@@ -1,10 +1,14 @@
 [tool.poetry]
 name = "cellcounter"
 version = "0.1.0"
-description = ""
-authors = ["tlee08 <timothy.e.lee@sydney.edu.au>"]
-license = "GPL-3.0"
+description = "cFos cell counting and region mapping for whole brain microscopy"
+authors = ["BowenLab"]
+license = "GNU GPLv3"
 readme = "README.md"
+homepage = "https://tlee08.github.io/cellcounter"
+repository = "https://github.com/tlee08/cellcounter"
+documentation = "https://tlee08.github.io/cellcounter"
+packages = [{ include = "cellcounter" }]
 
 [tool.poetry.dependencies]
 python = "^3.12"
