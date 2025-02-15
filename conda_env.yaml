@@ -1,0 +1,17 @@
+name: cellcounter
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - pip
+  # Interactivity
+  - ipykernel
+  # - bioconda::fiji
+  # Visualisation
+  - python-graphviz
+  # GPU acceleration (only CuPy from conda works)
+  # - cuda-toolkit
+  - cupy
+  - pip:
+      # - cellcounter[gpu,elastix]
+      - -e ".[gpu,elastix]"

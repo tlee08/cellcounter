@@ -1,0 +1,89 @@
+site_name: cellcounter Documentation
+site_url: https://tlee08.github.io/cellcounter/
+repo_url: https://github.com/tlee08/cellcounter
+
+theme:
+  name: material
+  features:
+    - content.code.copy
+    - toc.follow
+    # - toc.integrate
+
+markdown_extensions:
+  # Python Markdown
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - toc:
+      permalink: true
+  # Python Markdown Extensions
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+plugins:
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          paths: [../]
+          import:
+            - https://docs.python.org/3/objects.inv
+            - https://numpy.org/doc/stable/objects.inv
+            - https://pandas.pydata.org/docs/objects.inv
+            - https://docs.cupy.dev/en/stable/objects.inv
+            - https://docs.dask.org/en/stable/objects.inv
+            - https://docs.scipy.org/doc/numpy/objects.inv
+            - https://docs.scipy.org/doc/scipy/objects.inv
+          options:
+            show_root_heading: true
+            docstring_style: numpy
+            # merge_init_into_class: true
+            modernize_annotations: true
+            signature_crossrefs: true
+  - search
+  - autorefs
+  - offline
+  - tags
+
+nav:
+  - index.md
+  - Installing and Running:
+      - installation/installing.md
+      - installation/running.md
+      - installation/updating.md
+      - installation/uninstalling.md
+  - Tutorials:
+      - tutorials/tutorial.md
+      - tutorials/pipeline.md
+  - Examples:
+      - examples/single_pipeline.md
+      - examples/batch_pipeline.md
+  - API Reference:
+      - reference/pipeline_funcs.md
+      - reference/config_params_model.md
+      - reference/proj_fp_model.md

@@ -1,0 +1,56 @@
+[tool.poetry]
+name = "cellcounter"
+version = "0.1.0"
+description = ""
+authors = ["tlee08 <timothy.e.lee@sydney.edu.au>"]
+license = "GPL-3.0"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+jinja2 = "^3.1.5"
+streamlit = "^1.41.1"
+tifffile = "^2025.1.10"
+numpy = "^1.26.4"                                       # "^2.2.1"
+pandas = "^2.2.3"
+seaborn = "^0.13.2"
+scikit-image = "^0.25.0"
+zarr = "^3.0.0"
+dask = { version = "^2024.11.2", extras = ["complete"] }
+graphviz = "^0.20.3"
+# prefect = "^2.19.8"
+natsort = "^8.4.0"
+napari = { version = "^0.5.5", extras = ["all"] }
+pydantic = "^2.10.5"
+nibabel = "^5.3.2"
+# GPU (only CuPy from conda works)
+# cupy-cuda12x = { version = "^13.3.0", optional = true }
+dask-cuda = { version = "^24.12.0", optional = true }
+# Elastix
+simpleitk-simpleelastix = { version = "^2.4.0.dev53", optional = true }
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.4.8"
+mkdocs-material = "^9.5.18"
+mkdocstrings-python = "^1.9.2"
+pytest = "^8.3.3"
+
+[tool.poetry.extras]
+# gpu = ["cupy-cuda12x", "dask-cuda"]
+gpu = ["dask-cuda"]
+elastix = ["simpleitk-simpleelastix"]
+
+[tool.poetry.scripts]
+cellcounter_init = "cellcounter.scripts.init:main"
+cellcounter_project_gui = "cellcounter.scripts.project_gui:run_script"
+cellcounter_make_project = "cellcounter.scripts.make_project:main"
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.format]
+docstring-code-format = true
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
