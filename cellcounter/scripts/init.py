@@ -25,7 +25,7 @@ def main() -> None:
     # Running
     for cmd_str in [
         f'wget "{atlas_url}" -O {output_fp}',
-        f"unzip {output_fp}",
+        f"unzip {output_fp} -d {CACHE_DIR}",
     ]:
         try:
             subprocess.run(
