@@ -1,1 +1,1 @@
-::: cellcounter.pipelines.pipeline_funcs
+::: cellcounter.pipeline.pipeline.Pipeline

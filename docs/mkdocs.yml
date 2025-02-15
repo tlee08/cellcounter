@@ -85,5 +85,5 @@ nav:
       - examples/batch_pipeline.md
   - API Reference:
       - reference/pipeline_funcs.md
+      - reference/viewer_funcs.md
       - reference/config_params_model.md
-      - reference/proj_fp_model.md
