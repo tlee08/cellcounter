@@ -330,16 +330,17 @@ class Pipeline:
         configs = ConfigParamsModel.read_fp(pfm.config_params)
         # Asserting that lower bound is less than upper bound
         assert configs.lower_bound[0] < configs.upper_bound[0], (
-            "Error in config parameters: " "lower bound condition must be less than upper bound condition."
+            "Error in config parameters: lower bound condition must be less than upper bound condition."
         )
-        assert configs.lower_bound[1] <= configs.lower_bound[0], (
-            "Error in config parameters: "
-            "lower bound final value must be less than or equal to lower bound condition."
-        )
-        assert configs.upper_bound[1] >= configs.upper_bound[0], (
-            "Error in config parameters: "
-            "upper bound final value must be greater than or equal to upper bound condition."
-        )
+        # NOTE: removed upper and lower limit assertions to allow for more flexibility (e.g. "reducing" super high values)
+        # assert configs.lower_bound[1] <= configs.lower_bound[0], (
+        #     "Error in config parameters: "
+        #     "lower bound final value must be less than or equal to lower bound condition."
+        # )
+        # assert configs.upper_bound[1] >= configs.upper_bound[0], (
+        #     "Error in config parameters: "
+        #     "upper bound final value must be greater than or equal to upper bound condition."
+        # )
         # Reading
         trimmed_arr = tifffile.imread(pfm.trimmed)
         bounded_arr = trimmed_arr
