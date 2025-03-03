@@ -912,7 +912,7 @@ class Pipeline:
             for fp in (pfm.cells_raw_df,):
                 if os.path.exists(fp):
                     return logger.warning(file_exists_msg(fp))
-        with cluster_process(cls.heavy_cluster()):
+        with cluster_process(cls.gpu_cluster()):
             # Getting configs
             configs = ConfigParamsModel.read_fp(pfm.config_params)
             # Reading input images
@@ -924,7 +924,7 @@ class Pipeline:
             # Declaring processing instructions
             # Getting maxima coords and cell measures in table
             cells_df = block2coords(
-                CpuCellcFuncs.get_cells_b,
+                GpuCellcFuncs.get_cells_b,
                 raw_arr,
                 overlap_arr,
                 maxima_labels_arr,

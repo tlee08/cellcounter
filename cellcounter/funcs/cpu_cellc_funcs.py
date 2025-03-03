@@ -367,10 +367,14 @@ class CpuCellcFuncs:
         assert raw_arr.shape == tuple(i - 2 * depth for i in overlap_arr.shape)
         assert overlap_arr.shape == maxima_labels_arr.shape
         assert overlap_arr.shape == wshed_filt_arr.shape
+        # Converting to xp arrays
+        overlap_arr = cls.xp.asarray(overlap_arr)
+        maxima_labels_arr = cls.xp.asarray(maxima_labels_arr)
+        wshed_labels_arr = cls.xp.asarray(wshed_labels_arr)
+        wshed_filt_arr = cls.xp.asarray(wshed_filt_arr)
         cls.logger.debug("Trimming maxima labels array to raw array dimensions using `d`")
         slicer = slice(depth, -depth) if depth > 0 else slice(None)
         maxima_labels_trimmed_arr = maxima_labels_arr[slicer, slicer, slicer]
-        cls.logger.debug("Converting to DataFrame of coordinates and measures")
         # Getting first coord of each unique label (as some maxima are contiguous)
         # NOTE: np.unique auto flattens arr so reshaping it back with np.unravel_index
         labels_vect, coords_flat = cls.xp.unique(maxima_labels_trimmed_arr, return_index=True)
@@ -397,14 +401,13 @@ class CpuCellcFuncs:
         # (i.e these cells were evidently filtered out previously in wshed_filt_arr)
         cells_df = cells_df[cells_df[CellColumns.VOLUME.value] > 0]
         cls.logger.debug("Getting summed intensities for each cell")
-        # Before we get the sum intensity, we need to "filter" out
-        # wshed_labels_arr foreground values which have been filtered out
-        # in the wshed_filt_arr (i.e. volume is 0) by setting them to 0
-        wshed_labels_arr[wshed_filt_arr == 0] = 0
+        # Also getting the unique values of the UN-trimmed maxima_labels_arr
+        labels_untrimmed_vect = cp2np(cls.xp.unique(maxima_labels_arr))
         # With bincount, positional arg is the label cat and weights sums is raw arr (helpful for intensity)
         sum_intensity = cls.xp.bincount(
-            cls.xp.asarray(wshed_labels_arr[wshed_labels_arr > 0].ravel()),
-            weights=cls.xp.asarray(overlap_arr[wshed_labels_arr > 0].ravel()),
+            wshed_labels_arr[wshed_labels_arr > 0].ravel(),
+            weights=overlap_arr[wshed_labels_arr > 0].ravel(),
+            minlength=label_max + 1,
         )
         # NOTE: excluding 0 valued elements means sum_intensity matches with index
         # filt_sum_intensity = sum_intensity > 0
@@ -412,9 +415,10 @@ class CpuCellcFuncs:
         # index = index[filt_sum_intensity]
         # NOTE: a series with index is used here to "auto" filter labels not in cells_df
         # index = pd.Index(np.arange(label_max + 1), name=CELL_IDX_NAME)
+        index = pd.Index(labels_untrimmed_vect, name=CELL_IDX_NAME)
         print("===========")
-        print(cp2np(sum_intensity))
-        print(pd.Index(np.arange(label_max + 1), name=CELL_IDX_NAME))
+        print(cp2np(sum_intensity), cp2np(sum_intensity).shape)
+        print(index, index.shape)
         print("===========")
         cells_df[CellColumns.SUM_INTENSITY.value] = pd.Series(
             data=cp2np(sum_intensity),
