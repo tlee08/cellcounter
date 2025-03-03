@@ -423,7 +423,7 @@ class CpuCellcFuncs:
         cells_df[CellColumns.SUM_INTENSITY.value] = pd.Series(data=cls.cp2np(sum_intensity), index=index)
         # There should be no na values
         print(cells_df)
-        print(cells_df.is_na().sum())
+        print(cells_df.isna().sum())
         assert np.all(cells_df.notna())
         return cells_df
 
