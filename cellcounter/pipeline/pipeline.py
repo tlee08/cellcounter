@@ -691,7 +691,7 @@ class Pipeline:
         """
         Cell counting pipeline - Step 7
 
-        Get maxima of image masked by labels.
+        Get maxima mask of raw image with thresholded-filtered mask.
         """
         logger = init_logger_file()
         pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
@@ -716,9 +716,9 @@ class Pipeline:
             maxima_arr = disk_cache(maxima_arr, pfm.maxima)
 
     @classmethod
-    def cellc7b(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
+    def cellc8(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
         """
-        Cell counting pipeline - Step 7
+        Cell counting pipeline - Step 8
 
         Convert maxima mask to uniquely labelled points.
         """
@@ -740,11 +740,11 @@ class Pipeline:
             maxima_labels_arr = disk_cache(maxima_labels_arr, pfm.maxima_labels)
 
     @classmethod
-    def cellc8a(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
+    def cellc9(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
         """
-        Cell counting pipeline - Step 8
+        Cell counting pipeline - Step 9
 
-        Watershed segmentation labels.
+        Watershed segmentation labels with maxima labels and thresholded-filtered mask.
         """
         logger = init_logger_file()
         pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
@@ -767,11 +767,11 @@ class Pipeline:
             wshed_labels_arr = disk_cache(wshed_labels_arr, pfm.wshed_labels)
 
     @classmethod
-    def cellc8b(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
+    def cellc10(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
         """
-        Cell counting pipeline - Step 8
+        Cell counting pipeline - Step 10
 
-        Watershed segmentation volumes.
+        Convert watershed labels to watershed segmentation volumes.
         """
         logger = init_logger_file()
         pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
@@ -790,39 +790,12 @@ class Pipeline:
             wshed_volumes_arr = disk_cache(wshed_volumes_arr, pfm.wshed_volumes)
 
     @classmethod
-    def cellc8(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
+    def cellc11(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
         """
-        Cell counting pipeline - Step 8
+        Cell counting pipeline - Step 11
 
-        Watershed segmentation volumes.
-        """
-        logger = init_logger_file()
-        pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
-        if not overwrite:
-            for fp in (pfm.wshed_volumes,):
-                if os.path.exists(fp):
-                    return logger.warning(file_exists_msg(fp))
-        with cluster_process(cls.heavy_cluster()):
-            # n_workers=2
-            # Reading input images
-            overlap_arr = da.from_zarr(pfm.overlap)
-            maxima_arr = da.from_zarr(pfm.maxima)
-            threshd_filt_arr = da.from_zarr(pfm.threshd_filt)
-            # Declaring processing instructions
-            wshed_volumes_arr = da.map_blocks(
-                CpuCellcFuncs.wshed_segm_volumes,
-                overlap_arr,
-                maxima_arr,
-                threshd_filt_arr,
-            )
-            wshed_volumes_arr = disk_cache(wshed_volumes_arr, pfm.wshed_volumes)
-
-    @classmethod
-    def cellc9(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
-        """
-        Cell counting pipeline - Step 9
-
-        Filter out large watershed objects (again cell areas, not cells).
+        Filter out large watershed objects
+        (sets large volume values to 0, effectively filtering from segmentation image).
         """
         logger = init_logger_file()
         pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
@@ -846,7 +819,55 @@ class Pipeline:
             wshed_filt_arr = disk_cache(wshed_filt_arr, pfm.wshed_filt)
 
     @classmethod
-    def cellc10(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
+    def cellc12(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
+        """
+        Cell counting pipeline - Step 12
+
+        Saves a table of cells and their measures.
+
+        Uses raw, overlap, maxima_labels, wshed_labels, and wshed_filt
+        (so wshed computation not run again).
+        Also allows GPU processing.
+        """
+        logger = init_logger_file()
+        pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
+        if not overwrite:
+            for fp in (pfm.cells_raw_df,):
+                if os.path.exists(fp):
+                    return logger.warning(file_exists_msg(fp))
+        with cluster_process(cls.gpu_cluster()):
+            # Getting configs
+            configs = ConfigParamsModel.read_fp(pfm.config_params)
+            # Reading input images
+            raw_arr = da.from_zarr(pfm.raw)
+            overlap_arr = da.from_zarr(pfm.overlap)
+            maxima_labels_arr = da.from_zarr(pfm.maxima_labels)
+            wshed_labels_arr = da.from_zarr(pfm.wshed_labels)
+            wshed_filt_arr = da.from_zarr(pfm.wshed_filt)
+            # Declaring processing instructions
+            # Getting maxima coords and cell measures in table
+            cells_df = block2coords(
+                GpuCellcFuncs.get_cells,
+                raw_arr,
+                overlap_arr,
+                maxima_labels_arr,
+                wshed_labels_arr,
+                wshed_filt_arr,
+                configs.overlap_depth,
+            )
+            # Converting from dask to pandas
+            cells_df = cells_df.compute()
+            # If tuning, then offset by the tuning crop. Allows trfm and subsequent region grouping on tuning image.
+            if tuning:
+                cells_df[Coords.Z.value] += configs.tuning_z_trim[0] or 0
+                cells_df[Coords.Y.value] += configs.tuning_y_trim[0] or 0
+                cells_df[Coords.X.value] += configs.tuning_x_trim[0] or 0
+            # Computing and saving as parquet
+            # NOTE: temporary name for checking
+            write_parquet(cells_df, pfm.cells_raw_df)
+
+    @classmethod
+    def cellc12_old(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
         """
         Cell counting pipeline - Step 11
 
@@ -873,7 +894,7 @@ class Pipeline:
             # Declaring processing instructions
             # Getting maxima coords and cell measures in table
             cells_df = block2coords(
-                CpuCellcFuncs.get_cells,
+                CpuCellcFuncs.get_cells_old,
                 raw_arr,
                 overlap_arr,
                 maxima_arr,
@@ -889,61 +910,10 @@ class Pipeline:
             )
             # If tuning, then offset by the tuning crop. Allows trfm and subsequent region grouping on tuning image.
             if tuning:
-                tuning_z_trim_0 = configs.tuning_z_trim[0] or 0
-                tuning_y_trim_0 = configs.tuning_y_trim[0] or 0
-                tuning_x_trim_0 = configs.tuning_x_trim[0] or 0
-                cells_df[Coords.Z.value] += tuning_z_trim_0
-                cells_df[Coords.Y.value] += tuning_y_trim_0
-                cells_df[Coords.X.value] += tuning_x_trim_0
+                cells_df[Coords.Z.value] += configs.tuning_z_trim[0] or 0
+                cells_df[Coords.Y.value] += configs.tuning_y_trim[0] or 0
+                cells_df[Coords.X.value] += configs.tuning_x_trim[0] or 0
             # Computing and saving as parquet
-            write_parquet(cells_df, pfm.cells_raw_df)
-
-    @classmethod
-    def cellc10b(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
-        """
-        Alternative to cellc10.
-
-        Uses raw, overlap, maxima_labels, wshed_filt (so wshed computation not run again).
-        Also allows GPU processing.
-        """
-        logger = init_logger_file()
-        pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
-        if not overwrite:
-            for fp in (pfm.cells_raw_df,):
-                if os.path.exists(fp):
-                    return logger.warning(file_exists_msg(fp))
-        with cluster_process(cls.gpu_cluster()):
-            # Getting configs
-            configs = ConfigParamsModel.read_fp(pfm.config_params)
-            # Reading input images
-            raw_arr = da.from_zarr(pfm.raw)
-            overlap_arr = da.from_zarr(pfm.overlap)
-            maxima_labels_arr = da.from_zarr(pfm.maxima_labels)
-            wshed_labels_arr = da.from_zarr(pfm.wshed_labels)
-            wshed_filt_arr = da.from_zarr(pfm.wshed_filt)
-            # Declaring processing instructions
-            # Getting maxima coords and cell measures in table
-            cells_df = block2coords(
-                GpuCellcFuncs.get_cells_b,
-                raw_arr,
-                overlap_arr,
-                maxima_labels_arr,
-                wshed_labels_arr,
-                wshed_filt_arr,
-                configs.overlap_depth,
-            )
-            # Converting from dask to pandas
-            cells_df = cells_df.compute()
-            # If tuning, then offset by the tuning crop. Allows trfm and subsequent region grouping on tuning image.
-            if tuning:
-                tuning_z_trim_0 = configs.tuning_z_trim[0] or 0
-                tuning_y_trim_0 = configs.tuning_y_trim[0] or 0
-                tuning_x_trim_0 = configs.tuning_x_trim[0] or 0
-                cells_df[Coords.Z.value] += tuning_z_trim_0
-                cells_df[Coords.Y.value] += tuning_y_trim_0
-                cells_df[Coords.X.value] += tuning_x_trim_0
-            # Computing and saving as parquet
-            # NOTE: temporary name for checking
             write_parquet(cells_df, pfm.cells_raw_df + "_b.parquet")
 
     ###################################################################################################

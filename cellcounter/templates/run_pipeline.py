@@ -107,13 +107,11 @@ if __name__ == "__main__":
                 Pipeline.cellc5(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
                 Pipeline.cellc6(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
                 Pipeline.cellc7(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
-                Pipeline.cellc7b(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
                 Pipeline.cellc8(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
-                Pipeline.cellc8a(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
-                Pipeline.cellc8b(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
                 Pipeline.cellc9(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
                 Pipeline.cellc10(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
-                Pipeline.cellc10b(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
+                Pipeline.cellc11(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
+                Pipeline.cellc12(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
                 # Cell mapping
                 # COMMENT OUT UNTIL YOU'RE HAPPY WITH THE CELL COUNT PARAMETERS
                 Pipeline.transform_coords(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)

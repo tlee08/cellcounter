@@ -284,7 +284,7 @@ class CpuCellcFuncs:
         return df
 
     @classmethod
-    def get_cells(
+    def get_cells_old(
         cls,
         raw_arr: np.ndarray,
         overlap_arr: np.ndarray,
@@ -350,7 +350,7 @@ class CpuCellcFuncs:
         return df
 
     @classmethod
-    def get_cells_b(
+    def get_cells(
         cls,
         raw_arr: np.ndarray,
         overlap_arr: np.ndarray,
