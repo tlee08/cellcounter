@@ -417,13 +417,8 @@ class CpuCellcFuncs:
         # Getting the unique values of the UN-trimmed maxima_labels_arr
         labels_untrimmed_vect = cls.cp2np(cls.xp.unique(maxima_labels_arr))
         index = pd.Index(labels_untrimmed_vect, name=CELL_IDX_NAME)
-        # print("===========")
-        # print(cls.cp2np(sum_intensity), cls.cp2np(sum_intensity).shape)
-        # print(index, index.shape)
-        # print("===========")
         cells_df[CellColumns.SUM_INTENSITY.value] = pd.Series(data=cls.cp2np(sum_intensity), index=index)
         # There should be no na values
-        print(cells_df)
         assert np.all(cells_df.notna())
         return cells_df
 

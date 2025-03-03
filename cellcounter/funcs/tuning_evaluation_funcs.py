@@ -22,7 +22,6 @@ def read_img_histograms(my_dir, _bins=256, _range=(0, 5000)):
     bins_ls = []
     fp_ls = []
     for fp in os.listdir(my_dir):
-        print(fp)
         hist, bins = compute_img_histogram(
             os.path.join(my_dir, fp, "registration", "3_trimmed.tif"), _bins=_bins, _range=_range
         )
