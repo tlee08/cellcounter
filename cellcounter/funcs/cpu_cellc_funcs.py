@@ -373,14 +373,15 @@ class CpuCellcFuncs:
         maxima_labels_arr = cls.xp.asarray(maxima_labels_arr)
         wshed_labels_arr = cls.xp.asarray(wshed_labels_arr)
         wshed_filt_arr = cls.xp.asarray(wshed_filt_arr)
-        cls.logger.debug("Trimming maxima labels array to raw array dimensions using `d`")
+        # Trimming maxima labels array to raw array dimensions using `depth`
         slicer = slice(depth, -depth) if depth > 0 else slice(None)
         maxima_labels_trimmed_arr = maxima_labels_arr[slicer, slicer, slicer]
         assert raw_arr.shape == maxima_labels_trimmed_arr.shape
-        # Getting first coord of each unique label (as some maxima are contiguous)
+        # Getting first coord of each unique label in trimmed arr (as some maxima are contiguous)
         # NOTE: np.unique auto flattens arr so reshaping it back with np.unravel_index
         labels_vect, coords_flat = cls.xp.unique(maxima_labels_trimmed_arr, return_index=True)
         label_max = cls.cp2np(labels_vect.max())
+        # Making df of coordinates and measures
         z, y, x = cls.xp.unravel_index(coords_flat, maxima_labels_trimmed_arr.shape)
         cells_df = (
             pd.DataFrame(
@@ -394,25 +395,27 @@ class CpuCellcFuncs:
             .drop(index=0)  # Not including the 0 valued row (because it's background)
             .astype(np.uint16)
         )
-        print(cells_df)
         cells_df[CellColumns.COUNT.value] = 1
-        cls.logger.debug("Getting wshed_filt_arr (volume) values for each cell (z, y, x)")
+        # Getting wshed_filt_arr (volume) values for each cell (z, y, x). Offsetting by depth.
         cells_df[CellColumns.VOLUME.value] = cls.cp2np(
-            wshed_filt_arr[cells_df[Coords.Z.value], cells_df[Coords.Y.value], cells_df[Coords.X.value]]
+            wshed_filt_arr[
+                cells_df[Coords.Z.value] + depth,
+                cells_df[Coords.Y.value] + depth,
+                cells_df[Coords.X.value] + depth,
+            ]
         )
-        # Filtering out cells with 0 volume
-        # (i.e these cells were evidently filtered out previously in wshed_filt_arr)
+        # Filtering out cells with 0 volume. These cells were evidently filtered out previously in wshed_filt_arr
         cells_df = cells_df[cells_df[CellColumns.VOLUME.value] > 0]
-        cls.logger.debug("Getting summed intensities for each cell")
-        # With bincount, positional arg is the label cat and weights sums is raw arr (helpful for intensity)
+        # Getting summed intensities for each cell
+        # For bincount, positional arg is label cat and weights sums is raw arr (helpful for intensity)
         sum_intensity = cls.xp.bincount(
             wshed_labels_arr[wshed_labels_arr > 0].ravel(),
             weights=overlap_arr[wshed_labels_arr > 0].ravel(),
             minlength=label_max + 1,
         )
+        # A series with the index is used here to "auto" filter labels not in cells_df
         # Getting the unique values of the UN-trimmed maxima_labels_arr
         labels_untrimmed_vect = cls.cp2np(cls.xp.unique(maxima_labels_arr))
-        # NOTE: a series with the index is used here to "auto" filter labels not in cells_df
         index = pd.Index(labels_untrimmed_vect, name=CELL_IDX_NAME)
         # print("===========")
         # print(cls.cp2np(sum_intensity), cls.cp2np(sum_intensity).shape)
@@ -421,7 +424,6 @@ class CpuCellcFuncs:
         cells_df[CellColumns.SUM_INTENSITY.value] = pd.Series(data=cls.cp2np(sum_intensity), index=index)
         # There should be no na values
         print(cells_df)
-        print(cells_df.isna().sum())
         assert np.all(cells_df.notna())
         return cells_df
 
