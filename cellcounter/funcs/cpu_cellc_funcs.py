@@ -312,23 +312,23 @@ class CpuCellcFuncs:
         df = (
             pd.DataFrame(
                 {
-                    Coords.Z.value: cp2np(z),
-                    Coords.Y.value: cp2np(y),
-                    Coords.X.value: cp2np(x),
+                    Coords.Z.value: cls.cp2np(z),
+                    Coords.Y.value: cls.cp2np(y),
+                    Coords.X.value: cls.cp2np(x),
                 },
-                index=pd.Index(cp2np(ids_m).astype(np.uint32), name=CELL_IDX_NAME),
+                index=pd.Index(cls.cp2np(ids_m).astype(np.uint32), name=CELL_IDX_NAME),
             )
             .drop(index=0)  # Not including the 0 valued row (because there's no cell here)
             .astype(np.uint16)
         )
         cls.logger.debug("Watershed of overlap_arr, seeds maxima_arr, mask mask_arr")
         # NOTE: padding maxima_l_arr because we previously trimmed maxima_arr
-        maxima_l_arr = np.pad(cp2np(maxima_l_arr), depth, mode="constant", constant_values=0)
+        maxima_l_arr = np.pad(cls.cp2np(maxima_l_arr), depth, mode="constant", constant_values=0)
         wshed_arr = cls.wshed_segm(overlap_arr, maxima_l_arr, mask_arr)
         cls.logger.debug("Making vector of watershed region volumes")
         ids_w, counts = cls.xp.unique(wshed_arr[wshed_arr > 0], return_counts=True)
-        ids_w = cp2np(ids_w).astype(np.uint32)
-        counts = cp2np(counts).astype(np.uint32)
+        ids_w = cls.cp2np(ids_w).astype(np.uint32)
+        counts = cls.cp2np(counts).astype(np.uint32)
         cls.logger.debug("Getting sum intensity for each cell (wshed)")
         # With bincount, positional arg is the label cat and weights sums is raw arr (helpful for intensity)
         sum_intensity = cls.xp.bincount(
@@ -337,7 +337,7 @@ class CpuCellcFuncs:
             minlength=len(ids_w),
         )
         # NOTE: excluding 0 valued elements means sum_intensity matches with ids_w
-        sum_intensity = cp2np(sum_intensity[sum_intensity > 0])
+        sum_intensity = cls.cp2np(sum_intensity[sum_intensity > 0])
         cls.logger.debug("Adding cell measures to DataFrame")
         idx = pd.Index(ids_w, name=CELL_IDX_NAME)
         df[CellColumns.COUNT.value] = 1
@@ -378,31 +378,31 @@ class CpuCellcFuncs:
         # Getting first coord of each unique label (as some maxima are contiguous)
         # NOTE: np.unique auto flattens arr so reshaping it back with np.unravel_index
         labels_vect, coords_flat = cls.xp.unique(maxima_labels_trimmed_arr, return_index=True)
-        label_max = cp2np(labels_vect.max())
+        label_max = cls.cp2np(labels_vect.max())
         z, y, x = cls.xp.unravel_index(coords_flat, maxima_labels_trimmed_arr.shape)
         cells_df = (
             pd.DataFrame(
                 {
-                    Coords.Z.value: cp2np(z),
-                    Coords.Y.value: cp2np(y),
-                    Coords.X.value: cp2np(x),
+                    Coords.Z.value: cls.cp2np(z),
+                    Coords.Y.value: cls.cp2np(y),
+                    Coords.X.value: cls.cp2np(x),
                 },
-                index=pd.Index(cp2np(labels_vect).astype(np.uint32), name=CELL_IDX_NAME),
+                index=pd.Index(cls.cp2np(labels_vect).astype(np.uint32), name=CELL_IDX_NAME),
             )
             .drop(index=0)  # Not including the 0 valued row (because it's background)
             .astype(np.uint16)
         )
         cells_df[CellColumns.COUNT.value] = 1
         cls.logger.debug("Getting wshed_filt_arr (volume) values for each cell (z, y, x)")
-        cells_df[CellColumns.VOLUME.value] = wshed_filt_arr[
-            cells_df[Coords.Z.value], cells_df[Coords.Y.value], cells_df[Coords.X.value]
-        ]
+        cells_df[CellColumns.VOLUME.value] = cls.cp2np(
+            wshed_filt_arr[cells_df[Coords.Z.value], cells_df[Coords.Y.value], cells_df[Coords.X.value]]
+        )
         # Filtering out cells with 0 volume
         # (i.e these cells were evidently filtered out previously in wshed_filt_arr)
         cells_df = cells_df[cells_df[CellColumns.VOLUME.value] > 0]
         cls.logger.debug("Getting summed intensities for each cell")
         # Also getting the unique values of the UN-trimmed maxima_labels_arr
-        labels_untrimmed_vect = cp2np(cls.xp.unique(maxima_labels_arr))
+        labels_untrimmed_vect = cls.cp2np(cls.xp.unique(maxima_labels_arr))
         # With bincount, positional arg is the label cat and weights sums is raw arr (helpful for intensity)
         sum_intensity = cls.xp.bincount(
             wshed_labels_arr[wshed_labels_arr > 0].ravel(),
@@ -411,26 +411,28 @@ class CpuCellcFuncs:
         )
         # NOTE: excluding 0 valued elements means sum_intensity matches with index
         # filt_sum_intensity = sum_intensity > 0
-        # sum_intensity = cp2np(sum_intensity[filt_sum_intensity])
+        # sum_intensity = cls.cp2np(sum_intensity[filt_sum_intensity])
         # index = index[filt_sum_intensity]
         # NOTE: a series with index is used here to "auto" filter labels not in cells_df
         # index = pd.Index(np.arange(label_max + 1), name=CELL_IDX_NAME)
         index = pd.Index(labels_untrimmed_vect, name=CELL_IDX_NAME)
         print("===========")
-        print(cp2np(sum_intensity), cp2np(sum_intensity).shape)
+        print(cls.cp2np(sum_intensity), cls.cp2np(sum_intensity).shape)
         print(index, index.shape)
         print("===========")
         cells_df[CellColumns.SUM_INTENSITY.value] = pd.Series(
-            data=cp2np(sum_intensity),
+            data=cls.cp2np(sum_intensity),
             index=pd.Index(np.arange(label_max + 1), name=CELL_IDX_NAME),
         )
         # There should be no na values
+        print(cells_df)
+        print(cells_df.is_na().sum())
         assert np.all(cells_df.notna())
         return cells_df
 
-
-def cp2np(arr) -> np.ndarray:
-    try:
-        return arr.get()
-    except Exception:
-        return arr
+    @staticmethod
+    def cp2np(arr) -> np.ndarray:
+        try:
+            return arr.get()
+        except Exception:
+            return arr
