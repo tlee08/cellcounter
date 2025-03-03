@@ -739,55 +739,55 @@ class Pipeline:
             )
             maxima_labels_arr = disk_cache(maxima_labels_arr, pfm.maxima_labels)
 
-    # NOTE: NOT NEEDED TO GET WSHED_LABELS AS ALL WE NEED IS WSBEED_VOLUMES FOR CELLC10b
-    # @classmethod
-    # def cellc8a(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
-    #     """
-    #     Cell counting pipeline - Step 8
+    @classmethod
+    def cellc8a(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
+        """
+        Cell counting pipeline - Step 8
 
-    #     Watershed segmentation labels.
-    #     """
-    #     logger = init_logger_file()
-    #     pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
-    #     if not overwrite:
-    #         for fp in (pfm.maxima_labels.val,):
-    #             if os.path.exists(fp):
-    #                 return logger.warning(file_exists_msg(fp))
-    #     with cluster_process(cls.heavy_cluster()):
-    #         # Reading input images
-    #         overlap_arr = da.from_zarr(pfm.overlap.val)
-    #         maxima_labels_arr = da.from_zarr(pfm.maxima_labels.val)
-    #         threshd_filt_arr = da.from_zarr(pfm.threshd_filt.val)
-    #         # Declaring processing instructions
-    #         wshed_labels_arr = da.map_blocks(
-    #             cls.cellc_funcs.wshed_segm,
-    #             overlap_arr,
-    #             maxima_labels_arr,
-    #             threshd_filt_arr,
-    #         )
-    #         wshed_labels_arr = disk_cache(wshed_labels_arr, pfm.wshed_labels.val)
+        Watershed segmentation labels.
+        """
+        logger = init_logger_file()
+        pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
+        if not overwrite:
+            for fp in (pfm.maxima_labels,):
+                if os.path.exists(fp):
+                    return logger.warning(file_exists_msg(fp))
+        with cluster_process(cls.heavy_cluster()):
+            # Reading input images
+            overlap_arr = da.from_zarr(pfm.overlap)
+            maxima_labels_arr = da.from_zarr(pfm.maxima_labels)
+            threshd_filt_arr = da.from_zarr(pfm.threshd_filt)
+            # Declaring processing instructions
+            wshed_labels_arr = da.map_blocks(
+                cls.cellc_funcs.wshed_segm,
+                overlap_arr,
+                maxima_labels_arr,
+                threshd_filt_arr,
+            )
+            wshed_labels_arr = disk_cache(wshed_labels_arr, pfm.wshed_labels)
 
-    # @classmethod
-    # def cellc8b(cls, proj_dir: str, overwrite: bool = False) -> None:
-    #     """
-    #     Cell counting pipeline - Step 8
+    @classmethod
+    def cellc8b(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
+        """
+        Cell counting pipeline - Step 8
 
-    #     Watershed segmentation volumes.
-    #     """
-    #     logger = init_logger_file()
-    #     if not overwrite:
-    #         for fp in (pfm.maxima_labels.val,):
-    #             if os.path.exists(fp):
-    #                 return logger.warning(file_exists_msg(fp))
-    #     with cluster_process(cls.heavy_cluster()):
-    #         # Reading input images
-    #         wshed_labels_arr = da.from_zarr(pfm.wshed_labels.val)
-    #         # Declaring processing instructions
-    #         wshed_volumes_arr = da.map_blocks(
-    #             cls.cellc_funcs.label2volume,
-    #             wshed_labels_arr,
-    #         )
-    #         wshed_volumes_arr = disk_cache(wshed_volumes_arr, pfm.wshed_volumes.val)
+        Watershed segmentation volumes.
+        """
+        logger = init_logger_file()
+        pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
+        if not overwrite:
+            for fp in (pfm.maxima_labels,):
+                if os.path.exists(fp):
+                    return logger.warning(file_exists_msg(fp))
+        with cluster_process(cls.heavy_cluster()):
+            # Reading input images
+            wshed_labels_arr = da.from_zarr(pfm.wshed_labels)
+            # Declaring processing instructions
+            wshed_volumes_arr = da.map_blocks(
+                cls.cellc_funcs.label2volume,
+                wshed_labels_arr,
+            )
+            wshed_volumes_arr = disk_cache(wshed_volumes_arr, pfm.wshed_volumes)
 
     @classmethod
     def cellc8(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
@@ -887,6 +887,14 @@ class Pipeline:
                 f"({CellColumns.VOLUME.value} >= {configs.min_wshed_size}) & "
                 f"({CellColumns.VOLUME.value} <= {configs.max_wshed_size})"
             )
+            # If tuning, then offset by the tuning crop. Allows trfm and subsequent region grouping on tuning image.
+            if tuning:
+                tuning_z_trim_0 = configs.tuning_z_trim[0] or 0
+                tuning_y_trim_0 = configs.tuning_y_trim[0] or 0
+                tuning_x_trim_0 = configs.tuning_x_trim[0] or 0
+                cells_df[Coords.Z.value] += tuning_z_trim_0
+                cells_df[Coords.Y.value] += tuning_y_trim_0
+                cells_df[Coords.X.value] += tuning_x_trim_0
             # Computing and saving as parquet
             write_parquet(cells_df, pfm.cells_raw_df)
 
@@ -926,22 +934,31 @@ class Pipeline:
             )
             # Converting from dask to pandas
             cells_df = cells_df.compute()
+            # If tuning, then offset by the tuning crop. Allows trfm and subsequent region grouping on tuning image.
+            if tuning:
+                tuning_z_trim_0 = configs.tuning_z_trim[0] or 0
+                tuning_y_trim_0 = configs.tuning_y_trim[0] or 0
+                tuning_x_trim_0 = configs.tuning_x_trim[0] or 0
+                cells_df[Coords.Z.value] += tuning_z_trim_0
+                cells_df[Coords.Y.value] += tuning_y_trim_0
+                cells_df[Coords.X.value] += tuning_x_trim_0
             # Computing and saving as parquet
-            write_parquet(cells_df, pfm.cells_raw_df)
+            # NOTE: temporary name for checking
+            write_parquet(cells_df, pfm.cells_raw_df + "_b.parquet")
 
     ###################################################################################################
     # CELL COUNT REALIGNMENT TO REFERENCE AND AGGREGATION PIPELINE FUNCS
     ###################################################################################################
 
     @classmethod
-    def transform_coords(cls, proj_dir: str, overwrite: bool = False) -> None:
+    def transform_coords(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
         """
         `in_id` and `out_id` are either maxima or region
 
         NOTE: saves the cells_trfm dataframe as pandas parquet.
         """
         logger = init_logger_file()
-        pfm = ProjFpModel(proj_dir)
+        pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
         if not overwrite:
             for fp in (pfm.cells_trfm_df,):
                 if os.path.exists(fp):
@@ -979,7 +996,7 @@ class Pipeline:
             write_parquet(cells_trfm_df, pfm.cells_trfm_df)
 
     @classmethod
-    def cell_mapping(cls, proj_dir: str, overwrite: bool = False) -> None:
+    def cell_mapping(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
         """
         Using the transformed cell coordinates, get the region ID and name for each cell
         corresponding to the reference atlas.
@@ -987,7 +1004,7 @@ class Pipeline:
         NOTE: saves the cells dataframe as pandas parquet.
         """
         logger = init_logger_file()
-        pfm = ProjFpModel(proj_dir)
+        pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
         if not overwrite:
             for fp in (pfm.cells_df,):
                 if os.path.exists(fp):
@@ -1046,7 +1063,7 @@ class Pipeline:
             write_parquet(cells_df, pfm.cells_df)
 
     @classmethod
-    def group_cells(cls, proj_dir: str, overwrite: bool = False) -> None:
+    def group_cells(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
         """
         Grouping cells by region name and aggregating total cell volume
         and cell count for each region.
@@ -1054,7 +1071,7 @@ class Pipeline:
         NOTE: saves the cells_agg dataframe as pandas parquet.
         """
         logger = init_logger_file()
-        pfm = ProjFpModel(proj_dir)
+        pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
         if not overwrite:
             for fp in (pfm.cells_agg_df,):
                 if os.path.exists(fp):
@@ -1085,9 +1102,9 @@ class Pipeline:
             write_parquet(cells_agg_df, pfm.cells_agg_df)
 
     @classmethod
-    def cells2csv(cls, proj_dir: str, overwrite: bool = False) -> None:
+    def cells2csv(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
         logger = init_logger_file()
-        pfm = ProjFpModel(proj_dir)
+        pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
         if not overwrite:
             for fp in (pfm.cells_agg_csv,):
                 if os.path.exists(fp):

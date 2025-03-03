@@ -107,24 +107,32 @@ if __name__ == "__main__":
                 Pipeline.cellc5(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
                 Pipeline.cellc6(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
                 Pipeline.cellc7(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
+                Pipeline.cellc7b(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
                 Pipeline.cellc8(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
+                Pipeline.cellc8a(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
+                Pipeline.cellc8b(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
                 Pipeline.cellc9(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
                 Pipeline.cellc10(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
-            # Cell mapping
-            # COMMENT OUT UNTIL YOU'RE HAPPY WITH THE CELL COUNT PARAMETERS
-            Pipeline.transform_coords(analysis_img_dir, overwrite=overwrite)
-            # COMMENT OUT UNTIL YOU'RE HAPPY WITH THE CELL COUNT PARAMETERS
-            Pipeline.cell_mapping(analysis_img_dir, overwrite=overwrite)
-            # COMMENT OUT UNTIL YOU'RE HAPPY WITH THE CELL COUNT PARAMETERS
-            Pipeline.group_cells(analysis_img_dir, overwrite=overwrite)
-            # COMMENT OUT UNTIL YOU'RE HAPPY WITH THE CELL COUNT PARAMETERS
-            Pipeline.cells2csv(analysis_img_dir, overwrite=overwrite)
+                Pipeline.cellc10b(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
+                # Cell mapping
+                # COMMENT OUT UNTIL YOU'RE HAPPY WITH THE CELL COUNT PARAMETERS
+                Pipeline.transform_coords(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
+                # COMMENT OUT UNTIL YOU'RE HAPPY WITH THE CELL COUNT PARAMETERS
+                Pipeline.cell_mapping(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
+                # COMMENT OUT UNTIL YOU'RE HAPPY WITH THE CELL COUNT PARAMETERS
+                Pipeline.group_cells(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
+                # COMMENT OUT UNTIL YOU'RE HAPPY WITH THE CELL COUNT PARAMETERS
+                Pipeline.cells2csv(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
 
             # Registration visual check
             VisualCheck.combine_reg(analysis_img_dir, overwrite=overwrite)
             # Transformed space visual checks
-            VisualCheck.coords2heatmap_trfm(analysis_img_dir, overwrite=overwrite)
-            VisualCheck.combine_heatmap_trfm(analysis_img_dir, overwrite=overwrite)
+            for is_tuning in [
+                True,  # Tuning
+                False,  # Final (COMMENT OUT UNTIL YOU'RE HAPPY WITH THE CELL COUNT PARAMETERS)
+            ]:
+                VisualCheck.coords2heatmap_trfm(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
+                VisualCheck.combine_heatmap_trfm(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
         except Exception as e:
             print(f"Error in {img_name}: {e}")
     # Combining all experiment dataframes

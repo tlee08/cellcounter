@@ -98,9 +98,9 @@ class VisualCheck:
             )
 
     @classmethod
-    def coords2points_trfm(cls, proj_dir: str, overwrite: bool = False) -> None:
+    def coords2points_trfm(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
         logger = init_logger_file()
-        pfm = ProjFpModel(proj_dir)
+        pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
         if not overwrite:
             for fp in (pfm.points_trfm,):
                 if os.path.exists(fp):
@@ -112,9 +112,9 @@ class VisualCheck:
         )
 
     @classmethod
-    def coords2heatmap_trfm(cls, proj_dir: str, overwrite: bool = False) -> None:
+    def coords2heatmap_trfm(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
         logger = init_logger_file()
-        pfm = ProjFpModel(proj_dir)
+        pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
         if not overwrite:
             for fp in (pfm.heatmap_trfm,):
                 if os.path.exists(fp):
@@ -167,9 +167,9 @@ class VisualCheck:
         )
 
     @classmethod
-    def combine_heatmap_trfm(cls, proj_dir: str, overwrite: bool = False) -> None:
+    def combine_heatmap_trfm(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
         logger = init_logger_file()
-        pfm = ProjFpModel(proj_dir)
+        pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
         if not overwrite:
             for fp in (pfm.comb_heatmap,):
                 if os.path.exists(fp):
@@ -189,14 +189,17 @@ class VisualCheck:
         """
         Running all visual check pipelines in order.
         """
-        # Cell counting visual checks
-        for is_tuning in [True, False]:
+        # Registration visual check
+        cls.combine_reg(proj_dir, overwrite=overwrite)
+        for is_tuning in [
+            True,  # Tuning
+            False,  # Final
+        ]:
+            # Cell counting visual checks
             cls.cellc_trim_to_final(proj_dir, overwrite=overwrite, tuning=is_tuning)
             cls.coords2points_raw(proj_dir, overwrite=overwrite, tuning=is_tuning)
             cls.combine_cellc(proj_dir, overwrite=overwrite, tuning=is_tuning)
-        # Registration visual check
-        cls.combine_reg(proj_dir, overwrite=overwrite)
-        # Transformed space visual checks
-        cls.coords2points_trfm(proj_dir, overwrite=overwrite)
-        cls.coords2heatmap_trfm(proj_dir, overwrite=overwrite)
-        cls.combine_heatmap_trfm(proj_dir, overwrite=overwrite)
+            # Transformed space visual checks
+            cls.coords2points_trfm(proj_dir, overwrite=overwrite, tuning=is_tuning)
+            cls.coords2heatmap_trfm(proj_dir, overwrite=overwrite, tuning=is_tuning)
+            cls.combine_heatmap_trfm(proj_dir, overwrite=overwrite, tuning=is_tuning)

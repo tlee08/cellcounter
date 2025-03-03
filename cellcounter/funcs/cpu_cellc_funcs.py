@@ -366,10 +366,6 @@ class CpuCellcFuncs:
         assert raw_arr.shape == tuple(i - 2 * depth for i in overlap_arr.shape)
         assert overlap_arr.shape == maxima_labels_arr.shape
         assert overlap_arr.shape == wshed_filt_arr.shape
-        # Asserting that maxima_labels_arr and wshed_labels_arr have the same unique labels
-        assert cls.xp.all(
-            cls.xp.unique(cls.xp.asarray(maxima_labels_arr)) == cls.xp.unique(cls.xp.asarray(wshed_labels_arr))
-        )
         cls.logger.debug("Trimming maxima labels array to raw array dimensions using `d`")
         slicer = slice(depth, -depth) if depth > 0 else slice(None)
         maxima_labels_trimmed_arr = maxima_labels_arr[slicer, slicer, slicer]
@@ -399,7 +395,7 @@ class CpuCellcFuncs:
         # Filtering out cells with 0 volume (i.e evidently filtered out in wshed_filt_arr)
         cells_df = cells_df[cells_df[CellColumns.VOLUME.value] > 0]
         cls.logger.debug("Getting summed intensities for each cell")
-        # NOTE: with bincount, positional arg is the label category and weights sums (helpful for intensity)
+        # NOTE: with bincount, positional arg is the label cat and weights sums is raw arr (helpful for intensity)
         sum_intensity = cls.xp.bincount(
             cls.xp.asarray(wshed_labels_arr[wshed_labels_arr > 0].ravel()),
             weights=cls.xp.asarray(overlap_arr[wshed_labels_arr > 0].ravel()),

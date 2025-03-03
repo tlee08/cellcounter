@@ -92,7 +92,7 @@ class ConfigParamsModel(BaseModel):
     combine_cellc_x_trim: tuple[int | None, int | None, int | None] = (None, None, None)
 
     @model_validator(mode="after")
-    def _validate_trims(self):
+    def _validate_trims(self) -> "ConfigParamsModel":
         # Orient validation
         vect = np.array(self.ref_orient_ls)
         vect_abs = np.abs(vect)
@@ -103,7 +103,7 @@ class ConfigParamsModel(BaseModel):
         return self
 
     @classmethod
-    def read_fp(cls, fp: str):
+    def read_fp(cls, fp: str) -> "ConfigParamsModel":
         model = cls.model_validate(read_json(fp))
         return model
 
@@ -111,7 +111,7 @@ class ConfigParamsModel(BaseModel):
         return self.model_validate(self.model_copy(update=kwargs))
 
     @classmethod
-    def update_file(cls, fp: str, **kwargs):
+    def update_file(cls, fp: str, **kwargs) -> "ConfigParamsModel":
         """
         Reads the json file in `fp`, updates the parameters with `kwargs`,
         writes the updated parameters back to `fp` (if there are any updates),

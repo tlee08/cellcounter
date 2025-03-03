@@ -23,7 +23,8 @@ class FpModel(ABC):
         Make project directories from all subdirs in
         """
         for subdir in self.subdirs_ls:
-            os.makedirs(os.path.join(self.root_dir, subdir), exist_ok=True)
+            if subdir is not None:
+                os.makedirs(os.path.join(self.root_dir, subdir), exist_ok=True)
 
     def export2dict(self) -> dict:
         """
@@ -42,10 +43,9 @@ class FpModel(ABC):
         return export_dict
 
     @staticmethod
-    def raise_not_implemented_err(attr_name):
+    def raise_not_implemented_err(attr_name: str):
         raise NotImplementedError(
-            "This filepath is not implemented.\n"
-            "Activate this by calling 'set_implement' or explicitly edit this model."
+            "This filepath is not implemented.\nActivate this by calling 'set_implement' or explicitly edit this model."
         )
 
 
@@ -78,23 +78,23 @@ class RefFpModel(FpModel):
         ]
 
     @property
-    def ref(self):
+    def ref(self) -> str:
         return os.path.join(self.root_dir, self.reference_sdir, f"{self.ref_version}.tif")
 
     @property
-    def annot(self):
+    def annot(self) -> str:
         return os.path.join(self.root_dir, self.annotation_sdir, f"{self.annot_version}.tif")
 
     @property
-    def map(self):
+    def map(self) -> str:
         return os.path.join(self.root_dir, self.mapping_sdir, f"{self.map_version}.json")
 
     @property
-    def affine(self):
+    def affine(self) -> str:
         return os.path.join(self.root_dir, self.elastix_sdir, "align_affine.txt")
 
     @property
-    def bspline(self):
+    def bspline(self) -> str:
         return os.path.join(self.root_dir, self.elastix_sdir, "align_bspline.txt")
 
 
@@ -120,256 +120,252 @@ class ProjFpModel(FpModel):
         ]
 
     @property
-    def config_params(self):
+    def config_params(self) -> str:
         return os.path.join(self.root_dir, "config_params.json")
 
     @property
-    def diagnostics(self):
+    def diagnostics(self) -> str:
         return os.path.join(self.root_dir, "diagnostics.csv")
 
     @property
-    def raw(self):
+    def raw(self) -> str:
         return os.path.join(self.root_dir, self.raw_sdir, "raw.zarr")
 
     @property
-    def ref(self):
+    def ref(self) -> str:
         return os.path.join(self.root_dir, self.registration_sdir, "0a_reference.tif")
 
     @property
-    def annot(self):
+    def annot(self) -> str:
         return os.path.join(self.root_dir, self.registration_sdir, "0b_annotation.tif")
 
     @property
-    def map(self):
+    def map(self) -> str:
         return os.path.join(self.root_dir, self.registration_sdir, "0c_mapping.json")
 
     @property
-    def affine(self):
+    def affine(self) -> str:
         return os.path.join(self.root_dir, self.registration_sdir, "0d_align_affine.txt")
 
     @property
-    def bspline(self):
+    def bspline(self) -> str:
         return os.path.join(self.root_dir, self.registration_sdir, "0e_align_bspline.txt")
 
     @property
-    def downsmpl1(self):
+    def downsmpl1(self) -> str:
         return os.path.join(self.root_dir, self.registration_sdir, "1_downsmpl1.tif")
 
     @property
-    def downsmpl2(self):
+    def downsmpl2(self) -> str:
         return os.path.join(self.root_dir, self.registration_sdir, "2_downsmpl2.tif")
 
     @property
-    def trimmed(self):
+    def trimmed(self) -> str:
         return os.path.join(self.root_dir, self.registration_sdir, "3_trimmed.tif")
 
     @property
-    def bounded(self):
+    def bounded(self) -> str:
         return os.path.join(self.root_dir, self.registration_sdir, "4_bounded.tif")
 
     @property
-    def regresult(self):
+    def regresult(self) -> str:
         return os.path.join(self.root_dir, self.registration_sdir, "5_regresult.tif")
 
     @property
-    def premask_blur(self):
+    def premask_blur(self) -> str:
         return os.path.join(self.root_dir, self.mask_sdir, "1_premask_blur.tif")
 
     @property
-    def mask_fill(self):
+    def mask_fill(self) -> str:
         return os.path.join(self.root_dir, self.mask_sdir, "2_mask_trimmed.tif")
 
     @property
-    def mask_outline(self):
+    def mask_outline(self) -> str:
         return os.path.join(self.root_dir, self.mask_sdir, "3_outline_reg.tif")
 
     @property
-    def mask_reg(self):
+    def mask_reg(self) -> str:
         return os.path.join(self.root_dir, self.mask_sdir, "4_mask_reg.tif")
 
     @property
-    def mask_df(self):
+    def mask_df(self) -> str:
         return os.path.join(self.root_dir, self.mask_sdir, "5_mask.parquet")
 
     @property
-    def overlap(self):
+    def overlap(self) -> str:
         return os.path.join(self.root_dir, self.cellcount_sdir, "0_overlap.zarr")
 
     @property
-    def bgrm(self):
+    def bgrm(self) -> str:
         return os.path.join(self.root_dir, self.cellcount_sdir, "1_bgrm.zarr")
 
     @property
-    def dog(self):
+    def dog(self) -> str:
         return os.path.join(self.root_dir, self.cellcount_sdir, "2_dog.zarr")
 
     @property
-    def adaptv(self):
+    def adaptv(self) -> str:
         return os.path.join(self.root_dir, self.cellcount_sdir, "3_adaptv.zarr")
 
     @property
-    def threshd(self):
+    def threshd(self) -> str:
         return os.path.join(self.root_dir, self.cellcount_sdir, "4_threshd.zarr")
 
     @property
-    def threshd_volumes(self):
+    def threshd_volumes(self) -> str:
         return os.path.join(self.root_dir, self.cellcount_sdir, "5_threshd_volumes.zarr")
 
     @property
-    def threshd_filt(self):
+    def threshd_filt(self) -> str:
         return os.path.join(self.root_dir, self.cellcount_sdir, "6_threshd_filt.zarr")
 
     @property
-    def maxima(self):
+    def maxima(self) -> str:
         return os.path.join(self.root_dir, self.cellcount_sdir, "7_maxima.zarr")
 
     @property
-    def maxima_labels(self):
+    def maxima_labels(self) -> str:
         return os.path.join(self.root_dir, self.cellcount_sdir, "7_maxima_labels.zarr")  # NOTE: NEW
 
     @property
-    def wshed_labels(self):
+    def wshed_labels(self) -> str:
         return os.path.join(self.root_dir, self.cellcount_sdir, "8_wshed_labels.zarr")  # NOTE: NEW
 
     @property
-    def wshed_volumes(self):
+    def wshed_volumes(self) -> str:
         return os.path.join(self.root_dir, self.cellcount_sdir, "8_wshed_volumes.zarr")
 
     @property
-    def wshed_filt(self):
+    def wshed_filt(self) -> str:
         return os.path.join(self.root_dir, self.cellcount_sdir, "9_wshed_filt.zarr")
 
     @property
-    def cells_raw_df(self):
+    def cells_raw_df(self) -> str:
         return os.path.join(self.root_dir, self.analysis_sdir, "1_cells_raw.parquet")
 
     @property
-    def cells_trfm_df(self):
+    def cells_trfm_df(self) -> str:
         return os.path.join(self.root_dir, self.analysis_sdir, "2_cells_trfm.parquet")
 
     @property
-    def cells_df(self):
+    def cells_df(self) -> str:
         return os.path.join(self.root_dir, self.analysis_sdir, "3_cells.parquet")
 
     @property
-    def cells_agg_df(self):
+    def cells_agg_df(self) -> str:
         return os.path.join(self.root_dir, self.analysis_sdir, "4_cells_agg.parquet")
 
     @property
-    def cells_agg_csv(self):
+    def cells_agg_csv(self) -> str:
         return os.path.join(self.root_dir, self.analysis_sdir, "5_cells_agg.csv")
 
     @property
-    def threshd_final(self):
+    def threshd_final(self) -> str:
         return os.path.join(self.root_dir, self.visual_sdir, "threshd.zarr")
 
     @property
-    def maxima_final(self):
+    def maxima_final(self) -> str:
         return os.path.join(self.root_dir, self.visual_sdir, "maxima.zarr")
 
     @property
-    def wshed_final(self):
+    def wshed_final(self) -> str:
         return os.path.join(self.root_dir, self.visual_sdir, "wshed.zarr")
 
     @property
-    def points_raw(self):
+    def points_raw(self) -> str:
         return os.path.join(self.root_dir, self.visual_sdir, "points_raw.zarr")
 
     @property
-    def heatmap_raw(self):
+    def heatmap_raw(self) -> str:
         return os.path.join(self.root_dir, self.visual_sdir, "heatmap_raw.zarr")
 
     @property
-    def points_trfm(self):
+    def points_trfm(self) -> str:
         return os.path.join(self.root_dir, self.visual_sdir, "points_trfm.tif")
 
     @property
-    def heatmap_trfm(self):
+    def heatmap_trfm(self) -> str:
         return os.path.join(self.root_dir, self.visual_sdir, "heatmap_trfm.tif")
 
     @property
-    def comb_reg(self):
+    def comb_reg(self) -> str:
         return os.path.join(self.root_dir, self.visual_sdir, "comb_reg.tif")
 
     @property
-    def comb_cellc(self):
+    def comb_cellc(self) -> str:
         return os.path.join(self.root_dir, self.visual_sdir, "comb_cellc.tif")
 
     @property
-    def comb_heatmap(self):
+    def comb_heatmap(self) -> str:
         return os.path.join(self.root_dir, self.visual_sdir, "comb_points.tif")
 
 
 class ProjFpModelTuning(ProjFpModel):
     def __init__(self, root_dir: str):
         super().__init__(root_dir)
-        self.raw_sdir = "raw_tuning"
+        self.raw_sdir = f"{self.raw_sdir}_tuning"
         self.registration_sdir = None
         self.mask_sdir = None
-        self.cellcount_sdir = "cellcount_tuning"
-        self.analysis_sdir = "analysis_tuning"
-        self.visual_sdir = "visual_tuning"
+        self.cellcount_sdir = f"{self.cellcount_sdir}_tuning"
+        self.analysis_sdir = f"{self.analysis_sdir}_tuning"
+        self.visual_sdir = f"{self.visual_sdir}_tuning"
 
     @property
-    def raw(self):
-        return os.path.join(self.root_dir, self.raw_sdir, "raw.zarr")
+    def ref(self) -> str:
+        return self.raise_not_implemented_err("ref")
 
     @property
-    def ref(self):
-        self.raise_not_implemented_err("ref")
+    def annot(self) -> str:
+        return self.raise_not_implemented_err("annot")
 
     @property
-    def annot(self):
-        self.raise_not_implemented_err("annot")
+    def map(self) -> str:
+        return self.raise_not_implemented_err("map")
 
     @property
-    def map(self):
-        self.raise_not_implemented_err("map")
+    def affine(self) -> str:
+        return self.raise_not_implemented_err("affine")
 
     @property
-    def affine(self):
-        self.raise_not_implemented_err("affine")
+    def bspline(self) -> str:
+        return self.raise_not_implemented_err("bspline")
 
     @property
-    def bspline(self):
-        self.raise_not_implemented_err("bspline")
+    def downsmpl1(self) -> str:
+        return self.raise_not_implemented_err("downsmpl1")
 
     @property
-    def downsmpl1(self):
-        self.raise_not_implemented_err("downsmpl1")
+    def downsmpl2(self) -> str:
+        return self.raise_not_implemented_err("downsmpl2")
 
     @property
-    def downsmpl2(self):
-        self.raise_not_implemented_err("downsmpl2")
+    def trimmed(self) -> str:
+        return self.raise_not_implemented_err("trimmed")
 
     @property
-    def trimmed(self):
-        self.raise_not_implemented_err("trimmed")
+    def bounded(self) -> str:
+        return self.raise_not_implemented_err("bounded")
 
     @property
-    def bounded(self):
-        self.raise_not_implemented_err("bounded")
+    def regresult(self) -> str:
+        return self.raise_not_implemented_err("regresult")
 
     @property
-    def regresult(self):
-        self.raise_not_implemented_err("regresult")
+    def premask_blur(self) -> str:
+        return self.raise_not_implemented_err("premask_blur")
 
     @property
-    def premask_blur(self):
-        self.raise_not_implemented_err("premask_blur")
+    def mask_fill(self) -> str:
+        return self.raise_not_implemented_err("mask_fill")
 
     @property
-    def mask_fill(self):
-        self.raise_not_implemented_err("mask_fill")
+    def mask_outline(self) -> str:
+        return self.raise_not_implemented_err("mask_outline")
 
     @property
-    def mask_outline(self):
-        self.raise_not_implemented_err("mask_outline")
+    def mask_reg(self) -> str:
+        return self.raise_not_implemented_err("mask_reg")
 
     @property
-    def mask_reg(self):
-        self.raise_not_implemented_err("mask_reg")
-
-    @property
-    def mask_df(self):
-        self.raise_not_implemented_err("mask_df")
+    def mask_df(self) -> str:
+        return self.raise_not_implemented_err("mask_df")
