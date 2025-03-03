@@ -330,6 +330,7 @@ class CpuCellcFuncs:
         ids_w = cp2np(ids_w).astype(np.uint32)
         counts = cp2np(counts).astype(np.uint32)
         cls.logger.debug("Getting sum intensity for each cell (wshed)")
+        # With bincount, positional arg is the label cat and weights sums is raw arr (helpful for intensity)
         sum_intensity = cls.xp.bincount(
             cls.xp.asarray(wshed_arr[wshed_arr > 0].ravel()),
             weights=cls.xp.asarray(overlap_arr[wshed_arr > 0].ravel()),
@@ -395,14 +396,16 @@ class CpuCellcFuncs:
         # Filtering out cells with 0 volume (i.e evidently filtered out in wshed_filt_arr)
         cells_df = cells_df[cells_df[CellColumns.VOLUME.value] > 0]
         cls.logger.debug("Getting summed intensities for each cell")
-        # NOTE: with bincount, positional arg is the label cat and weights sums is raw arr (helpful for intensity)
+        # With bincount, positional arg is the label cat and weights sums is raw arr (helpful for intensity)
         sum_intensity = cls.xp.bincount(
             cls.xp.asarray(wshed_labels_arr[wshed_labels_arr > 0].ravel()),
             weights=cls.xp.asarray(overlap_arr[wshed_labels_arr > 0].ravel()),
         )
+        # NOTE: excluding 0 valued elements means sum_intensity matches with ids_w
+        sum_intensity = cp2np(sum_intensity[sum_intensity > 0])
         # NOTE: a series with index is used here to "auto" filter labels not in cells_df
         index = pd.Index(np.arange(label_max + 1), name=CELL_IDX_NAME)
-        cells_df[CellColumns.SUM_INTENSITY.value] = pd.Series(cp2np(sum_intensity), index=index)
+        cells_df[CellColumns.SUM_INTENSITY.value] = pd.Series(sum_intensity, index=index)
         # There should be no na values
         assert np.all(cells_df.notna())
         return cells_df
