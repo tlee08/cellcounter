@@ -302,6 +302,7 @@ class CpuCellcFuncs:
         cls.logger.debug("Trimming maxima labels array to raw array dimensions using `d`")
         slicer = slice(depth, -depth) if depth > 0 else slice(None)
         maxima_arr = maxima_arr[slicer, slicer, slicer]
+        assert raw_arr.shape == maxima_arr.shape
         cls.logger.debug("Getting unique labels in maxima_arr")
         maxima_l_arr = cls.mask2label(maxima_arr)
         cls.logger.debug("Converting to DataFrame of coordinates and measures")
@@ -375,6 +376,7 @@ class CpuCellcFuncs:
         cls.logger.debug("Trimming maxima labels array to raw array dimensions using `d`")
         slicer = slice(depth, -depth) if depth > 0 else slice(None)
         maxima_labels_trimmed_arr = maxima_labels_arr[slicer, slicer, slicer]
+        assert raw_arr.shape == maxima_labels_trimmed_arr.shape
         # Getting first coord of each unique label (as some maxima are contiguous)
         # NOTE: np.unique auto flattens arr so reshaping it back with np.unravel_index
         labels_vect, coords_flat = cls.xp.unique(maxima_labels_trimmed_arr, return_index=True)
@@ -392,6 +394,7 @@ class CpuCellcFuncs:
             .drop(index=0)  # Not including the 0 valued row (because it's background)
             .astype(np.uint16)
         )
+        print(cells_df)
         cells_df[CellColumns.COUNT.value] = 1
         cls.logger.debug("Getting wshed_filt_arr (volume) values for each cell (z, y, x)")
         cells_df[CellColumns.VOLUME.value] = cls.cp2np(
@@ -409,17 +412,12 @@ class CpuCellcFuncs:
         )
         # Getting the unique values of the UN-trimmed maxima_labels_arr
         labels_untrimmed_vect = cls.cp2np(cls.xp.unique(maxima_labels_arr))
-        # NOTE: excluding 0 valued elements means sum_intensity matches with index
-        # filt_sum_intensity = sum_intensity > 0
-        # sum_intensity = cls.cp2np(sum_intensity[filt_sum_intensity])
-        # index = index[filt_sum_intensity]
         # NOTE: a series with the index is used here to "auto" filter labels not in cells_df
-        # index = pd.Index(np.arange(label_max + 1), name=CELL_IDX_NAME)
         index = pd.Index(labels_untrimmed_vect, name=CELL_IDX_NAME)
-        print("===========")
-        print(cls.cp2np(sum_intensity), cls.cp2np(sum_intensity).shape)
-        print(index, index.shape)
-        print("===========")
+        # print("===========")
+        # print(cls.cp2np(sum_intensity), cls.cp2np(sum_intensity).shape)
+        # print(index, index.shape)
+        # print("===========")
         cells_df[CellColumns.SUM_INTENSITY.value] = pd.Series(data=cls.cp2np(sum_intensity), index=index)
         # There should be no na values
         print(cells_df)
