@@ -401,29 +401,26 @@ class CpuCellcFuncs:
         # (i.e these cells were evidently filtered out previously in wshed_filt_arr)
         cells_df = cells_df[cells_df[CellColumns.VOLUME.value] > 0]
         cls.logger.debug("Getting summed intensities for each cell")
-        # Also getting the unique values of the UN-trimmed maxima_labels_arr
-        labels_untrimmed_vect = cls.cp2np(cls.xp.unique(maxima_labels_arr))
         # With bincount, positional arg is the label cat and weights sums is raw arr (helpful for intensity)
         sum_intensity = cls.xp.bincount(
             wshed_labels_arr[wshed_labels_arr > 0].ravel(),
             weights=overlap_arr[wshed_labels_arr > 0].ravel(),
             minlength=label_max + 1,
         )
+        # Getting the unique values of the UN-trimmed maxima_labels_arr
+        labels_untrimmed_vect = cls.cp2np(cls.xp.unique(maxima_labels_arr))
         # NOTE: excluding 0 valued elements means sum_intensity matches with index
         # filt_sum_intensity = sum_intensity > 0
         # sum_intensity = cls.cp2np(sum_intensity[filt_sum_intensity])
         # index = index[filt_sum_intensity]
-        # NOTE: a series with index is used here to "auto" filter labels not in cells_df
+        # NOTE: a series with the index is used here to "auto" filter labels not in cells_df
         # index = pd.Index(np.arange(label_max + 1), name=CELL_IDX_NAME)
         index = pd.Index(labels_untrimmed_vect, name=CELL_IDX_NAME)
         print("===========")
         print(cls.cp2np(sum_intensity), cls.cp2np(sum_intensity).shape)
         print(index, index.shape)
         print("===========")
-        cells_df[CellColumns.SUM_INTENSITY.value] = pd.Series(
-            data=cls.cp2np(sum_intensity),
-            index=pd.Index(np.arange(label_max + 1), name=CELL_IDX_NAME),
-        )
+        cells_df[CellColumns.SUM_INTENSITY.value] = pd.Series(data=cls.cp2np(sum_intensity), index=index)
         # There should be no na values
         print(cells_df)
         print(cells_df.is_na().sum())
