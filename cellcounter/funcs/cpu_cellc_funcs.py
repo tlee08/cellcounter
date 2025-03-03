@@ -411,7 +411,11 @@ class CpuCellcFuncs:
         # sum_intensity = cp2np(sum_intensity[filt_sum_intensity])
         # index = index[filt_sum_intensity]
         # NOTE: a series with index is used here to "auto" filter labels not in cells_df
-        index = pd.Index(np.arange(label_max + 1), name=CELL_IDX_NAME)
+        # index = pd.Index(np.arange(label_max + 1), name=CELL_IDX_NAME)
+        print("===========")
+        print(cp2np(sum_intensity))
+        print(pd.Index(np.arange(label_max + 1), name=CELL_IDX_NAME))
+        print("===========")
         cells_df[CellColumns.SUM_INTENSITY.value] = pd.Series(
             data=cp2np(sum_intensity),
             index=pd.Index(np.arange(label_max + 1), name=CELL_IDX_NAME),
