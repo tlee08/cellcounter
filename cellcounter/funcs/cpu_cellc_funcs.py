@@ -393,19 +393,29 @@ class CpuCellcFuncs:
         cells_df[CellColumns.VOLUME.value] = wshed_filt_arr[
             cells_df[Coords.Z.value], cells_df[Coords.Y.value], cells_df[Coords.X.value]
         ]
-        # Filtering out cells with 0 volume (i.e evidently filtered out in wshed_filt_arr)
+        # Filtering out cells with 0 volume
+        # (i.e these cells were evidently filtered out previously in wshed_filt_arr)
         cells_df = cells_df[cells_df[CellColumns.VOLUME.value] > 0]
         cls.logger.debug("Getting summed intensities for each cell")
+        # Before we get the sum intensity, we need to "filter" out
+        # wshed_labels_arr foreground values which have been filtered out
+        # in the wshed_filt_arr (i.e. volume is 0) by setting them to 0
+        wshed_labels_arr[wshed_filt_arr == 0] = 0
         # With bincount, positional arg is the label cat and weights sums is raw arr (helpful for intensity)
         sum_intensity = cls.xp.bincount(
             cls.xp.asarray(wshed_labels_arr[wshed_labels_arr > 0].ravel()),
             weights=cls.xp.asarray(overlap_arr[wshed_labels_arr > 0].ravel()),
         )
-        # NOTE: excluding 0 valued elements means sum_intensity matches with ids_w
-        sum_intensity = cp2np(sum_intensity[sum_intensity > 0])
+        # NOTE: excluding 0 valued elements means sum_intensity matches with index
+        # filt_sum_intensity = sum_intensity > 0
+        # sum_intensity = cp2np(sum_intensity[filt_sum_intensity])
+        # index = index[filt_sum_intensity]
         # NOTE: a series with index is used here to "auto" filter labels not in cells_df
         index = pd.Index(np.arange(label_max + 1), name=CELL_IDX_NAME)
-        cells_df[CellColumns.SUM_INTENSITY.value] = pd.Series(sum_intensity, index=index)
+        cells_df[CellColumns.SUM_INTENSITY.value] = pd.Series(
+            data=cp2np(sum_intensity),
+            index=pd.Index(np.arange(label_max + 1), name=CELL_IDX_NAME),
+        )
         # There should be no na values
         assert np.all(cells_df.notna())
         return cells_df
