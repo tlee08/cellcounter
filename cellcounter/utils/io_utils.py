@@ -8,7 +8,6 @@ from typing import Callable
 
 import numpy as np
 import pandas as pd
-import tifffile
 from natsort import natsorted
 
 # TODO: add request functionality to download Allen Mouse Atlas image:
@@ -145,13 +144,8 @@ def sanitise_smb_df(df):
 
 
 #####################################################################
-# WRITE IO
+# DF IO
 #####################################################################
-
-
-def write_tiff(arr: np.ndarray, fp: str):
-    os.makedirs(os.path.dirname(fp), exist_ok=True)
-    tifffile.imwrite(fp, arr)
 
 
 def write_parquet(df: pd.DataFrame, fp: str):

@@ -21,11 +21,11 @@ from cellcounter.constants import (
     Coords,
     MaskColumns,
 )
+from cellcounter.funcs.arr_io_funcs import ArrIOFuncs
 from cellcounter.funcs.cpu_cellc_funcs import CpuCellcFuncs
 from cellcounter.funcs.map_funcs import MapFuncs
 from cellcounter.funcs.mask_funcs import MaskFuncs
 from cellcounter.funcs.reg_funcs import RegFuncs
-from cellcounter.funcs.tiff2zarr_funcs import Tiff2ZarrFuncs
 from cellcounter.funcs.visual_check_funcs_tiff import VisualCheckFuncsTiff
 from cellcounter.utils.config_params_model import ConfigParamsModel
 from cellcounter.utils.dask_utils import (
@@ -40,7 +40,6 @@ from cellcounter.utils.io_utils import (
     sanitise_smb_df,
     write_json,
     write_parquet,
-    write_tiff,
 )
 from cellcounter.utils.logging_utils import init_logger_file
 from cellcounter.utils.misc_utils import enum2list, import_extra_error_func
@@ -200,7 +199,7 @@ class Pipeline:
             if os.path.isdir(in_fp):
                 logger.debug(f"in_fp ({in_fp}) is a directory")
                 logger.debug("Making zarr from tiff file stack in directory")
-                Tiff2ZarrFuncs.tiffs2zarr(
+                ArrIOFuncs.tiffs2zarr(
                     in_fp_ls=tuple(
                         natsorted((os.path.join(in_fp, i) for i in os.listdir(in_fp) if re.search(r".tif$", i)))
                     ),
@@ -210,7 +209,7 @@ class Pipeline:
             elif os.path.isfile(in_fp):
                 logger.debug(f"in_fp ({in_fp}) is a file")
                 logger.debug("Making zarr from big-tiff file")
-                Tiff2ZarrFuncs.btiff2zarr(
+                ArrIOFuncs.btiff2zarr(
                     in_fp=in_fp,
                     out_fp=pfm.raw,
                     chunks=configs.zarr_chunksize,
@@ -255,7 +254,7 @@ class Pipeline:
                 slice(*configs.ref_x_trim),
             ]
             # Saving
-            write_tiff(arr, fp_o)
+            ArrIOFuncs.write_tiff(arr, fp_o)
         # Copying region mapping json to project folder
         shutil.copyfile(rfm.map, pfm.map)
         # Copying transformation files
@@ -278,7 +277,7 @@ class Pipeline:
             # Computing (from dask array)
             downsmpl1_arr = downsmpl1_arr.compute()
             # Saving
-            write_tiff(downsmpl1_arr, pfm.downsmpl1)
+            ArrIOFuncs.write_tiff(downsmpl1_arr, pfm.downsmpl1)
 
     @classmethod
     def reg_img_fine(cls, proj_dir: str, overwrite: bool = False) -> None:
@@ -295,7 +294,7 @@ class Pipeline:
         # Fine downsample
         downsmpl2_arr = RegFuncs.downsmpl_fine(downsmpl1_arr, configs.z_fine, configs.y_fine, configs.x_fine)
         # Saving
-        write_tiff(downsmpl2_arr, pfm.downsmpl2)
+        ArrIOFuncs.write_tiff(downsmpl2_arr, pfm.downsmpl2)
 
     @classmethod
     def reg_img_trim(cls, proj_dir: str, overwrite: bool = False) -> None:
@@ -316,7 +315,7 @@ class Pipeline:
             slice(*configs.x_trim),
         ]
         # Saving
-        write_tiff(trimmed_arr, pfm.trimmed)
+        ArrIOFuncs.write_tiff(trimmed_arr, pfm.trimmed)
 
     @classmethod
     def reg_img_bound(cls, proj_dir: str, overwrite: bool = False) -> None:
@@ -349,7 +348,7 @@ class Pipeline:
         # Bounding upper
         bounded_arr[bounded_arr > configs.upper_bound[0]] = configs.upper_bound[1]
         # Saving
-        write_tiff(bounded_arr, pfm.bounded)
+        ArrIOFuncs.write_tiff(bounded_arr, pfm.bounded)
 
     @classmethod
     def reg_elastix(cls, proj_dir: str, overwrite: bool = False) -> None:
@@ -394,9 +393,9 @@ class Pipeline:
         s = annot_arr.shape
         # Making mask
         blur_arr = cls.cellc_funcs.gauss_blur_filt(bounded_arr, configs.mask_gaus_blur)
-        write_tiff(blur_arr, pfm.premask_blur)
+        ArrIOFuncs.write_tiff(blur_arr, pfm.premask_blur)
         mask_arr = cls.cellc_funcs.manual_thresh(blur_arr, configs.mask_thresh)
-        write_tiff(mask_arr, pfm.mask_fill)
+        ArrIOFuncs.write_tiff(mask_arr, pfm.mask_fill)
 
         # Make outline
         outline_df = MaskFuncs.make_outline(mask_arr)
@@ -423,7 +422,7 @@ class Pipeline:
         in_arr = tifffile.imread(pfm.mask_outline)
         VisualCheckFuncsTiff.coords2points(outline_df[outline_df.is_in == 0], s, pfm.mask_outline)
         out_arr = tifffile.imread(pfm.mask_outline)
-        write_tiff(in_arr + out_arr * 2, pfm.mask_outline)
+        ArrIOFuncs.write_tiff(in_arr + out_arr * 2, pfm.mask_outline)
 
         # Fill in outline to recreate mask (not perfect)
         mask_reg_arr = MaskFuncs.fill_outline(outline_df, s)
@@ -431,7 +430,7 @@ class Pipeline:
         mask_reg_arr = ndimage.binary_closing(mask_reg_arr, iterations=2).astype(np.uint8)
         mask_reg_arr = ndimage.binary_opening(mask_reg_arr, iterations=2).astype(np.uint8)
         # Saving
-        write_tiff(mask_reg_arr, pfm.mask_reg)
+        ArrIOFuncs.write_tiff(mask_reg_arr, pfm.mask_reg)
 
         # Counting mask voxels in each region
         # Getting original annot fp by making ref_fp_model

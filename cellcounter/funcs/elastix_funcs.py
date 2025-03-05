@@ -6,7 +6,8 @@ import pandas as pd
 
 from cellcounter import ELASTIX_ENABLED
 from cellcounter.constants import CACHE_DIR, Coords
-from cellcounter.utils.io_utils import silent_remove, write_tiff
+from cellcounter.funcs.arr_io_funcs import ArrIOFuncs
+from cellcounter.utils.io_utils import silent_remove
 from cellcounter.utils.logging_utils import init_logger_file
 from cellcounter.utils.misc_utils import import_extra_error_func
 
@@ -66,7 +67,7 @@ class ElastixFuncs:
         # Saving output file
         res_img = elastix_img_filt.GetResultImage()
         # sitk.WriteImage(res_img, output_img_fp)
-        write_tiff(sitk.GetArrayFromImage(res_img), output_img_fp)
+        ArrIOFuncs.write_tiff(sitk.GetArrayFromImage(res_img), output_img_fp)
         # Removing temporary and unecessary elastix files
         for i in os.listdir(output_img_dir):
             # Removing IterationInfo files
@@ -213,7 +214,7 @@ class ElastixFuncs:
         # Saving output file
         res_img = transformix_img_filt.GetResultImage()
         # # sitk.WriteImage(res_img, output_img_fp)
-        # write_tiff(sitk.GetArrayFromImage(res_img), output_img_fp)
+        # ArrIOFuncs.write_tiff(sitk.GetArrayFromImage(res_img), output_img_fp)
         # Removing temporary and unecessary transformix files
         silent_remove(out_dir)
         # return coords_transformed

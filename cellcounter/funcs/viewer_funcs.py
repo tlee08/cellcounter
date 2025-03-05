@@ -8,8 +8,9 @@ import numpy as np
 import tifffile
 from dask.distributed import LocalCluster
 
+from cellcounter.funcs.arr_io_funcs import ArrIOFuncs
 from cellcounter.utils.dask_utils import cluster_process
-from cellcounter.utils.io_utils import async_read_files_run, write_tiff
+from cellcounter.utils.io_utils import async_read_files_run
 from cellcounter.utils.logging_utils import init_logger_file
 from cellcounter.utils.misc_utils import dictlists2listdicts
 from cellcounter.utils.proj_org_utils import ProjFpModel, ProjFpModelTuning
@@ -135,7 +136,7 @@ class ViewerFuncs:
             # Reading
             arr = cls.read_img(fp_in, trimmer)
             # Writing
-            write_tiff(arr, fp_out)
+            ArrIOFuncs.write_tiff(arr, fp_out)
 
     @classmethod
     def combine_arrs(
@@ -158,4 +159,4 @@ class ViewerFuncs:
         # Stacking arrays
         arr = np.stack(arr_ls, axis=-1, dtype=dtype)
         # Writing to file
-        write_tiff(arr, fp_out)
+        ArrIOFuncs.write_tiff(arr, fp_out)

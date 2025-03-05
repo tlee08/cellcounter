@@ -4,7 +4,8 @@ import numpy as np
 import pandas as pd
 
 from cellcounter.constants import CACHE_DIR, AnnotColumns, Coords
-from cellcounter.utils.io_utils import silent_remove, write_tiff
+from cellcounter.funcs.arr_io_funcs import ArrIOFuncs
+from cellcounter.utils.io_utils import silent_remove
 
 #####################################################################
 #             Converting coordinates to spatial
@@ -74,7 +75,7 @@ class VisualCheckFuncsTiff:
         # Adding coords to image
         cls.coords2points_workers(arr, coords)
         # Saving the subsampled array
-        write_tiff(arr, out_fp)
+        ArrIOFuncs.write_tiff(arr, out_fp)
         # Removing temporary memmap
         silent_remove(temp_fp)
 
@@ -119,7 +120,7 @@ class VisualCheckFuncsTiff:
                 cls.coords2points_workers(arr, coords_i)
 
         # Saving the subsampled array
-        write_tiff(arr, out_fp)
+        ArrIOFuncs.write_tiff(arr, out_fp)
         # Removing temporary memmap
         silent_remove(temp_fp)
 
@@ -155,6 +156,6 @@ class VisualCheckFuncsTiff:
             np.apply_along_axis(f, 1, coords)
 
         # Saving the subsampled array
-        write_tiff(arr, out_fp)
+        ArrIOFuncs.write_tiff(arr, out_fp)
         # Removing temporary memmap
         silent_remove(temp_fp)
