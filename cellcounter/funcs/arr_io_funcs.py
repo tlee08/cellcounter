@@ -74,7 +74,7 @@ class ArrIOFuncs:
     @classmethod
     def zarr2tiff(cls, in_fp: str, out_fp: str) -> None:
         arr = da.from_zarr(in_fp)
-        cls.write_tiff(out_fp, arr)
+        cls.write_tiff(arr, out_fp)
 
     @classmethod
     def btiff2niftygz(cls, in_fp: str, out_fp: str):
