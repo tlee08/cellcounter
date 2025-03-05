@@ -52,7 +52,7 @@ class ArrIOFuncs:
         silent_remove(f"{out_fp}_tmp.zarr")
 
     @classmethod
-    def tiff2zarr(
+    def tiffs2zarr(
         cls,
         in_fp_ls: tuple[str, ...],
         out_fp: str,
