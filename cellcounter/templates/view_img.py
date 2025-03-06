@@ -1,6 +1,6 @@
 import os
 
-from cellcounter.funcs.viewer_funcs import ViewerFuncs
+from cellcounter import ViewerFuncs
 
 if __name__ == "__main__":
     # =========================================

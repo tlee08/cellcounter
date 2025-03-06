@@ -2,9 +2,7 @@ import os
 
 from natsort import natsorted
 
-from cellcounter.funcs.batch_combine_funcs import BatchCombineFuncs
-from cellcounter.pipeline.pipeline import Pipeline
-from cellcounter.pipeline.visual_check import VisualCheck
+from cellcounter import BatchCombineFuncs, Pipeline, VisualCheck
 
 if __name__ == "__main__":
     # =========================================

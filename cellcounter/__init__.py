@@ -21,3 +21,13 @@ DASK_CUDA_ENABLED = package_is_importable("dask_cuda")
 GPU_ENABLED = package_is_importable("cupy")
 # Checking whether elastix extra dependency is installed
 ELASTIX_ENABLED = package_is_importable("SimpleITK")
+
+
+#####################################################################
+# IMPORTING SUBMODULES
+#####################################################################
+
+from cellcounter.funcs.batch_combine_funcs import BatchCombineFuncs
+from cellcounter.funcs.viewer_funcs import ViewerFuncs
+from cellcounter.pipeline.pipeline import Pipeline
+from cellcounter.pipeline.visual_check import VisualCheck
