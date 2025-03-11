@@ -123,6 +123,8 @@ if __name__ == "__main__":
                 True,  # Tuning
                 False,  # Final (COMMENT OUT UNTIL YOU'RE HAPPY WITH THE CELL COUNT PARAMETERS)
             ]:
+                VisualCheck.cellc_trim_to_final(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
+                VisualCheck.combine_cellc(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
                 VisualCheck.coords2heatmap_trfm(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
                 VisualCheck.combine_heatmap_trfm(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
         except Exception as e:

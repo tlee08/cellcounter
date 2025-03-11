@@ -36,7 +36,7 @@ class VisualCheck:
     @classmethod
     def cellc_trim_to_final(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
         """
-        Cell counting pipeline - Step 10
+        [DEPRECATED]
 
         Trimming filtered regions overlaps to make:
         - Trimmed maxima image
