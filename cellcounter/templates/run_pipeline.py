@@ -1,7 +1,5 @@
 import os
 
-from natsort import natsorted
-
 from cellcounter import BatchCombineFuncs, Pipeline, VisualCheck
 
 if __name__ == "__main__":
@@ -13,9 +11,7 @@ if __name__ == "__main__":
     overwrite = True
 
     # THIS NEXT LINE RUNS ALL IMAGES IN THE INPUT FOLDER
-    imgs_ls = [
-        fp for fp in natsorted(os.listdir(stitched_imgs_dir)) if os.path.isdir(os.path.join(stitched_imgs_dir, fp))
-    ]
+    imgs_ls = Pipeline.get_imgs_ls(stitched_imgs_dir)
     # THIS LINE RUNS ONLY THE IMAGES IN THE LIST BELOW
     # imgs_ls = ["example_img"]
     # =========================================
