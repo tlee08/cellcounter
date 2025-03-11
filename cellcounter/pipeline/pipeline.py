@@ -418,9 +418,9 @@ class Pipeline:
 
         # Make outline img (1 for in, 2 for out)
         # TODO: convert to return np.array and save out-of-function
-        VisualCheckFuncsTiff.coords2points(outline_df[outline_df.is_in == 1], s, pfm.mask_outline)
+        VisualCheckFuncsTiff.coords2points(pd.DataFrame(outline_df[outline_df.is_in == 1]), s, pfm.mask_outline)
         in_arr = tifffile.imread(pfm.mask_outline)
-        VisualCheckFuncsTiff.coords2points(outline_df[outline_df.is_in == 0], s, pfm.mask_outline)
+        VisualCheckFuncsTiff.coords2points(pd.DataFrame(outline_df[outline_df.is_in == 0]), s, pfm.mask_outline)
         out_arr = tifffile.imread(pfm.mask_outline)
         ArrIOFuncs.write_tiff(in_arr + out_arr * 2, pfm.mask_outline)
 
@@ -460,7 +460,7 @@ class Pipeline:
             mask_df[MaskColumns.VOLUME_MASK.value] / mask_df[MaskColumns.VOLUME_ANNOT.value]
         )
         # Selecting and ordering relevant columns
-        mask_df = mask_df[[*ANNOT_COLUMNS_FINAL, *enum2list(MaskColumns)]]
+        mask_df = pd.DataFrame(mask_df[[*ANNOT_COLUMNS_FINAL, *enum2list(MaskColumns)]])
         # Saving
         write_parquet(mask_df, pfm.mask_df)
 

@@ -12,11 +12,11 @@ if __name__ == "__main__":
     analysis_img_dir = os.path.join(analysis_root_dir, image_name)
 
     # Trimmer
-    trimmer = [
+    trimmer = (
         slice(None, None, None),
         slice(None, None, None),
         slice(None, None, None),
-    ]
+    )
     # Images to run
     # COMMENT OUT THE IMAGES THAT YOU DON'T WANT TO VIEW
     arrs_to_run = [

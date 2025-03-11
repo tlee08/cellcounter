@@ -4,7 +4,7 @@ import pandas as pd
 
 # from prefect import flow, task
 from cellcounter.constants import PROC_CHUNKS, AnnotColumns, Coords
-from cellcounter.utils.dask_utils import coords2block
+from cellcounter.utils.dask_utils import coords2block, disk_cache
 
 #####################################################################
 #             Converting coordinates to spatial
@@ -13,9 +13,7 @@ from cellcounter.utils.dask_utils import coords2block
 
 class VisualCheckFuncsDask:
     @classmethod
-    def coords2points_workers(
-        cls, arr: np.ndarray, coords: pd.DataFrame, block_info=None
-    ):
+    def coords2points_workers(cls, arr: np.ndarray, coords: pd.DataFrame, block_info=None):
         arr = arr.copy()
         # Offsetting coords with chunk space
         if block_info is not None:
@@ -35,11 +33,7 @@ class VisualCheckFuncsDask:
             )
         )
         # Groupby and counts, so we don't drop duplicates
-        coords = (
-            coords.groupby([Coords.Z.value, Coords.Y.value, Coords.X.value])
-            .size()
-            .reset_index(name="counts")
-        )  # type: ignore
+        coords = coords.groupby([Coords.Z.value, Coords.Y.value, Coords.X.value]).size().reset_index(name="counts")  # type: ignore
         # Incrementing the coords inCoords.Y.valuee array
         if coords.shape[0] > 0:
             arr[
@@ -51,9 +45,7 @@ class VisualCheckFuncsDask:
         return arr
 
     @classmethod
-    def coords2sphere_workers(
-        cls, arr: np.ndarray, coords: pd.DataFrame, r: int, block_info=None
-    ):
+    def coords2sphere_workers(cls, arr: np.ndarray, coords: pd.DataFrame, r: int, block_info=None):
         # Offsetting coords with chunk space
         if block_info:
             coords = coords2block(coords, block_info)
@@ -66,9 +58,9 @@ class VisualCheckFuncsDask:
             .round(0)
             .astype(np.int16)
             .query(
-                f"({Coords.Z.value} > {-1*r}) & ({Coords.Z.value} < {s[0] + r}) & "
-                f"({Coords.Y.value} > {-1*r}) & ({Coords.Y.value} < {s[1] + r}) & "
-                f"({Coords.X.value} > {-1*r}) & ({Coords.X.value} < {s[2] + r})"
+                f"({Coords.Z.value} > {-1 * r}) & ({Coords.Z.value} < {s[0] + r}) & "
+                f"({Coords.Y.value} > {-1 * r}) & ({Coords.Y.value} < {s[1] + r}) & "
+                f"({Coords.X.value} > {-1 * r}) & ({Coords.X.value} < {s[2] + r})"
             )
         )
         # Constructing index and sphere mask arrays
@@ -76,9 +68,7 @@ class VisualCheckFuncsDask:
         z_ind, y_ind, x_ind = np.meshgrid(i, i, i, indexing="ij")
         circ = np.square(z_ind) + np.square(y_ind) + np.square(x_ind) <= np.square(r)
         # Adding coords to image
-        for z, y, x, t in zip(
-            z_ind.ravel(), y_ind.ravel(), x_ind.ravel(), circ.ravel()
-        ):
+        for z, y, x, t in zip(z_ind.ravel(), y_ind.ravel(), x_ind.ravel(), circ.ravel()):
             if t:
                 coords_i = coords.copy()
                 coords_i[Coords.Z.value] += z
@@ -98,7 +88,7 @@ class VisualCheckFuncsDask:
         coords: pd.DataFrame,
         shape: tuple[int, ...],
         out_fp: str,
-    ):
+    ) -> da.Array:
         """
         Converts list of coordinates to spatial array single points.
 
@@ -118,7 +108,7 @@ class VisualCheckFuncsDask:
         # )
         arr = da.map_blocks(cls.coords2points_workers, arr, coords)
         # Computing and saving
-        arr.to_zarr(out_fp, overwrite=True)
+        return disk_cache(arr, out_fp)
 
     @classmethod
     def coords2heatmap(
@@ -127,7 +117,7 @@ class VisualCheckFuncsDask:
         shape: tuple[int, ...],
         out_fp: str,
         radius: int,
-    ):
+    ) -> da.Array:
         """
         Converts list of coordinates to spatial array as voxels.
         Overlapping areas accumulate in intensity.
@@ -144,16 +134,17 @@ class VisualCheckFuncsDask:
         # Initialising spatial array
         arr = da.zeros(shape, chunks=PROC_CHUNKS, dtype=np.uint8)
         # Adding coords to image
-        arr = arr.map_blocks(
-            lambda i, block_info=None: cls.coords2sphere_workers(
-                i, coords, radius, block_info
-            )
-        )
+        arr = arr.map_blocks(lambda i, block_info=None: cls.coords2sphere_workers(i, coords, radius, block_info))
         # Computing and saving
-        arr.to_zarr(out_fp, overwrite=True)
+        return disk_cache(arr, out_fp)
 
     @classmethod
-    def coords2regions(cls, coords, shape, out_fp):
+    def coords2regions(
+        cls,
+        coords: pd.DataFrame,
+        shape: tuple[int, ...],
+        out_fp: str,
+    ) -> da.Array:
         """
         Converts list of coordinates to spatial array.
 
@@ -177,13 +168,9 @@ class VisualCheckFuncsDask:
 
         # Formatting coord values as (z, y, x) and rounding to integers
         coords = (
-            coords[
-                [Coords.Z.value, Coords.Y.value, Coords.X.value, AnnotColumns.ID.value]
-            ]
-            .round(0)
-            .astype(np.int16)
+            coords[[Coords.Z.value, Coords.Y.value, Coords.X.value, AnnotColumns.ID.value]].round(0).astype(np.int16)
         )
         if coords.shape[0] > 0:
             np.apply_along_axis(f, 1, coords)
         # Computing and saving
-        arr.to_zarr(out_fp, overwrite=True)
+        return disk_cache(arr, out_fp)

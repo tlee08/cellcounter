@@ -1,6 +1,5 @@
-import re
+import os
 from enum import Enum
-from typing import Optional
 
 import dask.array as da
 import napari
@@ -71,12 +70,12 @@ class ViewerFuncs:
         """
         Reading, trimming (if possible), and returning the array in memory.
         """
-        if re.search(r"\.zarr$", fp):
+        if os.path.splitext(fp)[1] == ".zarr":
             arr = da.from_zarr(fp)
             if trimmer is not None:
                 arr = arr[*trimmer]
             return arr.compute()
-        elif re.search(r"\.tif$", fp):
+        elif os.path.splitext(fp)[1] == ".tif":
             arr = tifffile.imread(fp)
             if trimmer is not None:
                 arr = arr[*trimmer]
@@ -85,7 +84,7 @@ class ViewerFuncs:
             raise NotImplementedError("Only .zarr and .tif files are supported.")
 
     @classmethod
-    def view_arrs(cls, fp_ls: list[str], trimmer: list[slice], **kwargs):
+    def view_arrs(cls, fp_ls: list[str], trimmer: tuple[slice, ...], **kwargs):
         # Asserting all kwargs_ls list lengths are equal to fp_ls length
         for k, v in kwargs.items():
             assert len(v) == len(fp_ls)
@@ -109,7 +108,7 @@ class ViewerFuncs:
 
     @classmethod
     def view_arrs_from_pfm(
-        cls, proj_dir: str, imgs_to_view_ls: list[str], trimmer: list[slice], tuning: bool = True
+        cls, proj_dir: str, imgs_to_view_ls: list[str], trimmer: tuple[slice, ...], tuning: bool = True
     ) -> None:
         pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
         return cls.view_arrs(
@@ -126,9 +125,9 @@ class ViewerFuncs:
         cls,
         fp_in: str,
         fp_out: str,
-        trimmer: Optional[tuple[slice, ...]] = None,
+        trimmer: tuple[slice, ...] | None = None,
         **kwargs,
-    ):
+    ) -> np.ndarray:
         """
         NOTE: exports as tiff only.
         """
@@ -137,15 +136,17 @@ class ViewerFuncs:
             arr = cls.read_img(fp_in, trimmer)
             # Writing
             ArrIOFuncs.write_tiff(arr, fp_out)
+            # Returning
+            return arr
 
     @classmethod
     def combine_arrs(
         cls,
         fp_in_ls: tuple[str, ...],
         fp_out: str,
-        trimmer: Optional[tuple[slice, ...]] = None,
+        trimmer: tuple[slice, ...] | None = None,
         **kwargs,
-    ):
+    ) -> np.ndarray:
         dtype = np.uint16
         # Reading arrays
         arr_ls = []
@@ -160,3 +161,4 @@ class ViewerFuncs:
         arr = np.stack(arr_ls, axis=-1, dtype=dtype)
         # Writing to file
         ArrIOFuncs.write_tiff(arr, fp_out)
+        return arr
