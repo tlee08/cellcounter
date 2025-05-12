@@ -336,9 +336,9 @@ class Pipeline:
         # Getting configs
         configs = ConfigParamsModel.read_fp(pfm.config_params)
         # Asserting that lower bound is less than upper bound
-        assert configs.lower_bound[0] < configs.upper_bound[0], (
-            "Error in config parameters: lower bound condition must be less than upper bound condition."
-        )
+        assert (
+            configs.lower_bound[0] < configs.upper_bound[0]
+        ), "Error in config parameters: lower bound condition must be less than upper bound condition."
         # NOTE: removed upper and lower limit assertions to allow for more flexibility (e.g. "reducing" super high values)
         # assert configs.lower_bound[1] <= configs.lower_bound[0], (
         #     "Error in config parameters: "
@@ -496,6 +496,7 @@ class Pipeline:
                 slice(*configs.tuning_y_trim),
                 slice(*configs.tuning_x_trim),
             ]
+            raw_arr = raw_arr.rechunk(configs.zarr_chunksize)
             if not overwrite:
                 for fp in (pfm_tuning.raw,):
                     if os.path.exists(fp):
