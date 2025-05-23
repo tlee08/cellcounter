@@ -225,19 +225,19 @@ class ProjFpModel(FpModel):
 
     @property
     def maxima_labels(self) -> str:
-        return os.path.join(self.root_dir, self.cellcount_sdir, "7_maxima_labels.zarr")  # NOTE: NEW
+        return os.path.join(self.root_dir, self.cellcount_sdir, "8_maxima_labels.zarr")  # NOTE: NEW
 
     @property
     def wshed_labels(self) -> str:
-        return os.path.join(self.root_dir, self.cellcount_sdir, "8_wshed_labels.zarr")  # NOTE: NEW
+        return os.path.join(self.root_dir, self.cellcount_sdir, "9_wshed_labels.zarr")  # NOTE: NEW
 
     @property
     def wshed_volumes(self) -> str:
-        return os.path.join(self.root_dir, self.cellcount_sdir, "8_wshed_volumes.zarr")
+        return os.path.join(self.root_dir, self.cellcount_sdir, "10_wshed_volumes.zarr")
 
     @property
     def wshed_filt(self) -> str:
-        return os.path.join(self.root_dir, self.cellcount_sdir, "9_wshed_filt.zarr")
+        return os.path.join(self.root_dir, self.cellcount_sdir, "11_wshed_filt.zarr")
 
     @property
     def cells_raw_df(self) -> str:
@@ -304,68 +304,8 @@ class ProjFpModelTuning(ProjFpModel):
     def __init__(self, root_dir: str):
         super().__init__(root_dir)
         self.raw_sdir = f"{self.raw_sdir}_tuning"
-        self.registration_sdir = None
-        self.mask_sdir = None
+        # self.registration_sdir = "registration"
+        # self.mask_sdir = "mask"
         self.cellcount_sdir = f"{self.cellcount_sdir}_tuning"
         self.analysis_sdir = f"{self.analysis_sdir}_tuning"
         self.visual_sdir = f"{self.visual_sdir}_tuning"
-
-    @property
-    def ref(self) -> str:
-        return self.raise_not_implemented_err("ref")
-
-    @property
-    def annot(self) -> str:
-        return self.raise_not_implemented_err("annot")
-
-    @property
-    def map(self) -> str:
-        return self.raise_not_implemented_err("map")
-
-    @property
-    def affine(self) -> str:
-        return self.raise_not_implemented_err("affine")
-
-    @property
-    def bspline(self) -> str:
-        return self.raise_not_implemented_err("bspline")
-
-    @property
-    def downsmpl1(self) -> str:
-        return self.raise_not_implemented_err("downsmpl1")
-
-    @property
-    def downsmpl2(self) -> str:
-        return self.raise_not_implemented_err("downsmpl2")
-
-    @property
-    def trimmed(self) -> str:
-        return self.raise_not_implemented_err("trimmed")
-
-    @property
-    def bounded(self) -> str:
-        return self.raise_not_implemented_err("bounded")
-
-    @property
-    def regresult(self) -> str:
-        return self.raise_not_implemented_err("regresult")
-
-    @property
-    def premask_blur(self) -> str:
-        return self.raise_not_implemented_err("premask_blur")
-
-    @property
-    def mask_fill(self) -> str:
-        return self.raise_not_implemented_err("mask_fill")
-
-    @property
-    def mask_outline(self) -> str:
-        return self.raise_not_implemented_err("mask_outline")
-
-    @property
-    def mask_reg(self) -> str:
-        return self.raise_not_implemented_err("mask_reg")
-
-    @property
-    def mask_df(self) -> str:
-        return self.raise_not_implemented_err("mask_df")
