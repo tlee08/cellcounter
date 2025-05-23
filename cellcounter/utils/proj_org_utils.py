@@ -45,7 +45,7 @@ class FpModel(ABC):
     @staticmethod
     def raise_not_implemented_err(attr_name: str):
         raise NotImplementedError(
-            "This filepath is not implemented.\nActivate this by calling 'set_implement' or explicitly edit this model."
+            f"filepath, {attr_name} is not implemented.\nActivate this by calling 'set_implement' or explicitly edit this model."
         )
 
 
