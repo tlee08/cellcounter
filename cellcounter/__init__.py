@@ -1,5 +1,9 @@
 import importlib.util
 
+import dask
+
+from .constants import CACHE_DIR
+
 
 # Checking if CPU or GPU version
 def package_is_exists(package_name: str) -> bool:
@@ -21,6 +25,18 @@ DASK_CUDA_ENABLED = package_is_importable("dask_cuda")
 GPU_ENABLED = package_is_importable("cupy")
 # Checking whether elastix extra dependency is installed
 ELASTIX_ENABLED = package_is_importable("SimpleITK")
+
+# Setting Dask configuration
+dask.config.set(
+    {
+        # "distributed.scheduler.active-memory-manager.measure": "managed",
+        # "distributed.worker.memory.rebalance.measure": "managed",
+        # "distributed.worker.memory.spill": False,
+        # "distributed.worker.memory.pause": False,
+        # "distributed.worker.memory.terminate": False,
+        "temporary-directory": CACHE_DIR
+    }
+)
 
 
 #####################################################################
