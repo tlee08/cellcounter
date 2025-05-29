@@ -111,18 +111,6 @@ def da_trim(arr, d=DEPTH):
     )
 
 
-def my_configs():
-    dask.config.set(
-        {
-            "distributed.scheduler.active-memory-manager.measure": "managed",
-            "distributed.worker.memory.rebalance.measure": "managed",
-            "distributed.worker.memory.spill": False,
-            "distributed.worker.memory.pause": False,
-            "distributed.worker.memory.terminate": False,
-        }
-    )
-
-
 def cluster_proc_dec(cluster_factory: Callable[[], SpecCluster]):
     """
     `cluster_factory` is a function that returns a Dask cluster.
