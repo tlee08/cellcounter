@@ -297,7 +297,7 @@ class ProjFpModel(FpModel):
 
     @property
     def comb_heatmap(self) -> str:
-        return os.path.join(self.root_dir, self.visual_sdir, "comb_points.tif")
+        return os.path.join(self.root_dir, self.visual_sdir, "comb_heatmap.tif")
 
 
 class ProjFpModelTuning(ProjFpModel):
