@@ -837,6 +837,8 @@ class Pipeline:
         (so wshed computation not run again).
         Also allows GPU processing.
         """
+        # TODO: intermediate save as a dask parquet folder - useful for distributed processing
+
         logger = init_logger_file()
         pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
         if not overwrite:

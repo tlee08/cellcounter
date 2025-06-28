@@ -205,4 +205,4 @@ def page5_view():
         st.write(f"Trim dimensions are {byte_size_gb} GB")
     else:
         # Otherwise outputting warning that trim dimensions are unknown
-        st.warning("Trim dimensions are unknown, " "because overlap and raw arr do not exist in the project")
+        st.warning("Trim dimensions are unknown, because overlap and raw arr do not exist in the project")

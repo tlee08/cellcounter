@@ -1,60 +1,56 @@
-[tool.poetry]
+[project]
 name = "cellcounter"
 version = "0.1.0"
 description = "cFos cell counting and region mapping for whole brain microscopy"
-authors = ["BowenLab"]
-license = "GNU GPLv3"
+authors = [{ name = "BowenLab" }]
+requires-python = ">=3.12"
 readme = "README.md"
-homepage = "https://tlee08.github.io/cellcounter"
-repository = "https://github.com/tlee08/cellcounter"
-documentation = "https://tlee08.github.io/cellcounter"
-packages = [{ include = "cellcounter" }]
+license = "GNU GPLv3"
+dependencies = [
+    "jinja2>=3.1.5,<4",
+    "streamlit>=1.41.1,<2",
+    "tifffile>=2025.1.10,<2026",
+    "numpy>=1.26.4,<2",
+    "pandas>=2.2.3,<3",
+    "seaborn>=0.13.2,<0.14",
+    "scikit-image>=0.25.0,<0.26",
+    "zarr>=3.0.0,<4",
+    "dask[complete]>=2024.11.2,<2025",
+    "graphviz>=0.20.3,<0.21",
+    "natsort>=8.4.0,<9",
+    "napari[all]>=0.5.5,<0.6",
+    "pydantic>=2.10.5,<3",
+    "nibabel>=5.3.2,<6",
+]
 
-[tool.poetry.dependencies]
-python = "^3.12"
-jinja2 = "^3.1.5"
-streamlit = "^1.41.1"
-tifffile = "^2025.1.10"
-numpy = "^1.26.4"                                       # "^2.2.1"
-pandas = "^2.2.3"
-seaborn = "^0.13.2"
-scikit-image = "^0.25.0"
-zarr = "^3.0.0"
-dask = { version = "^2024.11.2", extras = ["complete"] }
-graphviz = "^0.20.3"
-# prefect = "^2.19.8"
-natsort = "^8.4.0"
-napari = { version = "^0.5.5", extras = ["all"] }
-pydantic = "^2.10.5"
-nibabel = "^5.3.2"
-# GPU (only CuPy from conda works)
-# cupy-cuda12x = { version = "^13.3.0", optional = true }
-dask-cuda = { version = "^24.12.0", optional = true }
-# Elastix
-simpleitk-simpleelastix = { version = "^2.4.0.dev53", optional = true }
+[project.optional-dependencies]
+gpu = ["dask-cuda>=24.12.0,<25"]
+elastix = ["simpleitk-simpleelastix>=2.4.0.dev53,<3"]
 
-[tool.poetry.group.dev.dependencies]
-ruff = "^0.4.8"
-mkdocs-material = "^9.5.18"
-mkdocstrings-python = "^1.9.2"
-pytest = "^8.3.3"
+[project.urls]
+Homepage = "https://tlee08.github.io/cellcounter"
+Repository = "https://github.com/tlee08/cellcounter"
+Documentation = "https://tlee08.github.io/cellcounter"
 
-[tool.poetry.extras]
-# gpu = ["cupy-cuda12x", "dask-cuda"]
-gpu = ["dask-cuda"]
-elastix = ["simpleitk-simpleelastix"]
-
-[tool.poetry.scripts]
+[project.scripts]
 cellcounter_init = "cellcounter.scripts.init:main"
 cellcounter_project_gui = "cellcounter.scripts.project_gui:run_script"
 cellcounter_make_project = "cellcounter.scripts.make_project:main"
+
+[dependency-groups]
+dev = [
+    "ruff>=0.4.8,<0.5",
+    "mkdocs-material>=9.5.18,<10",
+    "mkdocstrings-python>=1.9.2,<2",
+    "pytest>=8.3.3,<9",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [tool.ruff]
 line-length = 120
 
 [tool.ruff.format]
 docstring-code-format = true
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"

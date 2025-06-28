@@ -58,11 +58,7 @@ def input_root_func():
         # Checking project has configs_params, cells_agg, and mask df files
         pdir_i = os.path.join(st.session_state[INPUT_ROOT], i)
         pfm_i = Pipeline.get_pfm(pdir_i)
-        if (
-            os.path.exists(pfm_i.config_params)
-            and os.path.exists(pfm_i.cells_agg_df)
-            and os.path.exists(pfm_i.mask_df)
-        ):
+        if os.path.exists(pfm_i.config_params) and os.path.exists(pfm_i.cells_agg_df) and os.path.exists(pfm_i.mask_df):
             st.session_state[CHECKBOXES][i] = False
     # Updating session state: DISABLED
     update_disabled()
@@ -164,10 +160,7 @@ def page6_combine():
     if st.session_state[INPUT_OUT_STATUS] == ProjDirStatus.NOT_SET:
         st.warning("Output directory not set.")
     elif st.session_state[INPUT_OUT_STATUS] == ProjDirStatus.NOT_EXIST:
-        st.warning(
-            "Output directory does not exist.\n\n"
-            "Please make one or specify a valid directory."
-        )
+        st.warning("Output directory does not exist.\n\nPlease make one or specify a valid directory.")
     elif st.session_state[INPUT_OUT_STATUS] == ProjDirStatus.VALID:
         st.success("Output directory exists and ready to save files to.")
     # Button: Combine projects
@@ -183,9 +176,7 @@ def page6_combine():
         for i in proj_dir_ls:
             st.write(f"- {i}")
         # Updating project directories to full path
-        proj_dir_ls = [
-            os.path.join(st.session_state[INPUT_ROOT], i) for i in proj_dir_ls
-        ]
+        proj_dir_ls = [os.path.join(st.session_state[INPUT_ROOT], i) for i in proj_dir_ls]
         # Running combine func
         BatchCombineFuncs.combine_ls_pipeline(
             proj_dir_ls=proj_dir_ls,

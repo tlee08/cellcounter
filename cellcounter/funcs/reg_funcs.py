@@ -4,9 +4,7 @@ from scipy import ndimage
 
 class RegFuncs:
     @classmethod
-    def downsmpl_rough(
-        cls, arr: np.ndarray, z_scale: int, y_scale: int, x_scale: int
-    ) -> np.ndarray:
+    def downsmpl_rough(cls, arr: np.ndarray, z_scale: int, y_scale: int, x_scale: int) -> np.ndarray:
         """
         Expects scales to be ints
         """
@@ -14,9 +12,7 @@ class RegFuncs:
         return res
 
     @classmethod
-    def downsmpl_fine(
-        cls, arr: np.ndarray, z_scale: float, y_scale: float, x_scale: float
-    ) -> np.ndarray:
+    def downsmpl_fine(cls, arr: np.ndarray, z_scale: float, y_scale: float, x_scale: float) -> np.ndarray:
         """
         Expects scales to be floats
         """

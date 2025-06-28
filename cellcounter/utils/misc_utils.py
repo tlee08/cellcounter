@@ -17,8 +17,7 @@ def get_module_dir(module_name: str) -> str:
 def import_extra_error_func(extra_dep_name: str):
     def error_func(*args, **kwargs):
         raise ImportError(
-            f"{extra_dep_name} dependency not installed.\n"
-            f'Install with `pip install "cellcounter[{extra_dep_name}]"`'
+            f'{extra_dep_name} dependency not installed.\nInstall with `pip install "cellcounter[{extra_dep_name}]"`'
         )
 
     return error_func

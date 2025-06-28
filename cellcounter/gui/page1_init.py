@@ -39,9 +39,7 @@ def input_m_func():
     # Setting selectbox options
     st.session_state[SELECT_M_OPTIONS] = []
     # If input string is not None and is a directory
-    if (st.session_state[INPUT_M] is not None) and (
-        os.path.isdir(st.session_state[INPUT_M])
-    ):
+    if (st.session_state[INPUT_M] is not None) and (os.path.isdir(st.session_state[INPUT_M])):
         # Getting list of directories in the root string
         st.session_state[SELECT_M_OPTIONS] = natsorted(
             [
@@ -61,14 +59,10 @@ def select_m_func():
     # Updating own input variable
     st.session_state[SELECT_M] = st.session_state[f"{SELECT_M}_w"]
     # Updatating selectbox index
-    st.session_state[SELECT_M_INDEX] = st.session_state[SELECT_M_OPTIONS].index(
-        st.session_state[SELECT_M]
-    )
+    st.session_state[SELECT_M_INDEX] = st.session_state[SELECT_M_OPTIONS].index(st.session_state[SELECT_M])
     # Updating input and disabled variables
     if st.session_state[INPUT_M] and st.session_state[SELECT_M]:
-        st.session_state[INPUT] = os.path.join(
-            st.session_state[INPUT_M], st.session_state[SELECT_M]
-        )
+        st.session_state[INPUT] = os.path.join(st.session_state[INPUT_M], st.session_state[SELECT_M])
         st.session_state[DISABLED] = False
     else:
         st.session_state[INPUT] = None
