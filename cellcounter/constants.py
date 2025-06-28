@@ -121,6 +121,7 @@ dask.config.set(
         # "distributed.worker.memory.spill": False,
         # "distributed.worker.memory.pause": False,
         # "distributed.worker.memory.terminate": False,
-        "temporary-directory": CACHE_DIR
+        "temporary-directory": CACHE_DIR,
+        "optimization.fuse.active": False,
     }
 )
