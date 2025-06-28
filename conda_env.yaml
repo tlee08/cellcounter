@@ -4,8 +4,6 @@ channels:
 dependencies:
   - python=3.12
   - pip
-  # Interactivity
-  - ipykernel
   # - bioconda::fiji
   # GPU acceleration (only CuPy from conda works)
   # - cuda-toolkit
