@@ -1,5 +1,6 @@
 import contextlib
 import functools
+import gc
 import os
 from multiprocessing import current_process
 from typing import Any, Callable
@@ -77,12 +78,16 @@ def func_offsetted(func: Callable, args: list, z_offset: int, y_offset: int, x_o
 
     Intended to be used with `block2coords`.
     """
-    print(args)
+    # Running the function with the args
     df = func(*args)
-    # NOTE: previously with loc but removing
+    # Offsetting the coords in the df
     df[Coords.Z.value] = df[Coords.Z.value] + z_offset if Coords.Z.value in df.columns else z_offset
     df[Coords.Y.value] = df[Coords.Y.value] + y_offset if Coords.Y.value in df.columns else y_offset
     df[Coords.X.value] = df[Coords.X.value] + x_offset if Coords.X.value in df.columns else x_offset
+    # Garbage collection
+    del args
+    gc.collect()
+    # Returning the df
     return df
 
 
