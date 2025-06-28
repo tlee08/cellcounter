@@ -54,9 +54,6 @@ def block2coords(func, *args: Any) -> dd.DataFrame:
     args_blocks = [i.to_delayed().ravel() if isinstance(i, da.Array) else list(const2iter(i, n)) for i in args]
     # Transposing from (arg, blocks) to (block, arg) dimensions
     args_blocks = [list(i) for i in zip(*args_blocks)]
-    print(args_blocks)
-    print(len(args_blocks))
-    print("=====")
 
     # Defining the function that offsets the coords in each block
     # Given the block args and offsets, applies the function to each block
@@ -71,6 +68,10 @@ def block2coords(func, *args: Any) -> dd.DataFrame:
         df[Coords.X.value] = df[Coords.X.value] + x_offset if Coords.X.value in df.columns else x_offset
         return df
 
+    print("=====")
+    print(args_blocks)
+    print(len(args_blocks))
+    print("=====")
     # Applying the function to each block
     return dd.from_delayed(
         [
