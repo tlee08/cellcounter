@@ -423,6 +423,8 @@ class CpuCellcFuncs:
         # index = pd.Index(labels_untrimmed_vect, name=CELL_IDX_NAME)
         # sum_intensity = pd.Series(data=cls.cp2np(sum_intensity), index=index) if sum_intensity is not None else pd.Series()
         # There should be no na values
+        cls.logger.info("end of function check (get_cells)")
+        print("end of function check (get_cells)")
         assert np.all(cells_df.notna())
         return cells_df
 
