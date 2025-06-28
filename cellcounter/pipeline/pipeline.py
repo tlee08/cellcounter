@@ -4,6 +4,7 @@ import shutil
 from typing import Type
 
 import dask.array as da
+import dask.dataframe as dd
 import numpy as np
 import pandas as pd
 import tifffile
@@ -40,6 +41,7 @@ from cellcounter.utils.diagnostics_utils import file_exists_msg
 from cellcounter.utils.io_utils import (
     read_json,
     sanitise_smb_df,
+    silent_remove,
     write_json,
     write_parquet,
 )
@@ -867,16 +869,20 @@ class Pipeline:
                 wshed_filt_arr,
                 configs.overlap_depth,
             )
-            # Converting from dask to pandas
-            cells_df = cells_df.compute()
             # If tuning, then offset by the tuning crop. Allows trfm and subsequent region grouping on tuning image.
             if tuning:
                 cells_df[Coords.Z.value] += configs.tuning_z_trim[0] or 0
                 cells_df[Coords.Y.value] += configs.tuning_y_trim[0] or 0
                 cells_df[Coords.X.value] += configs.tuning_x_trim[0] or 0
+            # Saving intermediate as dask parquet
+            write_parquet(cells_df, f"{pfm.cells_raw_df}_dask.parquet")
+            # Reading and converting from dask to pandas
+            cells_df = dd.read_parquet(f"{pfm.cells_raw_df}_dask.parquet")
+            cells_df = cells_df.compute()
             # Computing and saving as parquet
-            # NOTE: temporary name for checking
             write_parquet(cells_df, pfm.cells_raw_df)
+            # Removing the intermediate dask parquet
+            silent_remove(f"{pfm.cells_raw_df}_dask.parquet")
 
     @classmethod
     def cellc12_old(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
