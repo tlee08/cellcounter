@@ -408,22 +408,20 @@ class CpuCellcFuncs:
         cells_df = cells_df.query(f"{CellColumns.VOLUME.value} > 0")
         # Getting summed intensities for each cell
         # For bincount, positional arg is label cat and weights sums is raw arr (helpful for intensity)
-        sum_intensity = cls.xp.zeros(label_max + 1, dtype=cls.xp.float32)
-        cls.logger.debug(f"wshed wshed_labels_arr shape: {sum_intensity.shape}")
-        cls.logger.debug(f"valid wshed_labels_arr shape: {cls.xp.sum(wshed_labels_arr > 0)}")
-        cls.logger.debug(f"wshed_labels_arr pos shape: {wshed_labels_arr[wshed_labels_arr > 0].shape}")
-        cls.logger.debug(f"cells_df shape: {cells_df.shape}")
-        if cls.xp.any(wshed_labels_arr > 0):
+        if cls.xp.any(wshed_filt_arr > 0):
             sum_intensity = cls.xp.bincount(
-                wshed_labels_arr[wshed_labels_arr > 0].ravel(),
-                weights=overlap_arr[wshed_labels_arr > 0].ravel(),
+                wshed_labels_arr[wshed_filt_arr > 0].ravel(),
+                weights=overlap_arr[wshed_filt_arr > 0].ravel(),
                 minlength=label_max + 1,
             )
+            cells_df[CellColumns.SUM_INTENSITY.value] = pd.Series(data=cls.cp2np(sum_intensity))
+        else:
+            cells_df[CellColumns.SUM_INTENSITY.value] = pd.Series(dtype=np.float32)
         # A series with the index used to "auto" filter labels that are not in cells_df
         # Getting the unique values of the untrimmed maxima_labels_arr
-        labels_untrimmed_vect = cls.cp2np(cls.xp.unique(maxima_labels_arr))
-        index = pd.Index(labels_untrimmed_vect, name=CELL_IDX_NAME)
-        cells_df[CellColumns.SUM_INTENSITY.value] = pd.Series(data=cls.cp2np(sum_intensity), index=index)
+        # labels_untrimmed_vect = cls.cp2np(cls.xp.unique(maxima_labels_arr))
+        # index = pd.Index(labels_untrimmed_vect, name=CELL_IDX_NAME)
+        # sum_intensity = pd.Series(data=cls.cp2np(sum_intensity), index=index) if sum_intensity is not None else pd.Series()
         # There should be no na values
         assert np.all(cells_df.notna())
         return cells_df
