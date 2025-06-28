@@ -5,7 +5,7 @@ from enum import Enum
 import dask
 import numpy as np
 
-from cellcounter.utils import package_is_importable
+from cellcounter.utils.misc_utils import package_is_importable
 
 PROC_CHUNKS = (500, 1000, 1000)
 # PROC_CHUNKS = (500, 1200, 1200)
