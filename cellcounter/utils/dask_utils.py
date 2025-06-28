@@ -55,11 +55,6 @@ def block2coords(func, *args: Any) -> dd.DataFrame:
     args_blocks = [i.to_delayed().ravel() if isinstance(i, da.Array) else list(const2iter(i, n)) for i in args]
     # Transposing from (arg, blocks) to (block, arg) dimensions
     args_blocks = [list(i) for i in zip(*args_blocks)]
-
-    print("=====")
-    print(args_blocks)
-    print(len(args_blocks))
-    print("=====")
     # Applying the function to each block
     return dd.from_delayed(
         [
