@@ -410,7 +410,7 @@ class CpuCellcFuncs:
         # For bincount, positional arg is label cat and weights sums is raw arr (helpful for intensity)
         sum_intensity = cls.xp.zeros(label_max + 1, dtype=cls.xp.float32)
         cls.logger.debug(f"wshed wshed_labels_arr shape: {sum_intensity.shape}")
-        cls.logger.debug(f"valid wshed_labels_arr shape: {cls.xp.sum([wshed_labels_arr > 0])}")
+        cls.logger.debug(f"valid wshed_labels_arr shape: {cls.xp.sum(wshed_labels_arr > 0)}")
         cls.logger.debug(f"wshed_labels_arr pos shape: {wshed_labels_arr[wshed_labels_arr > 0].shape}")
         cls.logger.debug(f"cells_df shape: {cells_df.shape}")
         if cls.xp.any(wshed_labels_arr > 0):
