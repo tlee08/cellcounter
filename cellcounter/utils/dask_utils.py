@@ -55,19 +55,6 @@ def block2coords(func, *args: Any) -> dd.DataFrame:
     # Transposing from (arg, blocks) to (block, arg) dimensions
     args_blocks = [list(i) for i in zip(*args_blocks)]
 
-    # Defining the function that offsets the coords in each block
-    # Given the block args and offsets, applies the function to each block
-    # and offsets the outputted coords for the block.
-    @dask.delayed
-    def func_offsetted(args: list, z_offset: int, y_offset: int, x_offset: int):
-        print(args)
-        df = func(*args)
-        # NOTE: previously with loc but removing
-        df[Coords.Z.value] = df[Coords.Z.value] + z_offset if Coords.Z.value in df.columns else z_offset
-        df[Coords.Y.value] = df[Coords.Y.value] + y_offset if Coords.Y.value in df.columns else y_offset
-        df[Coords.X.value] = df[Coords.X.value] + x_offset if Coords.X.value in df.columns else x_offset
-        return df
-
     print("=====")
     print(args_blocks)
     print(len(args_blocks))
@@ -75,10 +62,28 @@ def block2coords(func, *args: Any) -> dd.DataFrame:
     # Applying the function to each block
     return dd.from_delayed(
         [
-            func_offsetted(args_block, z_offset, y_offset, x_offset)
+            func_offsetted(func, args_block, z_offset, y_offset, x_offset)
             for args_block, z_offset, y_offset, x_offset in zip(args_blocks, z_offsets, y_offsets, x_offsets)
         ]
     )
+
+
+@dask.delayed
+def func_offsetted(func: Callable, args: list, z_offset: int, y_offset: int, x_offset: int):
+    """
+    Defining the function that offsets the coords in each block
+    Given the block args and offsets, applies the function to each block
+    and offsets the outputted coords for the block.
+
+    Intended to be used with `block2coords`.
+    """
+    print(args)
+    df = func(*args)
+    # NOTE: previously with loc but removing
+    df[Coords.Z.value] = df[Coords.Z.value] + z_offset if Coords.Z.value in df.columns else z_offset
+    df[Coords.Y.value] = df[Coords.Y.value] + y_offset if Coords.Y.value in df.columns else y_offset
+    df[Coords.X.value] = df[Coords.X.value] + x_offset if Coords.X.value in df.columns else x_offset
+    return df
 
 
 def coords2block(df: pd.DataFrame, block_info: dict) -> pd.DataFrame:
