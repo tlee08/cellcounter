@@ -4,8 +4,7 @@ import re
 import numpy as np
 import pandas as pd
 
-from cellcounter import ELASTIX_ENABLED
-from cellcounter.constants import CACHE_DIR, Coords
+from cellcounter.constants import CACHE_DIR, ELASTIX_ENABLED, Coords
 from cellcounter.funcs.arr_io_funcs import ArrIOFuncs
 from cellcounter.utils.io_utils import silent_remove
 from cellcounter.utils.logging_utils import init_logger_file
