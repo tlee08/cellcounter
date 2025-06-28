@@ -3,9 +3,9 @@ name = "cellcounter"
 version = "0.1.0"
 description = "cFos cell counting and region mapping for whole brain microscopy"
 authors = [{ name = "BowenLab" }]
-requires-python = ">=3.12"
+requires-python = ">=3.12,<3.13"
 readme = "README.md"
-license = "GNU GPLv3"
+license = "GPL-3.0-or-later"
 dependencies = [
     "jinja2>=3.1.5,<4",
     "streamlit>=1.41.1,<2",

@@ -7,8 +7,6 @@ dependencies:
   # Interactivity
   - ipykernel
   # - bioconda::fiji
-  # Visualisation
-  - python-graphviz
   # GPU acceleration (only CuPy from conda works)
   # - cuda-toolkit
   - cupy
