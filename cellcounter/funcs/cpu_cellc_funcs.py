@@ -414,9 +414,9 @@ class CpuCellcFuncs:
                 weights=overlap_arr[wshed_filt_arr > 0].ravel(),
                 minlength=label_max + 1,
             )
-            cells_df[CellColumns.SUM_INTENSITY.value] = pd.Series(data=cls.cp2np(sum_intensity))
+            cells_df.loc[:, CellColumns.SUM_INTENSITY.value] = pd.Series(data=cls.cp2np(sum_intensity))
         else:
-            cells_df[CellColumns.SUM_INTENSITY.value] = pd.Series(dtype=np.float32)
+            cells_df.loc[:, CellColumns.SUM_INTENSITY.value] = pd.Series(dtype=np.float32)
         # A series with the index used to "auto" filter labels that are not in cells_df
         # Getting the unique values of the untrimmed maxima_labels_arr
         # labels_untrimmed_vect = cls.cp2np(cls.xp.unique(maxima_labels_arr))
