@@ -2,7 +2,10 @@ import os
 import pathlib
 from enum import Enum
 
+import dask
 import numpy as np
+
+from cellcounter.utils import package_is_importable
 
 PROC_CHUNKS = (500, 1000, 1000)
 # PROC_CHUNKS = (500, 1200, 1200)
@@ -102,3 +105,22 @@ class MaskColumns(Enum):
 
 CACHE_DIR = os.path.join(pathlib.Path.home(), ".cellcounter")
 ATLAS_DIR = os.path.join(CACHE_DIR, "atlas_resources")
+
+# Checking whether dask_cuda works (i.e. is Linux and has CUDA)
+DASK_CUDA_ENABLED = package_is_importable("dask_cuda")
+# Checking whether gpu extra dependency (CuPy) is installed
+GPU_ENABLED = package_is_importable("cupy")
+# Checking whether elastix extra dependency is installed
+ELASTIX_ENABLED = package_is_importable("SimpleITK")
+
+# Setting Dask configuration
+dask.config.set(
+    {
+        # "distributed.scheduler.active-memory-manager.measure": "managed",
+        # "distributed.worker.memory.rebalance.measure": "managed",
+        # "distributed.worker.memory.spill": False,
+        # "distributed.worker.memory.pause": False,
+        # "distributed.worker.memory.terminate": False,
+        "temporary-directory": CACHE_DIR
+    }
+)

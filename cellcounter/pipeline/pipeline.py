@@ -11,15 +11,17 @@ from dask.distributed import LocalCluster
 from natsort import natsorted
 from scipy import ndimage
 
-from cellcounter import DASK_CUDA_ENABLED, ELASTIX_ENABLED, package_is_importable
 from cellcounter.constants import (
     ANNOT_COLUMNS_FINAL,
     CELL_AGG_MAPPINGS,
+    DASK_CUDA_ENABLED,
+    ELASTIX_ENABLED,
     TRFM,
     AnnotColumns,
     CellColumns,
     Coords,
     MaskColumns,
+    package_is_importable,
 )
 from cellcounter.funcs.arr_io_funcs import ArrIOFuncs
 from cellcounter.funcs.cpu_cellc_funcs import CpuCellcFuncs
