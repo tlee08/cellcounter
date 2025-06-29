@@ -408,7 +408,7 @@ class CpuCellcFuncs:
         cells_df = cells_df.query(f"{CellColumns.VOLUME.value} > 0")
         # Getting summed intensities for each cell
         # For bincount, positional arg is label cat and weights sums is raw arr (helpful for intensity)
-        if cls.xp.any(wshed_filt_arr > 0):
+        if cls.xp.any(wshed_filt_arr > 0) and label_max > 0:
             sum_intensity = cls.xp.bincount(
                 wshed_labels_arr[wshed_filt_arr > 0].ravel(),
                 weights=overlap_arr[wshed_filt_arr > 0].ravel(),
