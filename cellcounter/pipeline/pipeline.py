@@ -876,7 +876,7 @@ class Pipeline:
             # write_parquet(cells_df, f"{pfm.cells_raw_df}_dask.parquet")
             # Reading and converting from dask to pandas
             # cells_df = dd.read_parquet(f"{pfm.cells_raw_df}_dask.parquet")
-            # cells_df = cells_df.compute()
+            cells_df = cells_df.compute()
             # Computing and saving as parquet
             write_parquet(cells_df, pfm.cells_raw_df)
             # Removing the intermediate dask parquet
