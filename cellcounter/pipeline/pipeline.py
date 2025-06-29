@@ -832,6 +832,45 @@ class Pipeline:
 
     @classmethod
     def cellc12(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
+        logger = init_logger_file()
+        pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
+        if not overwrite:
+            for fp in (pfm.cells_raw_df,):
+                if os.path.exists(fp):
+                    return logger.warning(file_exists_msg(fp))
+        with cluster_process(cls.gpu_cluster()):
+            # Getting configs
+            configs = ConfigParamsModel.read_fp(pfm.config_params)
+            # Reading input images
+            raw_arr = da.from_zarr(pfm.raw)
+            overlap_arr = da.from_zarr(pfm.overlap)
+            maxima_labels_arr = da.from_zarr(pfm.maxima_labels)
+            wshed_labels_arr = da.from_zarr(pfm.wshed_labels)
+            wshed_filt_arr = da.from_zarr(pfm.wshed_filt)
+            # Declaring processing instructions
+            # Getting maxima coords and cell measures in table
+            cells_df = da.map_blocks(
+                GpuCellcFuncs.get_cells,
+                raw_arr,
+                overlap_arr,
+                maxima_labels_arr,
+                wshed_labels_arr,
+                wshed_filt_arr,
+                configs.overlap_depth,
+                dtype=object,
+                meta=pd.DataFrame(),
+            )
+            # If tuning, then offset by the tuning crop. Allows trfm and subsequent region grouping on tuning image.
+            if tuning:
+                cells_df[Coords.Z.value] += configs.tuning_z_trim[0] or 0
+                cells_df[Coords.Y.value] += configs.tuning_y_trim[0] or 0
+                cells_df[Coords.X.value] += configs.tuning_x_trim[0] or 0
+            # Computing and saving as parquet
+            disk_cache(cells_df, f"{pfm.cells_raw_df}.zarr")
+            # write_parquet(cells_df, pfm.cells_raw_df)
+
+    @classmethod
+    def cellc12_old(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
         """
         Cell counting pipeline - Step 12
 
@@ -842,7 +881,6 @@ class Pipeline:
         Also allows GPU processing.
         """
         # TODO: intermediate save as a dask parquet folder - useful for distributed processing
-
         logger = init_logger_file()
         pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
         if not overwrite:
@@ -885,7 +923,7 @@ class Pipeline:
             silent_remove(f"{pfm.cells_raw_df}_dask.parquet")
 
     @classmethod
-    def cellc12_old(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
+    def cellc12_v_old(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
         """
         Cell counting pipeline - Step 11
 

@@ -284,7 +284,7 @@ class CpuCellcFuncs:
         return df
 
     @classmethod
-    def get_cells_old(
+    def get_cells_v_old(
         cls,
         raw_arr: np.ndarray,
         overlap_arr: np.ndarray,
@@ -350,7 +350,7 @@ class CpuCellcFuncs:
         return df
 
     @classmethod
-    def get_cells(
+    def get_cells_old(
         cls,
         raw_arr: np.ndarray,
         overlap_arr: np.ndarray,
@@ -416,17 +416,37 @@ class CpuCellcFuncs:
             )
             cells_df.loc[:, CellColumns.SUM_INTENSITY.value] = pd.Series(data=cls.cp2np(sum_intensity))
         else:
-            cells_df.loc[:, CellColumns.SUM_INTENSITY.value] = pd.Series(dtype=np.float32)
-        # A series with the index used to "auto" filter labels that are not in cells_df
-        # Getting the unique values of the untrimmed maxima_labels_arr
-        # labels_untrimmed_vect = cls.cp2np(cls.xp.unique(maxima_labels_arr))
-        # index = pd.Index(labels_untrimmed_vect, name=CELL_IDX_NAME)
-        # sum_intensity = pd.Series(data=cls.cp2np(sum_intensity), index=index) if sum_intensity is not None else pd.Series()
+            cells_df.loc[:, CellColumns.SUM_INTENSITY.value] = 0.0
         # There should be no na values
         cls.logger.info("end of function check (get_cells)")
         print("end of function check (get_cells)")
         assert np.all(cells_df.notna())
         return cells_df
+
+    @classmethod
+    def get_cells(
+        cls,
+        raw_arr: np.ndarray,
+        overlap_arr: np.ndarray,
+        maxima_labels_arr: np.ndarray,
+        wshed_labels_arr: np.ndarray,
+        wshed_filt_arr: np.ndarray,
+        depth: int = DEPTH,
+    ) -> pd.DataFrame:
+        """
+        Get the cells from the maxima labels and the watershed segmentation
+        (with corresponding labels).
+        Wrapped with return np.array instead of pd.DataFrame to allow use with dd.map_array.
+        """
+        cells_df = cls.get_cells_old(
+            raw_arr,
+            overlap_arr,
+            maxima_labels_arr,
+            wshed_labels_arr,
+            wshed_filt_arr,
+            depth=depth,
+        )
+        return np.array([cells_df])
 
     @staticmethod
     def cp2np(arr) -> np.ndarray:
