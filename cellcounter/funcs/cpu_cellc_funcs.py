@@ -414,9 +414,9 @@ class CpuCellcFuncs:
                 weights=overlap_arr[wshed_filt_arr > 0].ravel(),
                 minlength=label_max + 1,
             )
-            cells_df.loc[:, CellColumns.SUM_INTENSITY.value] = pd.Series(data=cls.cp2np(sum_intensity))
+            cells_df[CellColumns.SUM_INTENSITY.value] = pd.Series(data=cls.cp2np(sum_intensity))
         else:
-            cells_df.loc[:, CellColumns.SUM_INTENSITY.value] = 0.0
+            cells_df[CellColumns.SUM_INTENSITY.value] = 0.0
         # There should be no na values
         cls.logger.info("end of function check (get_cells)")
         print("end of function check (get_cells)")
