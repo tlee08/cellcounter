@@ -11,6 +11,7 @@ import dask.array as da
 import dask.dataframe as dd
 import numpy as np
 import pandas as pd
+from dask import compute
 from dask.distributed import Client, SpecCluster, get_worker
 
 from cellcounter.constants import DEPTH, Coords
@@ -56,16 +57,16 @@ def block2coords(func, *args: Any) -> dd.DataFrame:
     # Transposing from (arg, blocks) to (block, arg) dimensions
     args_blocks = [list(i) for i in zip(*args_blocks)]
     # Applying the function to each block
-    return dd.from_delayed(
-        [
-            func_offsetted(func, args_block, z_offset, y_offset, x_offset)
-            for args_block, z_offset, y_offset, x_offset in zip(args_blocks, z_offsets, y_offsets, x_offsets)
-        ]
-    )
+    results_ls = [
+        func_offsetted_delayed(func, args_block, z_offset, y_offset, x_offset)
+        for args_block, z_offset, y_offset, x_offset in zip(args_blocks, z_offsets, y_offsets, x_offsets)
+    ]
+    return pd.concat(compute(*results_ls), axis=0, ignore_index=True)
+    # return dd.from_delayed(results_ls)
 
 
 @dask.delayed
-def func_offsetted(func: Callable, args: list, z_offset: int, y_offset: int, x_offset: int):
+def func_offsetted_delayed(func: Callable, args: list, z_offset: int, y_offset: int, x_offset: int):
     """
     Defining the function that offsets the coords in each block
     Given the block args and offsets, applies the function to each block
