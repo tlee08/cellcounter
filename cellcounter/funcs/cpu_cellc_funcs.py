@@ -418,6 +418,9 @@ class CpuCellcFuncs:
         else:
             cells_df[CellColumns.SUM_INTENSITY.value] = 0.0
         # There should be no na values
+        print(cells_df)
+        print(cells_df.shape)
+        print(cells_df.notna().sum())
         assert np.all(cells_df.notna())
         return cells_df
 
