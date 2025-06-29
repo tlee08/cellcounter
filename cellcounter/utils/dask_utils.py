@@ -62,8 +62,8 @@ def block2coords(func, *args: Any) -> dd.DataFrame:
         for args_block, z_offset, y_offset, x_offset in zip(args_blocks, z_offsets, y_offsets, x_offsets)
     ]
     # NOTE: current workaround for memory/taking-on-too-many-blocks issue is compute each block separately
-    # return dd.concat([compute(i)[0] for i in results_ls], axis=0, ignore_index=True)
-    return dd.concat(compute(*results_ls), axis=0, ignore_index=True)
+    return dd.concat([compute(i)[0] for i in results_ls], axis=0, ignore_index=True)
+    # return dd.concat(compute(*results_ls), axis=0, ignore_index=True)
     # return dd.from_delayed(results_ls)
 
 
