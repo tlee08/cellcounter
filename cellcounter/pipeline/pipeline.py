@@ -1103,6 +1103,22 @@ class Pipeline:
         cells_agg_df.to_csv(pfm.cells_agg_csv)
 
     ###################################################################################################
+    # CELL COUNT REALIGNMENT TO REFERENCE AND AGGREGATION PIPELINE FUNCS
+    ###################################################################################################
+
+    @classmethod
+    def clean_proj(cls, proj_dir: str, tuning: bool = False) -> None:
+        """
+        Clean the project directory by removing large files,
+        namely all files in cellcount subdirectory
+        """
+        logger = init_logger_file()
+        pfm = ProjFpModel(proj_dir) if not tuning else ProjFpModelTuning(proj_dir)
+        # Removing cellcount subdirectory
+        silent_remove(os.path.join(pfm.root_dir, pfm.cellcount_sdir))
+        logger.info(f"Project {proj_dir} cleaned.")
+
+    ###################################################################################################
     # ALL PIPELINE FUNCTION
     ###################################################################################################
 
