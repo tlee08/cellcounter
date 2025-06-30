@@ -1,6 +1,5 @@
 import contextlib
 import functools
-import gc
 import os
 from multiprocessing import current_process
 from typing import Any, Callable
@@ -43,32 +42,29 @@ def block2coords(func, *args: Any) -> dd.DataFrame:
     # Asserting that all da.Arrays have the same shape of chunks
     assert all(i.to_delayed().shape == arr0.to_delayed().shape for i in arr_blocks_ls)
     # Converting chunks tuple[tuple] from chunk sizes to block offsets
-    chunks_offsets = [np.cumsum([0, *i[:-1]]) for i in arr0.chunks]
+    offsets = [np.cumsum([0, *i[:-1]]) for i in arr0.chunks]
     # Creating the meshgrid of offsets to get offsets for each block in order
-    z_offsets, y_offsets, x_offsets = np.meshgrid(*chunks_offsets, indexing="ij")
-    # Flattening offsets ndarrays to 1D
-    z_offsets = z_offsets.ravel()
-    y_offsets = y_offsets.ravel()
-    x_offsets = x_offsets.ravel()
+    z_off, y_off, x_off = np.meshgrid(*offsets, indexing="ij")
+    z_off, y_off, x_off = map(np.ravel, (z_off, y_off, x_off))
     # Getting number of blocks
-    n = arr0.to_delayed().ravel().shape[0]
+    nblocks = np.prod(arr0.numblocks)
     # Converting dask arrays to list of delayed blocks in args list
-    args_blocks = [i.to_delayed().ravel() if isinstance(i, da.Array) else list(const2iter(i, n)) for i in args]
+    blocks_args = [i.to_delayed().ravel() if isinstance(i, da.Array) else list(const2iter(i, nblocks)) for i in args]
     # Transposing from (arg, blocks) to (block, arg) dimensions
-    args_blocks = [list(i) for i in zip(*args_blocks)]
+    args_blocks = list(zip(*blocks_args))
     # Applying the function to each block
     results_ls = [
         func_offsetted_delayed(func, args_block, z_offset, y_offset, x_offset)
-        for args_block, z_offset, y_offset, x_offset in zip(args_blocks, z_offsets, y_offsets, x_offsets)
+        for args_block, z_offset, y_offset, x_offset in zip(args_blocks, z_off, y_off, x_off)
     ]
     # NOTE: current workaround for memory/taking-on-too-many-blocks issue is compute each block separately
-    return dd.concat([compute(i)[0] for i in results_ls], axis=0, ignore_index=True)
-    # return dd.concat(compute(*results_ls), axis=0, ignore_index=True)
+    # return dd.concat([compute(i)[0] for i in results_ls], axis=0, ignore_index=True)
+    return dd.concat(compute(*results_ls), axis=0, ignore_index=True)
     # return dd.from_delayed(results_ls)
 
 
 @dask.delayed
-def func_offsetted_delayed(func: Callable, args: list, z_offset: int, y_offset: int, x_offset: int):
+def func_offsetted_delayed(func: Callable, args: tuple, z_off: int, y_off: int, x_off: int):
     """
     Defining the function that offsets the coords in each block
     Given the block args and offsets, applies the function to each block
@@ -79,12 +75,9 @@ def func_offsetted_delayed(func: Callable, args: list, z_offset: int, y_offset: 
     # Running the function with the args
     df = func(*args)
     # Offsetting the coords in the df
-    df[Coords.Z.value] = df[Coords.Z.value] + z_offset if Coords.Z.value in df.columns else z_offset
-    df[Coords.Y.value] = df[Coords.Y.value] + y_offset if Coords.Y.value in df.columns else y_offset
-    df[Coords.X.value] = df[Coords.X.value] + x_offset if Coords.X.value in df.columns else x_offset
-    # Garbage collection
-    del args
-    gc.collect()
+    df[Coords.Z.value] = df[Coords.Z.value] + z_off if Coords.Z.value in df.columns else z_off
+    df[Coords.Y.value] = df[Coords.Y.value] + y_off if Coords.Y.value in df.columns else y_off
+    df[Coords.X.value] = df[Coords.X.value] + x_off if Coords.X.value in df.columns else x_off
     # Returning the df
     return df
 
