@@ -7,7 +7,7 @@ dependencies:
   # - bioconda::fiji
   # GPU acceleration (only CuPy from conda works)
   # - cuda-toolkit
-  - cupy
+  # - cupy
   - pip:
       # - cellcounter[gpu,elastix]
       - -e ".[gpu,elastix]"

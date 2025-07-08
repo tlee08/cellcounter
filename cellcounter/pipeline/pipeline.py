@@ -530,9 +530,15 @@ class Pipeline:
     @classmethod
     def cellc1(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
         """
-        Cell counting pipeline - Step 1
+        Cell counting pipeline - Step 1: Top-hat filter (background subtraction).
 
-        Top-hat filter (background subtraction)
+        Args:
+            proj_dir (str): Project directory path.
+            overwrite (bool, optional): If True, overwrite existing outputs. Defaults to False.
+            tuning (bool, optional): If True, use the tuning project file model. Defaults to False.
+
+        Returns:
+            None
         """
         logger = init_logger_file()
         pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
@@ -558,9 +564,15 @@ class Pipeline:
     @classmethod
     def cellc2(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
         """
-        Cell counting pipeline - Step 2
+        Cell counting pipeline - Step 2: Difference of Gaussians (edge detection).
 
-        Difference of Gaussians (edge detection)
+        Args:
+            proj_dir (str): Project directory path.
+            overwrite (bool, optional): If True, overwrite existing outputs. Defaults to False.
+            tuning (bool, optional): If True, use the tuning project file model. Defaults to False.
+
+        Returns:
+            None
         """
         logger = init_logger_file()
         pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
@@ -587,9 +599,15 @@ class Pipeline:
     @classmethod
     def cellc3(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
         """
-        Cell counting pipeline - Step 3
+        Cell counting pipeline - Step 3: Gaussian subtraction with large sigma for adaptive thresholding.
 
-        Gaussian subtraction with large sigma for adaptive thresholding
+        Args:
+            proj_dir (str): Project directory path.
+            overwrite (bool, optional): If True, overwrite existing outputs. Defaults to False.
+            tuning (bool, optional): If True, use the tuning project file model. Defaults to False.
+
+        Returns:
+            None
         """
         logger = init_logger_file()
         pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
@@ -615,10 +633,15 @@ class Pipeline:
     @classmethod
     def cellc4(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
         """
-        Cell counting pipeline - Step 4
+        Cell counting pipeline - Step 4: Manual thresholding (or mean thresholding with standard deviation offset).
 
-        Currently, manual thresholding.
-        Ideally, mean thresholding with standard deviation offset
+        Args:
+            proj_dir (str): Project directory path.
+            overwrite (bool, optional): If True, overwrite existing outputs. Defaults to False.
+            tuning (bool, optional): If True, use the tuning project file model. Defaults to False.
+
+        Returns:
+            None
         """
         logger = init_logger_file()
         pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
@@ -647,9 +670,15 @@ class Pipeline:
     @classmethod
     def cellc5(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
         """
-        Cell counting pipeline - Step 5
+        Cell counting pipeline - Step 5: Get object sizes.
 
-        Getting object sizes
+        Args:
+            proj_dir (str): Project directory path.
+            overwrite (bool, optional): If True, overwrite existing outputs. Defaults to False.
+            tuning (bool, optional): If True, use the tuning project file model. Defaults to False.
+
+        Returns:
+            None
         """
         logger = init_logger_file()
         pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
@@ -672,9 +701,15 @@ class Pipeline:
     @classmethod
     def cellc6(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
         """
-        Cell counting pipeline - Step 6
+        Cell counting pipeline - Step 6: Filter out large objects (likely outlines, not cells).
 
-        Filter out large objects (likely outlines, not cells)
+        Args:
+            proj_dir (str): Project directory path.
+            overwrite (bool, optional): If True, overwrite existing outputs. Defaults to False.
+            tuning (bool, optional): If True, use the tuning project file model. Defaults to False.
+
+        Returns:
+            None
         """
         logger = init_logger_file()
         pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
@@ -700,9 +735,15 @@ class Pipeline:
     @classmethod
     def cellc7(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
         """
-        Cell counting pipeline - Step 7
+        Cell counting pipeline - Step 7: Get maxima mask of raw image with thresholded-filtered mask.
 
-        Get maxima mask of raw image with thresholded-filtered mask.
+        Args:
+            proj_dir (str): Project directory path.
+            overwrite (bool, optional): If True, overwrite existing outputs. Defaults to False.
+            tuning (bool, optional): If True, use the tuning project file model. Defaults to False.
+
+        Returns:
+            None
         """
         logger = init_logger_file()
         pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
@@ -729,9 +770,15 @@ class Pipeline:
     @classmethod
     def cellc8(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
         """
-        Cell counting pipeline - Step 8
+        Cell counting pipeline - Step 8: Convert maxima mask to uniquely labelled points.
 
-        Convert maxima mask to uniquely labelled points.
+        Args:
+            proj_dir (str): Project directory path.
+            overwrite (bool, optional): If True, overwrite existing outputs. Defaults to False.
+            tuning (bool, optional): If True, use the tuning project file model. Defaults to False.
+
+        Returns:
+            None
         """
         # TODO: Check that the results of cellc10 and cellc7b, cellc8a, cellc10a are the same (df)
         logger = init_logger_file()
@@ -753,9 +800,15 @@ class Pipeline:
     @classmethod
     def cellc9(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
         """
-        Cell counting pipeline - Step 9
+        Cell counting pipeline - Step 9: Watershed segmentation labels with maxima labels and thresholded-filtered mask.
 
-        Watershed segmentation labels with maxima labels and thresholded-filtered mask.
+        Args:
+            proj_dir (str): Project directory path.
+            overwrite (bool, optional): If True, overwrite existing outputs. Defaults to False.
+            tuning (bool, optional): If True, use the tuning project file model. Defaults to False.
+
+        Returns:
+            None
         """
         logger = init_logger_file()
         pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
@@ -939,9 +992,18 @@ class Pipeline:
     @classmethod
     def transform_coords(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
         """
-        `in_id` and `out_id` are either maxima or region
+        Transform cell coordinates to reference atlas space and save as a parquet file.
 
-        NOTE: saves the cells_trfm dataframe as pandas parquet.
+        Args:
+            proj_dir (str): Project directory path.
+            overwrite (bool, optional): If True, overwrite existing outputs. Defaults to False.
+            tuning (bool, optional): If True, use the tuning project file model. Defaults to False.
+
+        Returns:
+            None
+
+        Notes:
+            Saves the cells_trfm dataframe as pandas parquet.
         """
         logger = init_logger_file()
         pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
@@ -984,10 +1046,18 @@ class Pipeline:
     @classmethod
     def cell_mapping(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
         """
-        Using the transformed cell coordinates, get the region ID and name for each cell
-        corresponding to the reference atlas.
+        Map transformed cell coordinates to region IDs and names in the reference atlas.
 
-        NOTE: saves the cells dataframe as pandas parquet.
+        Args:
+            proj_dir (str): Project directory path.
+            overwrite (bool, optional): If True, overwrite existing outputs. Defaults to False.
+            tuning (bool, optional): If True, use the tuning project file model. Defaults to False.
+
+        Returns:
+            None
+
+        Notes:
+            Saves the cells dataframe as pandas parquet.
         """
         logger = init_logger_file()
         pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
@@ -1051,10 +1121,18 @@ class Pipeline:
     @classmethod
     def group_cells(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
         """
-        Grouping cells by region name and aggregating total cell volume
-        and cell count for each region.
+        Group cells by region name and aggregate total cell volume and cell count for each region.
 
-        NOTE: saves the cells_agg dataframe as pandas parquet.
+        Args:
+            proj_dir (str): Project directory path.
+            overwrite (bool, optional): If True, overwrite existing outputs. Defaults to False.
+            tuning (bool, optional): If True, use the tuning project file model. Defaults to False.
+
+        Returns:
+            None
+
+        Notes:
+            Saves the cells_agg dataframe as pandas parquet.
         """
         logger = init_logger_file()
         pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
@@ -1089,6 +1167,17 @@ class Pipeline:
 
     @classmethod
     def cells2csv(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
+        """
+        Save the aggregated cell dataframe to a CSV file.
+
+        Args:
+            proj_dir (str): Project directory path.
+            overwrite (bool, optional): If True, overwrite existing outputs. Defaults to False.
+            tuning (bool, optional): If True, use the tuning project file model. Defaults to False.
+
+        Returns:
+            None
+        """
         logger = init_logger_file()
         pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
         if not overwrite:
