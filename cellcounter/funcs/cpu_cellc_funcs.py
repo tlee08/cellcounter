@@ -219,7 +219,7 @@ class CpuCellcFuncs:
         if mask_arr is not None:
             cls.logger.debug("Mask provided. Maxima only in mask regions considered.")
             mask_arr = (cls.xp.asarray(mask_arr) > 0).astype(cls.xp.uint8)
-            res = res * mask_arr
+            res = (res * mask_arr).astype(cls.xp.uint8)
         return res
 
     @classmethod

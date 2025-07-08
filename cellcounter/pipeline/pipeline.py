@@ -557,6 +557,7 @@ class Pipeline:
                 cls.cellc_funcs.tophat_filt,
                 overlap_arr,
                 configs.tophat_sigma,
+                dtype=np.uint16,
             )
             # Computing and saving
             bgrm_arr = disk_cache(bgrm_arr, pfm.bgrm)
@@ -592,6 +593,7 @@ class Pipeline:
                 bgrm_arr,
                 configs.dog_sigma1,
                 configs.dog_sigma2,
+                dtype=np.uint16,
             )
             # Computing and saving
             dog_arr = disk_cache(dog_arr, pfm.dog)
@@ -626,6 +628,7 @@ class Pipeline:
                 cls.cellc_funcs.gauss_subt_filt,
                 dog_arr,
                 configs.large_gauss_sigma,
+                dtype=np.uint16,
             )
             # Computing and saving
             adaptv_arr = disk_cache(adaptv_arr, pfm.adaptv)
@@ -660,9 +663,10 @@ class Pipeline:
             adaptv_arr = da.from_zarr(pfm.adaptv)
             # Declaring processing instructions
             threshd_arr = da.map_blocks(
-                cls.cellc_funcs.manual_thresh,  # NOTE: previously CPU
+                cls.cellc_funcs.manual_thresh,
                 adaptv_arr,
                 configs.threshd_value,
+                dtype=np.uint8,
             )
             # Computing and saving
             threshd_arr = disk_cache(threshd_arr, pfm.threshd)
@@ -694,6 +698,7 @@ class Pipeline:
             threshd_volumes_arr = da.map_blocks(
                 cls.cellc_funcs.mask2volume,  # NOTE: previously CPU
                 threshd_arr,
+                dtype=np.uint16,
             )
             # Computing and saving
             threshd_volumes_arr = disk_cache(threshd_volumes_arr, pfm.threshd_volumes)
@@ -728,6 +733,7 @@ class Pipeline:
                 threshd_volumes_arr,
                 configs.min_threshd_size,
                 configs.max_threshd_size,
+                dtype=np.uint16,
             )
             # Computing and saving
             threshd_filt_arr = disk_cache(threshd_filt_arr, pfm.threshd_filt)
@@ -763,6 +769,7 @@ class Pipeline:
                 overlap_arr,
                 configs.maxima_sigma,
                 threshd_filt_arr,
+                dtype=np.uint8,
             )
             # Computing and saving
             maxima_arr = disk_cache(maxima_arr, pfm.maxima)
@@ -794,6 +801,7 @@ class Pipeline:
             maxima_labels_arr = da.map_blocks(
                 cls.cellc_funcs.mask2label,
                 maxima_arr,
+                dtype=np.uint32,
             )
             maxima_labels_arr = disk_cache(maxima_labels_arr, pfm.maxima_labels)
 
@@ -827,6 +835,7 @@ class Pipeline:
                 overlap_arr,
                 maxima_labels_arr,
                 threshd_filt_arr,
+                dtype=np.uint32,
             )
             wshed_labels_arr = disk_cache(wshed_labels_arr, pfm.wshed_labels)
 
@@ -850,6 +859,7 @@ class Pipeline:
             wshed_volumes_arr = da.map_blocks(
                 cls.cellc_funcs.label2volume,
                 wshed_labels_arr,
+                dtype=np.uint16,
             )
             wshed_volumes_arr = disk_cache(wshed_volumes_arr, pfm.wshed_volumes)
 
@@ -878,6 +888,7 @@ class Pipeline:
                 wshed_volumes_arr,
                 configs.min_wshed_size,
                 configs.max_wshed_size,
+                dtype=np.uint16,
             )
             # Computing and saving
             wshed_filt_arr = disk_cache(wshed_filt_arr, pfm.wshed_filt)
