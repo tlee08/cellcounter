@@ -49,13 +49,20 @@ def block2coords(func, *args: Any) -> dd.DataFrame:
     # Getting number of blocks
     nblocks = np.prod(arr0.numblocks)
     # Converting dask arrays to list of delayed blocks in args list
-    blocks_args = [i.to_delayed().ravel() if isinstance(i, da.Array) else list(const2iter(i, nblocks)) for i in args]
+    blocks_args = [
+        i.to_delayed().ravel()
+        if isinstance(i, da.Array)
+        else list(const2iter(i, nblocks))
+        for i in args
+    ]
     # Transposing from (arg, blocks) to (block, arg) dimensions
     args_blocks = list(zip(*blocks_args))
     # Applying the function to each block
     results_ls = [
         func_offsetted_delayed(func, args_block, z_offset, y_offset, x_offset)
-        for args_block, z_offset, y_offset, x_offset in zip(args_blocks, z_off, y_off, x_off)
+        for args_block, z_offset, y_offset, x_offset in zip(
+            args_blocks, z_off, y_off, x_off
+        )
     ]
     # NOTE: current workaround for memory/taking-on-too-many-blocks issue is compute each block separately
     return dd.concat([compute(i)[0] for i in results_ls], axis=0, ignore_index=True)
@@ -64,7 +71,9 @@ def block2coords(func, *args: Any) -> dd.DataFrame:
 
 
 @dask.delayed
-def func_offsetted_delayed(func: Callable, args: tuple, z_off: int, y_off: int, x_off: int):
+def func_offsetted_delayed(
+    func: Callable, args: tuple, z_off: int, y_off: int, x_off: int
+):
     """
     Defining the function that offsets the coords in each block
     Given the block args and offsets, applies the function to each block
@@ -75,9 +84,15 @@ def func_offsetted_delayed(func: Callable, args: tuple, z_off: int, y_off: int, 
     # Running the function with the args
     df = func(*args)
     # Offsetting the coords in the df
-    df[Coords.Z.value] = df[Coords.Z.value] + z_off if Coords.Z.value in df.columns else z_off
-    df[Coords.Y.value] = df[Coords.Y.value] + y_off if Coords.Y.value in df.columns else y_off
-    df[Coords.X.value] = df[Coords.X.value] + x_off if Coords.X.value in df.columns else x_off
+    df[Coords.Z.value] = (
+        df[Coords.Z.value] + z_off if Coords.Z.value in df.columns else z_off
+    )
+    df[Coords.Y.value] = (
+        df[Coords.Y.value] + y_off if Coords.Y.value in df.columns else y_off
+    )
+    df[Coords.X.value] = (
+        df[Coords.X.value] + x_off if Coords.X.value in df.columns else x_off
+    )
     # Returning the df
     return df
 
@@ -102,12 +117,14 @@ def coords2block(df: pd.DataFrame, block_info: dict) -> pd.DataFrame:
 
 def disk_cache(arr: da.Array, fp):
     os.makedirs(os.path.dirname(fp), exist_ok=True)
-    arr.to_zarr(fp, overwrite=True)
+    arr.to_zarr(fp, zarr_kwargs={"overwrite": True})
     return da.from_zarr(fp)
 
 
 def da_overlap(arr, d=DEPTH):
-    return da.overlap.overlap(arr, depth=d, boundary="reflect").rechunk([i + 2 * d for i in arr.chunksize])
+    return da.overlap.overlap(arr, depth=d, boundary="reflect").rechunk(
+        [i + 2 * d for i in arr.chunksize]
+    )
 
 
 def da_trim(arr, d=DEPTH):

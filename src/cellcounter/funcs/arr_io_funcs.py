@@ -34,7 +34,9 @@ class ArrIOFuncs:
     #####################################################################
 
     @classmethod
-    def btiff2zarr(cls, in_fp: str, out_fp: str, chunks: tuple[int, ...] = PROC_CHUNKS) -> None:
+    def btiff2zarr(
+        cls, in_fp: str, out_fp: str, chunks: tuple[int, ...] = PROC_CHUNKS
+    ) -> None:
         # To intermediate tiff
         mmap_arr = tifffile.memmap(in_fp)
         zarr_arr = zarr.open(
@@ -47,7 +49,7 @@ class ArrIOFuncs:
         zarr_arr[:] = mmap_arr
         # To final dask tiff
         zarr_arr = da.from_zarr(f"{out_fp}_tmp.zarr")
-        zarr_arr.to_zarr(out_fp, overwrite=True)
+        zarr_arr.to_zarr(out_fp, zarr_kwargs={"overwrite": True})
         # Remove intermediate
         silent_remove(f"{out_fp}_tmp.zarr")
 
@@ -65,11 +67,14 @@ class ArrIOFuncs:
         # Getting list of dask delayed tiffs
         tiffs_ls = [dask.delayed(cls.read_tiff)(i) for i in in_fp_ls]
         # Getting list of dask array tiffs and rechunking each (in prep later rechunking)
-        tiffs_ls = [da.from_delayed(i, dtype=dtype, shape=shape[1:]).rechunk(chunks[1:]) for i in tiffs_ls]
+        tiffs_ls = [
+            da.from_delayed(i, dtype=dtype, shape=shape[1:]).rechunk(chunks[1:])
+            for i in tiffs_ls
+        ]
         # Stacking tiffs and rechunking
         arr = da.stack(tiffs_ls, axis=0).rechunk(chunks)
         # Saving to zarr
-        arr.to_zarr(out_fp, overwrite=True)
+        arr.to_zarr(out_fp, zarr_kwargs={"overwrite": True})
 
     @classmethod
     def zarr2tiff(cls, in_fp: str, out_fp: str) -> None:
