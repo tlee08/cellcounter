@@ -49,7 +49,8 @@ class ArrIOFuncs:
         zarr_arr[:] = mmap_arr
         # To final dask tiff
         zarr_arr = da.from_zarr(f"{out_fp}_tmp.zarr")
-        zarr_arr.to_zarr(out_fp, zarr_kwargs={"overwrite": True})
+        silent_remove(out_fp)
+        zarr_arr.to_zarr(out_fp, mode="w")
         # Remove intermediate
         silent_remove(f"{out_fp}_tmp.zarr")
 
@@ -74,7 +75,8 @@ class ArrIOFuncs:
         # Stacking tiffs and rechunking
         arr = da.stack(tiffs_ls, axis=0).rechunk(chunks)
         # Saving to zarr
-        arr.to_zarr(out_fp, zarr_kwargs={"overwrite": True})
+        silent_remove(out_fp)
+        arr.to_zarr(out_fp, mode="w")
 
     @classmethod
     def zarr2tiff(cls, in_fp: str, out_fp: str) -> None:

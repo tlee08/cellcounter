@@ -14,6 +14,7 @@ from dask import compute
 from dask.distributed import Client, SpecCluster, get_worker
 
 from cellcounter.constants import DEPTH, Coords
+from cellcounter.utils.io_utils import silent_remove
 from cellcounter.utils.misc_utils import const2iter
 
 
@@ -117,7 +118,8 @@ def coords2block(df: pd.DataFrame, block_info: dict) -> pd.DataFrame:
 
 def disk_cache(arr: da.Array, fp):
     os.makedirs(os.path.dirname(fp), exist_ok=True)
-    arr.to_zarr(fp, zarr_kwargs={"overwrite": True})
+    silent_remove(fp)
+    arr.to_zarr(fp, mode="w")
     return da.from_zarr(fp)
 
 
