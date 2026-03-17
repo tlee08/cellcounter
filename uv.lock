@@ -283,14 +283,7 @@ dependencies = [
     { name = "zarr" },
 ]
 
-[package.dev-dependencies]
-dev = [
-    { name = "mkdocs-material" },
-    { name = "mkdocstrings-python" },
-    { name = "pymdown-extensions" },
-    { name = "pytest" },
-    { name = "ruff" },
-]
+[package.optional-dependencies]
 elastix = [
     { name = "simpleitk-simpleelastix" },
 ]
@@ -299,9 +292,20 @@ gpu = [
     { name = "dask-cuda" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "mkdocs-material" },
+    { name = "mkdocstrings-python" },
+    { name = "pymdown-extensions" },
+    { name = "pytest" },
+    { name = "ruff" },
+]
+
 [package.metadata]
 requires-dist = [
-    { name = "dask", extras = ["complete"], specifier = ">=2026.1.2" },
+    { name = "cupy-cuda13x", marker = "extra == 'gpu'", specifier = ">=14.0.1" },
+    { name = "dask", extras = ["complete"], specifier = ">=2026.1.1" },
+    { name = "dask-cuda", marker = "extra == 'gpu'", specifier = ">=26.2.0" },
     { name = "ipykernel", specifier = ">=7.2.0" },
     { name = "jinja2", specifier = ">=3.1.6" },
     { name = "napari", extras = ["all"], specifier = ">=0.6.5" },
@@ -312,23 +316,20 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.12.5" },
     { name = "scikit-image", specifier = ">=0.26.0" },
     { name = "seaborn", specifier = ">=0.13.2" },
+    { name = "simpleitk-simpleelastix", marker = "extra == 'elastix'", specifier = ">=3.0.0a1.post183" },
     { name = "streamlit", specifier = ">=1.55.0" },
     { name = "tifffile", specifier = ">=2026.3.3" },
     { name = "zarr", specifier = ">=3.1.5" },
 ]
+provides-extras = ["elastix", "gpu"]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "mkdocs-material", specifier = ">=9.6.14" },
-    { name = "mkdocstrings-python", specifier = ">=1.16.12" },
-    { name = "pymdown-extensions", specifier = ">=10.16" },
-    { name = "pytest", specifier = ">=8.4.1" },
-    { name = "ruff", specifier = ">=0.12.1" },
-]
-elastix = [{ name = "simpleitk-simpleelastix", specifier = ">=3.0.0a1.post183" }]
-gpu = [
-    { name = "cupy-cuda13x", specifier = ">=14.0.1" },
-    { name = "dask-cuda", specifier = ">=0.18.0" },
+    { name = "mkdocs-material", specifier = ">=9.7.5" },
+    { name = "mkdocstrings-python", specifier = ">=2.0.3" },
+    { name = "pymdown-extensions", specifier = ">=10.21" },
+    { name = "pytest", specifier = ">=9.0.2" },
+    { name = "ruff", specifier = ">=0.15.6" },
 ]
 
 [[package]]
@@ -450,6 +451,32 @@ wheels = [
 ]
 
 [[package]]
+name = "cuda-bindings"
+version = "13.2.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "cuda-pathfinder" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/52/c8/b2589d68acf7e3d63e2be330b84bc25712e97ed799affbca7edd7eae25d6/cuda_bindings-13.2.0-cp312-cp312-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:e865447abfb83d6a98ad5130ed3c70b1fc295ae3eeee39fd07b4ddb0671b6788", size = 5722404, upload-time = "2026-03-11T00:12:44.041Z" },
+    { url = "https://files.pythonhosted.org/packages/1f/92/f899f7bbb5617bb65ec52a6eac1e9a1447a86b916c4194f8a5001b8cde0c/cuda_bindings-13.2.0-cp312-cp312-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:46d8776a55d6d5da9dd6e9858fba2efcda2abe6743871dee47dd06eb8cb6d955", size = 6320619, upload-time = "2026-03-11T00:12:45.939Z" },
+    { url = "https://files.pythonhosted.org/packages/bb/a5/d7f01a415e134546248cef612adad8153c9f1eb10ec79505a7cd8294370b/cuda_bindings-13.2.0-cp312-cp312-win_amd64.whl", hash = "sha256:45815daeb595bf3b405c52671a2542b1f8e9329f3b029494acbfcc74aeaa1f2d", size = 5840830, upload-time = "2026-03-11T00:12:48.43Z" },
+]
+
+[[package]]
+name = "cuda-core"
+version = "0.3.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5d/ad/d9f56e354ee85f1db37d72a1d0adfd6bcb21f1e5a14a210b93bed9932854/cuda_core-0.3.2-cp312-cp312-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:d5e635d60209478d7fcb26d96e9182e6f7407c983147f488b98130c1ba31df12", size = 3041511, upload-time = "2025-08-07T03:41:10.013Z" },
+    { url = "https://files.pythonhosted.org/packages/b2/75/cb52e7d8c44ef4bf1313251685adc0c6568d51b9790edf7a1ecdf0135394/cuda_core-0.3.2-cp312-cp312-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:1338ab324d29b3afcde623c4a12571cd6e74e76fa0d5533db1e36df978899e4e", size = 3081871, upload-time = "2025-08-07T03:41:12.079Z" },
+    { url = "https://files.pythonhosted.org/packages/0e/83/c5ed2035bd13a0625f1621c4d09e2be2b5664a9f2eccfadfda306833acc4/cuda_core-0.3.2-cp312-cp312-win_amd64.whl", hash = "sha256:b4afafbc3809244dfe764898c8a49abaccb1cc4cd41bbb9a61e89c31dd1f2a18", size = 1283337, upload-time = "2025-08-07T03:41:14.053Z" },
+]
+
+[[package]]
 name = "cuda-pathfinder"
 version = "1.4.3"
 source = { registry = "https://pypi.org/simple" }
@@ -482,7 +509,7 @@ wheels = [
 
 [[package]]
 name = "dask"
-version = "2026.1.2"
+version = "2026.1.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
@@ -493,9 +520,9 @@ dependencies = [
     { name = "pyyaml" },
     { name = "toolz" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/bd/52/b0f9172b22778def907db1ff173249e4eb41f054b46a9c83b1528aaf811f/dask-2026.1.2.tar.gz", hash = "sha256:1136683de2750d98ea792670f7434e6c1cfce90cab2cc2f2495a9e60fd25a4fc", size = 10997838, upload-time = "2026-01-30T21:04:20.54Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/1e/46/61ecde57bac647ca7eb6ffef8dcd90af6c1c649020874cd7fd8738003d62/dask-2026.1.1.tar.gz", hash = "sha256:12b1dbb0d6e92f287feb4076871600b2fba3a843d35ff214776ada5e9e7a1529", size = 10994732, upload-time = "2026-01-16T12:35:30.258Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e5/23/d39ccc4ed76222db31530b0a7d38876fdb7673e23f838e8d8f0ed4651a4f/dask-2026.1.2-py3-none-any.whl", hash = "sha256:46a0cf3b8d87f78a3d2e6b145aea4418a6d6d606fe6a16c79bd8ca2bb862bc91", size = 1482084, upload-time = "2026-01-30T21:04:18.363Z" },
+    { url = "https://files.pythonhosted.org/packages/e9/4b/9cc373120658a2516aa5f6dcdde631c95d714b876d29ad8f8e009d793f3f/dask-2026.1.1-py3-none-any.whl", hash = "sha256:146b0ef2918eb581e06139183a88801b4a8c52d7c37758a91f8c3b75c54b0e15", size = 1481492, upload-time = "2026-01-16T12:35:22.602Z" },
 ]
 
 [package.optional-dependencies]
@@ -514,18 +541,20 @@ complete = [
 
 [[package]]
 name = "dask-cuda"
-version = "0.18.0"
+version = "26.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "dask" },
-    { name = "distributed" },
-    { name = "numba" },
+    { name = "click" },
+    { name = "cuda-core" },
+    { name = "numba-cuda" },
     { name = "numpy" },
-    { name = "pynvml" },
+    { name = "nvidia-ml-py" },
+    { name = "pandas" },
+    { name = "rapids-dask-dependency" },
+    { name = "zict" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/68/dc/de6aa72da72b3a60477cf472b744ef550da27fe9bf6d74f77256cdb65779/dask-cuda-0.18.0.tar.gz", hash = "sha256:f5127667bbb6730e23e22016fb1a64f308d8e8455fa61993990e5d237df75396", size = 66395, upload-time = "2021-02-24T18:02:39.719Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/af/bc/86255af79f74d7e91fcc824eeb6299f46de3133b8e4095f06a1f44787c2d/dask_cuda-0.18.0-py3-none-any.whl", hash = "sha256:4e49cedba661eaed7416c3a08ec59b39703f94613b0cb9240955a0d241b217f2", size = 67577, upload-time = "2021-02-24T18:02:37.887Z" },
+    { url = "https://files.pythonhosted.org/packages/a1/a4/3654ae87d352d2af8926d4d87ca36050a3197bb63576f090f1ad6c4288bb/dask_cuda-26.2.0-py3-none-manylinux_2_28_aarch64.manylinux_2_28_x86_64.whl", hash = "sha256:0dc0c642a94fd6a0616890e14bc7c55844a92bd741dc78a9311b807821767f01", size = 160162, upload-time = "2026-02-05T17:20:31.563Z" },
 ]
 
 [[package]]
@@ -552,7 +581,7 @@ wheels = [
 
 [[package]]
 name = "distributed"
-version = "2026.1.2"
+version = "2026.1.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
@@ -571,9 +600,9 @@ dependencies = [
     { name = "urllib3" },
     { name = "zict" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/4e/75/b6e5b77229097ff03dd5ba6a07c77e2da87e7e991ccfef412549bba78746/distributed-2026.1.2.tar.gz", hash = "sha256:8333fa7a34151ed3b4cf1a03136fe1f1799eca706a5e47bdb63022c8795d853b", size = 2103721, upload-time = "2026-01-30T21:07:03.307Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/45/19/0c13efdffc55cb311594f66c1c8d36a3c4711e427c820155fb9c59138b5e/distributed-2026.1.1.tar.gz", hash = "sha256:3d2709a43912797df3c345af3bb333bbf1a386ec1e9e6a134e5f050521373dbd", size = 2102870, upload-time = "2026-01-16T12:34:58.258Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ad/14/0fe5889a83991ac29c93e6b2e121ad2afc3bff5f9327f34447d3068d8142/distributed-2026.1.2-py3-none-any.whl", hash = "sha256:30ccb5587351f50304f6f6e219ea91bc09d88401125779caa8be5253e9d3ecf2", size = 1009083, upload-time = "2026-01-30T21:07:01.363Z" },
+    { url = "https://files.pythonhosted.org/packages/b9/dc/6d709bcf8fed7611d8a510aeed23b0436cf6db5b61e63c8eb8451eb0d4d8/distributed-2026.1.1-py3-none-any.whl", hash = "sha256:506759b1ed88e45e12ba65e2a429de9911862db55d27dd8bb293c6268430374e", size = 1008417, upload-time = "2026-01-16T12:34:55.535Z" },
 ]
 
 [[package]]
@@ -1510,6 +1539,23 @@ wheels = [
 ]
 
 [[package]]
+name = "numba-cuda"
+version = "0.22.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "cuda-bindings" },
+    { name = "cuda-core" },
+    { name = "numba" },
+    { name = "packaging" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/aa/cd/9017506815047ee30ad404e3c469788676a6abeaaff8014d07a0180cdfbc/numba_cuda-0.22.2.tar.gz", hash = "sha256:e8c19bc1174dfc3596259381fa708f1c3397a618bdbbaa5d068bcc56af8fd921", size = 1340447, upload-time = "2025-12-19T01:08:57.73Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/63/80/71a7ecde9f4eb535cf7fce0ebe621528ac36202c11e5fa9d1416910a1d93/numba_cuda-0.22.2-cp312-cp312-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:34fab56da7da95f6342642f9702597e28246dfda0ec13da826d32dfdf889ed86", size = 1846950, upload-time = "2025-12-19T01:08:48.566Z" },
+    { url = "https://files.pythonhosted.org/packages/42/c5/f8771db9e643f1935f4bfe9f9c33c6cf425648103e3bc05659cd7356787c/numba_cuda-0.22.2-cp312-cp312-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:8d34d95cd5a352c1d9564503aecb49d940274e6ffb5dae44b78e4e4e47b8a9f5", size = 1845190, upload-time = "2025-12-19T01:08:50.317Z" },
+    { url = "https://files.pythonhosted.org/packages/1b/39/2f00be3b38fb2e87d4a3e74f24a602ca4bebf11f8e0221030237473b92d5/numba_cuda-0.22.2-cp312-cp312-win_amd64.whl", hash = "sha256:17a53af35f83e5857cf7045aee569f7aeadf8e0a48614a68a5191eaf8e7d5980", size = 1621266, upload-time = "2025-12-19T01:08:52.005Z" },
+]
+
+[[package]]
 name = "numcodecs"
 version = "0.16.5"
 source = { registry = "https://pypi.org/simple" }
@@ -1963,18 +2009,6 @@ wheels = [
 ]
 
 [[package]]
-name = "pynvml"
-version = "13.0.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "nvidia-ml-py" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/5c/57/da7dc63a79f59e082e26a66ac02d87d69ea316b35b35b7a00d82f3ce3d2f/pynvml-13.0.1.tar.gz", hash = "sha256:1245991d9db786b4d2f277ce66869bd58f38ac654e38c9397d18f243c8f6e48f", size = 35226, upload-time = "2025-09-05T20:33:25.377Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/d7/4a/cac76c174bb439a0c46c9a4413fcbea5c6cabfb01879f7bbdb9fdfaed76c/pynvml-13.0.1-py3-none-any.whl", hash = "sha256:e2b20e0a501eeec951e2455b7ab444759cf048e0e13a57b08049fa2775266aa8", size = 28810, upload-time = "2025-09-05T20:33:24.13Z" },
-]
-
-[[package]]
 name = "pyopengl"
 version = "3.1.10"
 source = { registry = "https://pypi.org/simple" }
@@ -2180,6 +2214,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/70/01/392eba83c8e47b946b929d7c46e0f04b35e9671f8bb6fc36b6f7945b4de8/qtpy-2.4.3.tar.gz", hash = "sha256:db744f7832e6d3da90568ba6ccbca3ee2b3b4a890c3d6fbbc63142f6e4cdf5bb", size = 66982, upload-time = "2025-02-11T15:09:25.759Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/69/76/37c0ccd5ab968a6a438f9c623aeecc84c202ab2fabc6a8fd927580c15b5a/QtPy-2.4.3-py3-none-any.whl", hash = "sha256:72095afe13673e017946cc258b8d5da43314197b741ed2890e563cf384b51aa1", size = 95045, upload-time = "2025-02-11T15:09:24.162Z" },
+]
+
+[[package]]
+name = "rapids-dask-dependency"
+version = "26.2.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "dask" },
+    { name = "distributed" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/35/e3/2a027db7b67bf4b98e80744521ed729b389e9e2d9e261021303c4ae6dbc2/rapids_dask_dependency-26.2.0-py3-none-any.whl", hash = "sha256:3ba85f7b0ad3754e1d94cd6f6a4ca3cc5695529cf03ea7dc110a74b042403e00", size = 10276, upload-time = "2026-02-07T02:29:41.757Z" },
 ]
 
 [[package]]

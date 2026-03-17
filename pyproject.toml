@@ -7,7 +7,7 @@ requires-python = ">=3.12,<3.13"
 readme = "README.md"
 license = "GPL-3.0-or-later"
 dependencies = [
-    "dask[complete]>=2026.1.2",
+    "dask[complete]>=2026.1.1",
     "ipykernel>=7.2.0",
     "jinja2>=3.1.6",
     "napari[all]>=0.6.5",
@@ -28,27 +28,28 @@ Homepage = "https://tlee08.github.io/cellcounter"
 Repository = "https://github.com/tlee08/cellcounter"
 Documentation = "https://tlee08.github.io/cellcounter"
 
-[dependency-groups]
-dev = [
-    "mkdocs-material>=9.6.14",
-    "mkdocstrings-python>=1.16.12",
-    "pymdown-extensions>=10.16",
-    "pytest>=8.4.1",
-    "ruff>=0.12.1",
-]
+[project.optional-dependencies]
 elastix = [
     "simpleitk-simpleelastix>=3.0.0a1.post183",
 ]
 gpu = [
     "cupy-cuda13x>=14.0.1",
-    "dask-cuda>=0.18.0",
+    "dask-cuda>=26.2.0",
+]
+
+[dependency-groups]
+dev = [
+    "mkdocs-material>=9.7.5",
+    "mkdocstrings-python>=2.0.3",
+    "pymdown-extensions>=10.21",
+    "pytest>=9.0.2",
+    "ruff>=0.15.6",
 ]
 
 [project.scripts]
 cellcounter-init = "cellcounter.scripts.init:main"
 cellcounter-project-gui = "cellcounter.scripts.project_gui:run_script"
 cellcounter-make-project = "cellcounter.scripts.make_project:main"
-
 
 [build-system]
 requires = ["uv_build>=0.10.11,<0.11.0"]
