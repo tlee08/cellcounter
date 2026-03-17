@@ -33,20 +33,22 @@ And follow the "CUDA Toolkit Installer" instructions.
 nvcc --version
 ```
 
-Install uv (to make a python venv).
-Instructions from [here](https://docs.astral.sh/uv/getting-started/installation/)
-
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
-
 ## Install
 
 ```bash
-# Install dependencies
-uv sync --all-groups
-# 
+# Install conda env
+conda env create -f conda_env.yaml
+# Load atlas
+uv run init
 ```
 
 ## Using
 
+Make template
+
+```bash
+cd <your/project/folder>
+conda activate
+cellcounter-make-project
+# Edit this file for your analysis
+```
