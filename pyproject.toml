@@ -46,6 +46,11 @@ dev = [
     "ruff>=0.15.6",
 ]
 
+[tool.uv]
+exclude-dependencies = [
+    "pynvml"
+]
+
 [project.scripts]
 cellcounter-init = "cellcounter.scripts.init:main"
 cellcounter-project-gui = "cellcounter.scripts.project_gui:run_script"
