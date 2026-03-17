@@ -7,36 +7,26 @@ requires-python = ">=3.12,<3.13"
 readme = "README.md"
 license = "GPL-3.0-or-later"
 dependencies = [
-    "dask[complete]>=2024.11.2",
-    "ipykernel>=6.29.5",
+    "dask[complete]>=2026.1.2",
+    "ipykernel>=7.2.0",
     "jinja2>=3.1.6",
-    "napari[all]>=0.6.1",
+    "napari[all]>=0.6.5",
     "natsort>=8.4.0",
-    "nibabel>=5.3.2",
-    "numpy>=2.2.6",
-    "pandas>=2.3.0",
-    "pydantic>=2.11.7",
-    "scikit-image>=0.25.2",
+    "nibabel>=5.4.2",
+    "numpy>=2.4.3",
+    "pandas>=2.3.3",
+    "pydantic>=2.12.5",
+    "scikit-image>=0.26.0",
     "seaborn>=0.13.2",
-    "streamlit>=1.46.1",
-    "tifffile>=2025.6.11",
-    "zarr>=3.0.8",
+    "streamlit>=1.55.0",
+    "tifffile>=2026.3.3",
+    "zarr>=3.1.5",
 ]
-
-[project.optional-dependencies]
-# gpu = ["dask-cuda>=24.12.0,<25", "cupy-cuda12x>=13.4.1"]
-gpu = ["dask-cuda>=24.12.0,<25"]
-elastix = ["simpleitk-simpleelastix>=2.4.0.dev53,<3"]
 
 [project.urls]
 Homepage = "https://tlee08.github.io/cellcounter"
 Repository = "https://github.com/tlee08/cellcounter"
 Documentation = "https://tlee08.github.io/cellcounter"
-
-[project.scripts]
-cellcounter_init = "cellcounter.scripts.init:main"
-cellcounter_project_gui = "cellcounter.scripts.project_gui:run_script"
-cellcounter_make_project = "cellcounter.scripts.make_project:main"
 
 [dependency-groups]
 dev = [
@@ -46,13 +36,20 @@ dev = [
     "pytest>=8.4.1",
     "ruff>=0.12.1",
 ]
+elastix = [
+    "simpleitk-simpleelastix>=3.0.0a1.post183",
+]
+gpu = [
+    "cupy-cuda13x>=14.0.1",
+    "dask-cuda>=0.18.0",
+]
+
+[project.scripts]
+cellcounter-init = "cellcounter.scripts.init:main"
+cellcounter-project-gui = "cellcounter.scripts.project_gui:run_script"
+cellcounter-make-project = "cellcounter.scripts.make_project:main"
+
 
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[tool.ruff]
-line-length = 120
-
-[tool.ruff.format]
-docstring-code-format = true
+requires = ["uv_build>=0.10.11,<0.11.0"]
+build-backend = "uv_build"

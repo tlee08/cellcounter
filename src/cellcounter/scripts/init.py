@@ -20,7 +20,9 @@ def main() -> None:
     os.makedirs(CACHE_DIR, exist_ok=True)
 
     # Assert whether atlas resources already exist
-    assert not os.path.exists(ATLAS_DIR), f"Atlas resources already exist at {ATLAS_DIR}!"
+    assert not os.path.exists(ATLAS_DIR), (
+        f"Atlas resources already exist at {ATLAS_DIR}!"
+    )
 
     # Running
     for cmd_str in [
