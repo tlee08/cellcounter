@@ -89,7 +89,7 @@ class ArrIOFuncs:
         nib.Nifti1Image(arr, None).to_filename(dst_fp)
 
     @classmethod
-    def read_niftygz(cls, fp: str) -> np.NDArray:
+    def read_niftygz(cls, fp: str) -> np.typing.NDArray:
         img = nib.load(fp)
         return np.array(img.dataobj)
 
