@@ -122,7 +122,6 @@ dask.config.set(
         "temporary-directory": CACHE_DIR,
         # Prevent task fusion (which can cause large memory blowouts)
         "optimization.fuse.active": False,
-        # Prevent task fusion (which can cause large memory blowouts)
         "distributed.worker.memory.target": False,
         "distributed.worker.memory.spill": False,
         "distributed.worker.memory.pause": 0.80,
