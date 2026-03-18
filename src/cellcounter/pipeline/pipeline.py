@@ -59,7 +59,7 @@ logger = init_logger_file(__name__)
 if DASK_CUDA_ENABLED:
     from dask_cuda import LocalCUDACluster
 else:
-    LocalCUDACluster = lambda: LocalCluster(n_workers=1, threads_per_worker=1)
+    LocalCUDACluster = lambda: LocalCluster(n_workers=1, threads_per_worker=1)  # noqa: E731
     logger.warning(
         "Warning Dask-Cuda functionality not installed.\n"
         "Using single GPU functionality instead (1 worker)\n"
@@ -70,7 +70,7 @@ if package_is_importable("cupy"):
     from cellcounter.funcs.gpu_cellc_funcs import GpuCellcFuncs
 else:
     # TODO: allow more flexibility in number of workers here
-    LocalCUDACluster = lambda: LocalCluster(n_workers=2, threads_per_worker=1)
+    LocalCUDACluster = lambda: LocalCluster(n_workers=2, threads_per_worker=1)  # noqa: E731
     GpuCellcFuncs = CpuCellcFuncs
     logger.warning(
         "Warning GPU functionality not installed.\n"
@@ -107,11 +107,16 @@ class Pipeline:
 
     @classmethod
     def heavy_cluster(cls):
-        return LocalCluster(n_workers=cls.heavy_n_workers, threads_per_worker=cls.heavy_threads_per_worker)
+        return LocalCluster(
+            n_workers=cls.heavy_n_workers,
+            threads_per_worker=cls.heavy_threads_per_worker,
+        )
 
     @classmethod
     def busy_cluster(cls):
-        return LocalCluster(n_workers=cls.busy_n_workers, threads_per_worker=cls.busy_threads_per_worker)
+        return LocalCluster(
+            n_workers=cls.busy_n_workers, threads_per_worker=cls.busy_threads_per_worker
+        )
 
     @classmethod
     def gpu_cluster(cls):
@@ -124,7 +129,8 @@ class Pipeline:
             cls.cellc_funcs = GpuCellcFuncs
         else:
             cls._gpu_cluster = lambda: LocalCluster(
-                n_workers=cls.heavy_n_workers, threads_per_worker=cls.heavy_threads_per_worker
+                n_workers=cls.heavy_n_workers,
+                threads_per_worker=cls.heavy_threads_per_worker,
             )
             cls.cellc_funcs = CpuCellcFuncs
 
@@ -134,7 +140,13 @@ class Pipeline:
 
     @classmethod
     def get_imgs_ls(cls, imgs_dir: str) -> list:
-        return natsorted([fp for fp in os.listdir(imgs_dir) if os.path.isdir(os.path.join(imgs_dir, fp))])
+        return natsorted(
+            [
+                fp
+                for fp in os.listdir(imgs_dir)
+                if os.path.isdir(os.path.join(imgs_dir, fp))
+            ]
+        )
 
     ###################################################################################################
     # UPDATE CONFIGS
@@ -169,7 +181,9 @@ class Pipeline:
             logger.debug(f"kwargs is not empty. They are: {kwargs}")
             configs_new = configs.model_validate(configs.model_copy(update=kwargs))
             if configs_new != configs:
-                logger.debug("New configs are different from old configs. Overwriting to file.")
+                logger.debug(
+                    "New configs are different from old configs. Overwriting to file."
+                )
                 write_json(pfm.config_params, configs_new.model_dump())
         logger.debug("Returning the configs file")
         return configs
@@ -206,13 +220,21 @@ class Pipeline:
         logger.debug("Reading config params")
         configs = ConfigParamsModel.read_fp(pfm.config_params)
         logger.debug("Making zarr from tiff file(s)")
-        with cluster_process(LocalCluster(n_workers=1, threads_per_worker=6)):  # TODO: is this faster without cluster?
+        with cluster_process(
+            LocalCluster(n_workers=1, threads_per_worker=6)
+        ):  # TODO: is this faster without cluster?
             if os.path.isdir(in_fp):
                 logger.debug(f"in_fp ({in_fp}) is a directory")
                 logger.debug("Making zarr from tiff file stack in directory")
                 ArrIOFuncs.tiffs2zarr(
                     in_fp_ls=tuple(
-                        natsorted((os.path.join(in_fp, i) for i in os.listdir(in_fp) if re.search(r".tif$", i)))
+                        natsorted(
+                            (
+                                os.path.join(in_fp, i)
+                                for i in os.listdir(in_fp)
+                                if re.search(r".tif$", i)
+                            )
+                        )
                     ),
                     out_fp=pfm.raw,
                     chunks=configs.zarr_chunksize,
@@ -280,11 +302,15 @@ class Pipeline:
             return logger.warning(file_exists_msg(pfm.downsmpl1))
         # Getting configs
         configs = ConfigParamsModel.read_fp(pfm.config_params)
-        with cluster_process(cls.busy_cluster()):  # TODO:  is this faster without cluster?
+        with cluster_process(
+            cls.busy_cluster()
+        ):  # TODO:  is this faster without cluster?
             # Reading
             raw_arr = da.from_zarr(pfm.raw)
             # Rough downsample
-            downsmpl1_arr = RegFuncs.downsmpl_rough(raw_arr, configs.z_rough, configs.y_rough, configs.x_rough)
+            downsmpl1_arr = RegFuncs.downsmpl_rough(
+                raw_arr, configs.z_rough, configs.y_rough, configs.x_rough
+            )
             # Computing (from dask array)
             downsmpl1_arr = downsmpl1_arr.compute()
             # Saving
@@ -303,7 +329,9 @@ class Pipeline:
         # Reading
         downsmpl1_arr = tifffile.imread(pfm.downsmpl1)
         # Fine downsample
-        downsmpl2_arr = RegFuncs.downsmpl_fine(downsmpl1_arr, configs.z_fine, configs.y_fine, configs.x_fine)
+        downsmpl2_arr = RegFuncs.downsmpl_fine(
+            downsmpl1_arr, configs.z_fine, configs.y_fine, configs.x_fine
+        )
         # Saving
         ArrIOFuncs.write_tiff(downsmpl2_arr, pfm.downsmpl2)
 
@@ -429,17 +457,25 @@ class Pipeline:
 
         # Make outline img (1 for in, 2 for out)
         # TODO: convert to return np.array and save out-of-function
-        VisualCheckFuncsTiff.coords2points(pd.DataFrame(outline_df[outline_df.is_in == 1]), s, pfm.mask_outline)
+        VisualCheckFuncsTiff.coords2points(
+            pd.DataFrame(outline_df[outline_df.is_in == 1]), s, pfm.mask_outline
+        )
         in_arr = tifffile.imread(pfm.mask_outline)
-        VisualCheckFuncsTiff.coords2points(pd.DataFrame(outline_df[outline_df.is_in == 0]), s, pfm.mask_outline)
+        VisualCheckFuncsTiff.coords2points(
+            pd.DataFrame(outline_df[outline_df.is_in == 0]), s, pfm.mask_outline
+        )
         out_arr = tifffile.imread(pfm.mask_outline)
         ArrIOFuncs.write_tiff(in_arr + out_arr * 2, pfm.mask_outline)
 
         # Fill in outline to recreate mask (not perfect)
         mask_reg_arr = MaskFuncs.fill_outline(outline_df, s)
         # Opening (removes FP) and closing (fills FN)
-        mask_reg_arr = ndimage.binary_closing(mask_reg_arr, iterations=2).astype(np.uint8)
-        mask_reg_arr = ndimage.binary_opening(mask_reg_arr, iterations=2).astype(np.uint8)
+        mask_reg_arr = ndimage.binary_closing(mask_reg_arr, iterations=2).astype(
+            np.uint8
+        )
+        mask_reg_arr = ndimage.binary_opening(mask_reg_arr, iterations=2).astype(
+            np.uint8
+        )
         # Saving
         ArrIOFuncs.write_tiff(mask_reg_arr, pfm.mask_reg)
 
@@ -455,7 +491,9 @@ class Pipeline:
         annot_orig_arr = tifffile.imread(rfm.annot)
         # Getting the annotation name for every cell (zyx coord)
         mask_df = pd.merge(
-            left=MaskFuncs.mask2region_counts(np.full(annot_orig_arr.shape, 1), annot_orig_arr),
+            left=MaskFuncs.mask2region_counts(
+                np.full(annot_orig_arr.shape, 1), annot_orig_arr
+            ),
             right=MaskFuncs.mask2region_counts(mask_reg_arr, annot_arr),
             how="left",
             left_index=True,
@@ -468,7 +506,8 @@ class Pipeline:
         mask_df = MapFuncs.combine_nested_regions(mask_df, annot_df)
         # Calculating proportion of mask volume in each region
         mask_df[MaskColumns.VOLUME_PROP.value] = (
-            mask_df[MaskColumns.VOLUME_MASK.value] / mask_df[MaskColumns.VOLUME_ANNOT.value]
+            mask_df[MaskColumns.VOLUME_MASK.value]
+            / mask_df[MaskColumns.VOLUME_ANNOT.value]
         )
         # Selecting and ordering relevant columns
         mask_df = pd.DataFrame(mask_df[[*ANNOT_COLUMNS_FINAL, *enum2list(MaskColumns)]])
@@ -490,7 +529,9 @@ class Pipeline:
         pfm_tuning = ProjFpModelTuning(proj_dir)
         logger.debug("Reading config params")
         configs = ConfigParamsModel.read_fp(pfm.config_params)
-        with cluster_process(cls.busy_cluster()):  # TODO:  is this faster without cluster?
+        with cluster_process(
+            cls.busy_cluster()
+        ):  # TODO:  is this faster without cluster?
             logger.debug("Reading raw zarr")
             raw_arr = da.from_zarr(pfm.raw)
             logger.debug("Cropping raw zarr")
@@ -512,7 +553,9 @@ class Pipeline:
     ###################################################################################################
 
     @classmethod
-    def img_overlap(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
+    def img_overlap(
+        cls, proj_dir: str, overwrite: bool = False, tuning: bool = False
+    ) -> None:
         logger = init_logger_file()
         pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
         if not overwrite:
@@ -522,13 +565,17 @@ class Pipeline:
         # Getting configs
         configs = ConfigParamsModel.read_fp(pfm.config_params)
         # Making overlap image
-        with cluster_process(cls.heavy_cluster()):  # TODO: is this faster without cluster?
+        with cluster_process(
+            cls.heavy_cluster()
+        ):  # TODO: is this faster without cluster?
             raw_arr = da.from_zarr(pfm.raw, chunks=configs.zarr_chunksize)
             overlap_arr = da_overlap(raw_arr, d=configs.overlap_depth)
             overlap_arr = disk_cache(overlap_arr, pfm.overlap)
 
     @classmethod
-    def cellc1(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
+    def cellc1(
+        cls, proj_dir: str, overwrite: bool = False, tuning: bool = False
+    ) -> None:
         """
         Cell counting pipeline - Step 1: Top-hat filter (background subtraction).
 
@@ -562,7 +609,9 @@ class Pipeline:
             bgrm_arr = disk_cache(bgrm_arr, pfm.bgrm)
 
     @classmethod
-    def cellc2(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
+    def cellc2(
+        cls, proj_dir: str, overwrite: bool = False, tuning: bool = False
+    ) -> None:
         """
         Cell counting pipeline - Step 2: Difference of Gaussians (edge detection).
 
@@ -597,7 +646,9 @@ class Pipeline:
             dog_arr = disk_cache(dog_arr, pfm.dog)
 
     @classmethod
-    def cellc3(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
+    def cellc3(
+        cls, proj_dir: str, overwrite: bool = False, tuning: bool = False
+    ) -> None:
         """
         Cell counting pipeline - Step 3: Gaussian subtraction with large sigma for adaptive thresholding.
 
@@ -631,7 +682,9 @@ class Pipeline:
             adaptv_arr = disk_cache(adaptv_arr, pfm.adaptv)
 
     @classmethod
-    def cellc4(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
+    def cellc4(
+        cls, proj_dir: str, overwrite: bool = False, tuning: bool = False
+    ) -> None:
         """
         Cell counting pipeline - Step 4: Manual thresholding (or mean thresholding with standard deviation offset).
 
@@ -668,7 +721,9 @@ class Pipeline:
             threshd_arr = disk_cache(threshd_arr, pfm.threshd)
 
     @classmethod
-    def cellc5(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
+    def cellc5(
+        cls, proj_dir: str, overwrite: bool = False, tuning: bool = False
+    ) -> None:
         """
         Cell counting pipeline - Step 5: Get object sizes.
 
@@ -699,7 +754,9 @@ class Pipeline:
             threshd_volumes_arr = disk_cache(threshd_volumes_arr, pfm.threshd_volumes)
 
     @classmethod
-    def cellc6(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
+    def cellc6(
+        cls, proj_dir: str, overwrite: bool = False, tuning: bool = False
+    ) -> None:
         """
         Cell counting pipeline - Step 6: Filter out large objects (likely outlines, not cells).
 
@@ -733,7 +790,9 @@ class Pipeline:
             threshd_filt_arr = disk_cache(threshd_filt_arr, pfm.threshd_filt)
 
     @classmethod
-    def cellc7(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
+    def cellc7(
+        cls, proj_dir: str, overwrite: bool = False, tuning: bool = False
+    ) -> None:
         """
         Cell counting pipeline - Step 7: Get maxima mask of raw image with thresholded-filtered mask.
 
@@ -768,7 +827,9 @@ class Pipeline:
             maxima_arr = disk_cache(maxima_arr, pfm.maxima)
 
     @classmethod
-    def cellc8(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
+    def cellc8(
+        cls, proj_dir: str, overwrite: bool = False, tuning: bool = False
+    ) -> None:
         """
         Cell counting pipeline - Step 8: Convert maxima mask to uniquely labelled points.
 
@@ -798,7 +859,9 @@ class Pipeline:
             maxima_labels_arr = disk_cache(maxima_labels_arr, pfm.maxima_labels)
 
     @classmethod
-    def cellc9(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
+    def cellc9(
+        cls, proj_dir: str, overwrite: bool = False, tuning: bool = False
+    ) -> None:
         """
         Cell counting pipeline - Step 9: Watershed segmentation labels with maxima labels and thresholded-filtered mask.
 
@@ -831,7 +894,9 @@ class Pipeline:
             wshed_labels_arr = disk_cache(wshed_labels_arr, pfm.wshed_labels)
 
     @classmethod
-    def cellc10(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
+    def cellc10(
+        cls, proj_dir: str, overwrite: bool = False, tuning: bool = False
+    ) -> None:
         """
         Cell counting pipeline - Step 10
 
@@ -854,7 +919,9 @@ class Pipeline:
             wshed_volumes_arr = disk_cache(wshed_volumes_arr, pfm.wshed_volumes)
 
     @classmethod
-    def cellc11(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
+    def cellc11(
+        cls, proj_dir: str, overwrite: bool = False, tuning: bool = False
+    ) -> None:
         """
         Cell counting pipeline - Step 11
 
@@ -883,7 +950,9 @@ class Pipeline:
             wshed_filt_arr = disk_cache(wshed_filt_arr, pfm.wshed_filt)
 
     @classmethod
-    def cellc12(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
+    def cellc12(
+        cls, proj_dir: str, overwrite: bool = False, tuning: bool = False
+    ) -> None:
         """
         Cell counting pipeline - Step 12
 
@@ -936,7 +1005,9 @@ class Pipeline:
             silent_remove(f"{pfm.cells_raw_df}_dask.parquet")
 
     @classmethod
-    def cellc12_old(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
+    def cellc12_old(
+        cls, proj_dir: str, overwrite: bool = False, tuning: bool = False
+    ) -> None:
         """
         Cell counting pipeline - Step 11
 
@@ -990,7 +1061,9 @@ class Pipeline:
     ###################################################################################################
 
     @classmethod
-    def transform_coords(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
+    def transform_coords(
+        cls, proj_dir: str, overwrite: bool = False, tuning: bool = False
+    ) -> None:
         """
         Transform cell coordinates to reference atlas space and save as a parquet file.
 
@@ -1023,15 +1096,23 @@ class Pipeline:
             cells_df = cells_df[enum2list(Coords)]
             # Scaling to resampled rough space
             # NOTE: this downsampling uses slicing so must be computed differently
-            cells_df = cells_df / np.array((configs.z_rough, configs.y_rough, configs.x_rough))
+            cells_df = cells_df / np.array(
+                (configs.z_rough, configs.y_rough, configs.x_rough)
+            )
             # Scaling to resampled space
-            cells_df = cells_df * np.array((configs.z_fine, configs.y_fine, configs.x_fine))
+            cells_df = cells_df * np.array(
+                (configs.z_fine, configs.y_fine, configs.x_fine)
+            )
             # Trimming/offsetting to sliced space
-            cells_df = cells_df - np.array([s[0] or 0 for s in (configs.z_trim, configs.y_trim, configs.x_trim)])
+            cells_df = cells_df - np.array(
+                [s[0] or 0 for s in (configs.z_trim, configs.y_trim, configs.x_trim)]
+            )
             # Converting back to DataFrame
             cells_df = pd.DataFrame(cells_df, columns=enum2list(Coords))
 
-            cells_trfm_df = ElastixFuncs.transformation_coords(cells_df, pfm.ref, pfm.regresult)
+            cells_trfm_df = ElastixFuncs.transformation_coords(
+                cells_df, pfm.ref, pfm.regresult
+            )
             # NOTE: Using pandas parquet. does not work with dask yet
             # cells_df = dd.from_pandas(cells_df, npartitions=1)
             # Fitting resampled space to atlas image with Transformix (from Elastix registration step)
@@ -1044,7 +1125,9 @@ class Pipeline:
             write_parquet(cells_trfm_df, pfm.cells_trfm_df)
 
     @classmethod
-    def cell_mapping(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
+    def cell_mapping(
+        cls, proj_dir: str, overwrite: bool = False, tuning: bool = False
+    ) -> None:
         """
         Map transformed cell coordinates to region IDs and names in the reference atlas.
 
@@ -1119,7 +1202,9 @@ class Pipeline:
             write_parquet(cells_df, pfm.cells_df)
 
     @classmethod
-    def group_cells(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
+    def group_cells(
+        cls, proj_dir: str, overwrite: bool = False, tuning: bool = False
+    ) -> None:
         """
         Group cells by region name and aggregate total cell volume and cell count for each region.
 
@@ -1147,7 +1232,9 @@ class Pipeline:
             # Sanitising (removing smb columns)
             cells_df = sanitise_smb_df(cells_df)
             # Grouping cells by region name and aggregating on given mappings
-            cells_agg_df = cells_df.groupby(AnnotColumns.ID.value).agg(CELL_AGG_MAPPINGS)
+            cells_agg_df = cells_df.groupby(AnnotColumns.ID.value).agg(
+                CELL_AGG_MAPPINGS
+            )
             cells_agg_df.columns = list(CELL_AGG_MAPPINGS.keys())
             # Reading annotation mappings dataframe
             # Making df of region names and their parent region names
@@ -1156,7 +1243,8 @@ class Pipeline:
             cells_agg_df = MapFuncs.combine_nested_regions(cells_agg_df, annot_df)
             # Calculating integrated average intensity (sum_intensity / volume)
             cells_agg_df[CellColumns.IOV.value] = (
-                cells_agg_df[CellColumns.SUM_INTENSITY.value] / cells_agg_df[CellColumns.VOLUME.value]
+                cells_agg_df[CellColumns.SUM_INTENSITY.value]
+                / cells_agg_df[CellColumns.VOLUME.value]
             )
             # Selecting and ordering relevant columns
             cells_agg_df = cells_agg_df[[*ANNOT_COLUMNS_FINAL, *enum2list(CellColumns)]]
@@ -1166,7 +1254,9 @@ class Pipeline:
             write_parquet(cells_agg_df, pfm.cells_agg_df)
 
     @classmethod
-    def cells2csv(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
+    def cells2csv(
+        cls, proj_dir: str, overwrite: bool = False, tuning: bool = False
+    ) -> None:
         """
         Save the aggregated cell dataframe to a CSV file.
 
@@ -1212,7 +1302,9 @@ class Pipeline:
     ###################################################################################################
 
     @classmethod
-    def run_pipeline(cls, in_fp: str, proj_dir: str, overwrite: bool = False, **kwargs) -> None:
+    def run_pipeline(
+        cls, in_fp: str, proj_dir: str, overwrite: bool = False, **kwargs
+    ) -> None:
         """
         Running all pipelines in order.
         """
