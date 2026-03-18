@@ -120,6 +120,7 @@ dask.config.set(
         # "distributed.worker.memory.pause": False,
         # "distributed.worker.memory.terminate": False,
         "temporary-directory": CACHE_DIR,
+        "array.rechunk.method": "p2p",
         # Prevent task fusion (which can cause large memory blowouts)
         "optimization.fuse.active": False,
         "distributed.worker.memory.target": False,
