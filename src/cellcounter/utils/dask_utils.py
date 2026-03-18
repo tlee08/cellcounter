@@ -117,9 +117,13 @@ def coords2block(df: pd.DataFrame, block_info: dict) -> pd.DataFrame:
 
 
 def disk_cache(arr: da.Array, fp):
+    # Make parent dir
     os.makedirs(os.path.dirname(fp), exist_ok=True)
+    # Remove existing file (if there) - otherwise error thrown by dask
     silent_remove(fp)
+    # Write arr to disk as zarr
     arr.to_zarr(fp, mode="w")
+    # Return arr
     return da.from_zarr(fp)
 
 

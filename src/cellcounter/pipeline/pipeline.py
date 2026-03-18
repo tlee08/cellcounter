@@ -1302,16 +1302,17 @@ class Pipeline:
     #############################################
 
     @classmethod
-    def rechunk(cls, proj_dir: str, in_fp: str, out_fp: str) -> None:
+    def rechunk(cls, proj_dir: str, src_fp: str, dst_fp: str) -> None:
         """Rechunk a zarr file based on the project config's chunksize."""
         pfm = ProjFpModel(proj_dir)
         configs = ConfigParamsModel.read_fp(pfm.config_params)
         with cluster_process(cls.busy_cluster()):
-            ArrIOFuncs.rechunk(
-                src_fp=in_fp,
-                dst_fp=out_fp,
-                zarr_chunksize=configs.zarr_chunksize,
-            )
+            # Read
+            zarr_arr = da.from_zarr(src_fp)
+            # Rechunk
+            zarr_rechunked = zarr_arr.rechunk(configs.zarr_chunksize)
+            # Write
+            disk_cache(zarr_rechunked, dst_fp)
 
     #############################################
     # ALL PIPELINE FUNCTION

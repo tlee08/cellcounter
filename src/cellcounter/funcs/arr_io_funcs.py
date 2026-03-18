@@ -92,19 +92,3 @@ class ArrIOFuncs:
     def read_niftygz(cls, fp: str) -> np.typing.NDArray:
         img = nib.load(fp)
         return np.array(img.dataobj)
-
-    #############################################
-    # MISC - RECHUNK
-    #############################################
-
-    @classmethod
-    def rechunk(
-        cls, src_fp: str, dst_fp: str, zarr_chunksize: tuple[int, int, int]
-    ) -> None:
-        # Read
-        zarr_arr = da.from_zarr(src_fp)
-        # Rechunk
-        zarr_rechunked = zarr_arr.rechunk(zarr_chunksize)
-        # Write
-        silent_remove(dst_fp)
-        zarr_rechunked.to_zarr(dst_fp, mode="w")
