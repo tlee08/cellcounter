@@ -16,12 +16,12 @@ from cellcounter.constants import (
     CELL_AGG_MAPPINGS,
     DASK_CUDA_ENABLED,
     ELASTIX_ENABLED,
+    GPU_ENABLED,
     TRFM,
     AnnotColumns,
     CellColumns,
     Coords,
     MaskColumns,
-    package_is_importable,
 )
 from cellcounter.funcs.arr_io_funcs import ArrIOFuncs
 from cellcounter.funcs.cpu_cellc_funcs import CpuCellcFuncs
@@ -66,7 +66,7 @@ else:
         "Dask-Cuda currently only available on Linux"
     )
 # Optional dependency: gpu
-if package_is_importable("cupy"):
+if GPU_ENABLED:
     from cellcounter.funcs.gpu_cellc_funcs import GpuCellcFuncs
 else:
     # TODO: allow more flexibility in number of workers here
