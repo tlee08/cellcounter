@@ -13,34 +13,34 @@ from cellcounter.utils.io_utils import silent_remove
 
 
 class ArrIOFuncs:
-    #####################################################################
+    #############################################
     # REGULAR IO
-    #####################################################################
+    #############################################
 
     @classmethod
-    def read_tiff(cls, fp: str) -> np.ndarray:
-        arr = tifffile.imread(fp)
+    def read_tiff(cls, src_fp: str) -> np.ndarray:
+        arr = tifffile.imread(src_fp)
         for i in np.arange(len(arr.shape)):
             arr = np.squeeze(arr)
         return arr
 
     @classmethod
-    def write_tiff(cls, arr: np.ndarray, fp: str) -> None:
-        os.makedirs(os.path.dirname(fp), exist_ok=True)
-        tifffile.imwrite(fp, arr)
+    def write_tiff(cls, arr: np.ndarray, dst_fp: str) -> None:
+        os.makedirs(os.path.dirname(dst_fp), exist_ok=True)
+        tifffile.imwrite(dst_fp, arr)
 
-    #####################################################################
+    #############################################
     # CONVERSIONS
-    #####################################################################
+    #############################################
 
     @classmethod
     def btiff2zarr(
-        cls, in_fp: str, out_fp: str, chunks: tuple[int, ...] = PROC_CHUNKS
+        cls, src_fp: str, dst_fp: str, chunks: tuple[int, ...] = PROC_CHUNKS
     ) -> None:
         # To intermediate tiff
-        mmap_arr = tifffile.memmap(in_fp)
+        mmap_arr = tifffile.memmap(src_fp)
         zarr_arr = zarr.open(
-            f"{out_fp}_tmp.zarr",
+            f"{dst_fp}_tmp.zarr",
             mode="w",
             shape=mmap_arr.shape,
             dtype=mmap_arr.dtype,
@@ -48,25 +48,25 @@ class ArrIOFuncs:
         )
         zarr_arr[:] = mmap_arr
         # To final dask tiff
-        zarr_arr = da.from_zarr(f"{out_fp}_tmp.zarr")
-        silent_remove(out_fp)
-        zarr_arr.to_zarr(out_fp, mode="w")
+        zarr_arr = da.from_zarr(f"{dst_fp}_tmp.zarr")
+        silent_remove(dst_fp)
+        zarr_arr.to_zarr(dst_fp, mode="w")
         # Remove intermediate
-        silent_remove(f"{out_fp}_tmp.zarr")
+        silent_remove(f"{dst_fp}_tmp.zarr")
 
     @classmethod
     def tiffs2zarr(
         cls,
-        in_fp_ls: tuple[str, ...],
-        out_fp: str,
+        src_fp_ls: tuple[str, ...],
+        dst_fp: str,
         chunks: tuple[int, ...] = PROC_CHUNKS,
     ) -> None:
         # Getting shape and dtype
-        arr0 = cls.read_tiff(in_fp_ls[0])
-        shape = (len(in_fp_ls), *arr0.shape)
+        arr0 = cls.read_tiff(src_fp_ls[0])
+        shape = (len(src_fp_ls), *arr0.shape)
         dtype = arr0.dtype
         # Getting list of dask delayed tiffs
-        tiffs_ls = [dask.delayed(cls.read_tiff)(i) for i in in_fp_ls]
+        tiffs_ls = [dask.delayed(cls.read_tiff)(i) for i in src_fp_ls]
         # Getting list of dask array tiffs and rechunking each (in prep later rechunking)
         tiffs_ls = [
             da.from_delayed(i, dtype=dtype, shape=shape[1:]).rechunk(chunks[1:])
@@ -75,20 +75,36 @@ class ArrIOFuncs:
         # Stacking tiffs and rechunking
         arr = da.stack(tiffs_ls, axis=0).rechunk(chunks)
         # Saving to zarr
-        silent_remove(out_fp)
-        arr.to_zarr(out_fp, mode="w")
+        silent_remove(dst_fp)
+        arr.to_zarr(dst_fp, mode="w")
 
     @classmethod
-    def zarr2tiff(cls, in_fp: str, out_fp: str) -> None:
-        arr = da.from_zarr(in_fp)
-        cls.write_tiff(arr, out_fp)
+    def zarr2tiff(cls, src_fp: str, dst_fp: str) -> None:
+        arr = da.from_zarr(src_fp)
+        cls.write_tiff(arr, dst_fp)
 
     @classmethod
-    def btiff2niftygz(cls, in_fp: str, out_fp: str):
-        arr = tifffile.imread(in_fp)
-        nib.Nifti1Image(arr, None).to_filename(out_fp)
+    def btiff2niftygz(cls, src_fp: str, dst_fp: str) -> None:
+        arr = tifffile.imread(src_fp)
+        nib.Nifti1Image(arr, None).to_filename(dst_fp)
 
     @classmethod
-    def read_niftygz(cls, fp):
+    def read_niftygz(cls, fp: str) -> np.NDArray:
         img = nib.load(fp)
         return np.array(img.dataobj)
+
+    #############################################
+    # MISC - RECHUNK
+    #############################################
+
+    @classmethod
+    def rechunk(
+        cls, src_fp: str, dst_fp: str, zarr_chunksize: tuple[int, int, int]
+    ) -> None:
+        # Read
+        zarr_arr = da.from_zarr(src_fp)
+        # Rechunk
+        zarr_rechunked = zarr_arr.rechunk(zarr_chunksize)
+        # Write
+        silent_remove(dst_fp)
+        zarr_rechunked.to_zarr(dst_fp, mode="w")

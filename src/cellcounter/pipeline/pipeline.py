@@ -101,9 +101,9 @@ class Pipeline:
     # GPU enabled cell funcs
     cellc_funcs: Type[CpuCellcFuncs] = GpuCellcFuncs
 
-    ###################################################################################################
+    #############################################
     # SETTING PROCESSING CONFIGS (NUMBER OF WORKERS, GPU ENABLED, ETC.)
-    ###################################################################################################
+    #############################################
 
     @classmethod
     def heavy_cluster(cls):
@@ -134,9 +134,9 @@ class Pipeline:
             )
             cls.cellc_funcs = CpuCellcFuncs
 
-    ###################################################################################################
+    #############################################
     # GET LIST OF IMAGES
-    ###################################################################################################
+    #############################################
 
     @classmethod
     def get_imgs_ls(cls, imgs_dir: str) -> list:
@@ -148,9 +148,9 @@ class Pipeline:
             ]
         )
 
-    ###################################################################################################
+    #############################################
     # UPDATE CONFIGS
-    ###################################################################################################
+    #############################################
 
     @classmethod
     def update_configs(cls, proj_dir: str, **kwargs) -> ConfigParamsModel:
@@ -188,9 +188,9 @@ class Pipeline:
         logger.debug("Returning the configs file")
         return configs
 
-    ###################################################################################################
+    #############################################
     # CONVERT TIFF TO ZARR FUNCS
-    ###################################################################################################
+    #############################################
 
     @classmethod
     def tiff2zarr(cls, proj_dir: str, in_fp: str, overwrite: bool = False) -> None:
@@ -227,7 +227,7 @@ class Pipeline:
                 logger.debug(f"in_fp ({in_fp}) is a directory")
                 logger.debug("Making zarr from tiff file stack in directory")
                 ArrIOFuncs.tiffs2zarr(
-                    in_fp_ls=tuple(
+                    src_fp_ls=tuple(
                         natsorted(
                             (
                                 os.path.join(in_fp, i)
@@ -236,23 +236,23 @@ class Pipeline:
                             )
                         )
                     ),
-                    out_fp=pfm.raw,
+                    dst_fp=pfm.raw,
                     chunks=configs.zarr_chunksize,
                 )
             elif os.path.isfile(in_fp):
                 logger.debug(f"in_fp ({in_fp}) is a file")
                 logger.debug("Making zarr from big-tiff file")
                 ArrIOFuncs.btiff2zarr(
-                    in_fp=in_fp,
-                    out_fp=pfm.raw,
+                    src_fp=in_fp,
+                    dst_fp=pfm.raw,
                     chunks=configs.zarr_chunksize,
                 )
             else:
                 raise ValueError(f'Input file path, "{in_fp}" does not exist.')
 
-    ###################################################################################################
+    #############################################
     # REGISTRATION PIPELINE FUNCS
-    ###################################################################################################
+    #############################################
 
     @classmethod
     def reg_ref_prepare(cls, proj_dir: str, overwrite: bool = False) -> None:
@@ -406,9 +406,9 @@ class Pipeline:
             bspline_fp=pfm.bspline,
         )
 
-    ###################################################################################################
+    #############################################
     # MASK PIPELINE FUNCS
-    ###################################################################################################
+    #############################################
 
     @classmethod
     def make_mask(cls, proj_dir: str, overwrite: bool = False) -> None:
@@ -514,9 +514,9 @@ class Pipeline:
         # Saving
         write_parquet(mask_df, pfm.mask_df)
 
-    ###################################################################################################
+    #############################################
     # CROP RAW ZARR TO MAKE TUNING ZARR
-    ###################################################################################################
+    #############################################
 
     @classmethod
     def make_tuning_arr(cls, proj_dir: str, overwrite: bool = False) -> None:
@@ -548,9 +548,9 @@ class Pipeline:
             logger.debug("Saving cropped raw zarr")
             raw_arr = disk_cache(raw_arr, pfm_tuning.raw)
 
-    ###################################################################################################
+    #############################################
     # CELL COUNTING PIPELINE FUNCS
-    ###################################################################################################
+    #############################################
 
     @classmethod
     def img_overlap(
@@ -1056,9 +1056,9 @@ class Pipeline:
             # Computing and saving as parquet
             write_parquet(cells_df, pfm.cells_raw_df + "_b.parquet")
 
-    ###################################################################################################
+    #############################################
     # CELL COUNT REALIGNMENT TO REFERENCE AND AGGREGATION PIPELINE FUNCS
-    ###################################################################################################
+    #############################################
 
     @classmethod
     def transform_coords(
@@ -1281,9 +1281,9 @@ class Pipeline:
         # Saving to csv
         cells_agg_df.to_csv(pfm.cells_agg_csv)
 
-    ###################################################################################################
-    # CELL COUNT REALIGNMENT TO REFERENCE AND AGGREGATION PIPELINE FUNCS
-    ###################################################################################################
+    #############################################
+    # CLEAN IMAGE ANALYSIS DIR BY REMOVING LARGE CELLCOUNT SUBDIR
+    #############################################
 
     @classmethod
     def clean_proj(cls, proj_dir: str, tuning: bool = False) -> None:
@@ -1297,9 +1297,25 @@ class Pipeline:
         silent_remove(os.path.join(pfm.root_dir, pfm.cellcount_sdir))
         logger.info(f"Project {proj_dir} cleaned.")
 
-    ###################################################################################################
+    #############################################
+    # MISC: REGISTRATION PIPELINE FUNCS
+    #############################################
+
+    @classmethod
+    def rechunk(cls, proj_dir: str, in_fp: str, out_fp: str) -> None:
+        """Rechunk a zarr file based on the project config's chunksize."""
+        pfm = ProjFpModel(proj_dir)
+        configs = ConfigParamsModel.read_fp(pfm.config_params)
+        with cluster_process(cls.busy_cluster()):
+            ArrIOFuncs.rechunk(
+                src_fp=in_fp,
+                dst_fp=out_fp,
+                zarr_chunksize=configs.zarr_chunksize,
+            )
+
+    #############################################
     # ALL PIPELINE FUNCTION
-    ###################################################################################################
+    #############################################
 
     @classmethod
     def run_pipeline(
