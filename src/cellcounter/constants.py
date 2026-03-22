@@ -1,6 +1,5 @@
-import os
-import pathlib
 from enum import Enum
+from pathlib import Path
 
 import dask
 import numpy as np
@@ -15,9 +14,7 @@ ROWS_PARTITION = 10000000
 
 
 class Coords(Enum):
-    """
-    NOTE: this is the de facto order of the 3d dimensions (for tiff and zarr)
-    """
+    """The de facto order of the 3d dimensions (for tiff and zarr)."""
 
     Z = "z"
     Y = "y"
@@ -30,6 +27,8 @@ CELL_IDX_NAME = "label"
 
 
 class AnnotColumns(Enum):
+    """Atlas annotation column names."""
+
     ID = "id"
     ATLAS_ID = "atlas_id"
     ONTOLOGY_ID = "ontology_id"
@@ -43,6 +42,8 @@ class AnnotColumns(Enum):
 
 
 class AnnotExtraColumns(Enum):
+    """Other annotation columns derived from the Atlas annotations."""
+
     PARENT_ID = "parent_id"
     PARENT_ACRONYM = "parent_acronym"
     CHILDREN = "children"
@@ -101,8 +102,8 @@ class MaskColumns(Enum):
     VOLUME_PROP = f"{MASK_VOLUME}_prop"
 
 
-CACHE_DIR = os.path.join(pathlib.Path.home(), ".cellcounter")
-ATLAS_DIR = os.path.join(CACHE_DIR, "atlas_resources")
+CACHE_DIR = Path.home() / ".cellcounter"
+ATLAS_DIR = CACHE_DIR / "atlas_resources"
 
 # Checking whether dask_cuda works (i.e. is Linux and has CUDA)
 DASK_CUDA_ENABLED = package_is_importable("dask_cuda")

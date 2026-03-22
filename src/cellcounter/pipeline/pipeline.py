@@ -261,7 +261,8 @@ class Pipeline:
         if not overwrite:
             for fp in (pfm.ref, pfm.annot, pfm.map, pfm.affine, pfm.bspline):
                 if os.path.exists(fp):
-                    return logger.warning(file_exists_msg(fp))
+                    logger.warning(file_exists_msg(fp))
+                    return
         # Getting configs
         configs = ConfigParamsModel.read_fp(pfm.config_params)
         # Making ref_fp_model of original atlas images filepaths
@@ -293,13 +294,14 @@ class Pipeline:
         # Copying transformation files
         shutil.copyfile(rfm.affine, pfm.affine)
         shutil.copyfile(rfm.bspline, pfm.bspline)
+        return
 
     @classmethod
     def reg_img_rough(cls, proj_dir: str, overwrite: bool = False) -> None:
-        logger = init_logger_file()
         pfm = ProjFpModel(proj_dir)
         if not overwrite and os.path.exists(pfm.downsmpl1):
-            return logger.warning(file_exists_msg(pfm.downsmpl1))
+            logger.warning(file_exists_msg(pfm.downsmpl1))
+            return
         # Getting configs
         configs = ConfigParamsModel.read_fp(pfm.config_params)
         with cluster_process(
@@ -315,6 +317,7 @@ class Pipeline:
             downsmpl1_arr = downsmpl1_arr.compute()
             # Saving
             ArrIOFuncs.write_tiff(downsmpl1_arr, pfm.downsmpl1)
+            return
 
     @classmethod
     def reg_img_fine(cls, proj_dir: str, overwrite: bool = False) -> None:
@@ -323,7 +326,8 @@ class Pipeline:
         if not overwrite:
             for fp in (pfm.downsmpl2,):
                 if os.path.exists(fp):
-                    return logger.warning(file_exists_msg(fp))
+                    logger.warning(file_exists_msg(fp))
+                    return
         # Getting configs
         configs = ConfigParamsModel.read_fp(pfm.config_params)
         # Reading
@@ -342,7 +346,8 @@ class Pipeline:
         if not overwrite:
             for fp in (pfm.trimmed,):
                 if os.path.exists(fp):
-                    return logger.warning(file_exists_msg(fp))
+                    logger.warning(file_exists_msg(fp))
+                    return
         # Getting configs
         configs = ConfigParamsModel.read_fp(pfm.config_params)
         # Reading
@@ -355,6 +360,7 @@ class Pipeline:
         ]
         # Saving
         ArrIOFuncs.write_tiff(trimmed_arr, pfm.trimmed)
+        return
 
     @classmethod
     def reg_img_bound(cls, proj_dir: str, overwrite: bool = False) -> None:
@@ -363,7 +369,8 @@ class Pipeline:
         if not overwrite:
             for fp in (pfm.bounded,):
                 if os.path.exists(fp):
-                    return logger.warning(file_exists_msg(fp))
+                    logger.warning(file_exists_msg(fp))
+                    return
         # Getting configs
         configs = ConfigParamsModel.read_fp(pfm.config_params)
         # Asserting that lower bound is less than upper bound
@@ -388,6 +395,7 @@ class Pipeline:
         bounded_arr[bounded_arr > configs.upper_bound[0]] = configs.upper_bound[1]
         # Saving
         ArrIOFuncs.write_tiff(bounded_arr, pfm.bounded)
+        return
 
     @classmethod
     def reg_elastix(cls, proj_dir: str, overwrite: bool = False) -> None:
@@ -396,7 +404,8 @@ class Pipeline:
         if not overwrite:
             for fp in (pfm.regresult,):
                 if os.path.exists(fp):
-                    return logger.warning(file_exists_msg(fp))
+                    logger.warning(file_exists_msg(fp))
+                    return
         # Running Elastix registration
         ElastixFuncs.registration(
             fixed_img_fp=pfm.bounded,
@@ -405,6 +414,7 @@ class Pipeline:
             affine_fp=pfm.affine,
             bspline_fp=pfm.bspline,
         )
+        return
 
     #############################################
     # MASK PIPELINE FUNCS
