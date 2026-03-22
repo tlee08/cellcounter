@@ -1,11 +1,14 @@
 import re
 import shutil
+from collections import defaultdict
 from pathlib import Path
 
+import dask
 import dask.array as da
 import numpy as np
 import pandas as pd
 import tifffile
+import zarr
 from dask.distributed import LocalCluster, SpecCluster
 from natsort import natsorted
 from scipy import ndimage
@@ -718,7 +721,70 @@ class Pipeline:
     def cellc5(
         cls, proj_dir: Path | str, overwrite: bool = False, tuning: bool = False
     ) -> None:
-        """Cell counting pipeline - Step 5: Get object sizes.
+        """Cell counting pipeline - Step 5: Get object sizes with cross-chunk connectivity.
+
+        This is a convenience method that calls cellc5_label and cellc5_size in sequence.
+
+        Args:
+            proj_dir (str): Project directory path.
+            overwrite (bool, optional): If True, overwrite existing outputs. Defaults to False.
+            tuning (bool, optional): If True, use the tuning project file model. Defaults to False.
+
+        Returns:
+            None
+        """
+        cls.cellc5_label(proj_dir, overwrite=overwrite, tuning=tuning)
+        cls.cellc5_size(proj_dir, overwrite=overwrite, tuning=tuning)
+
+    @classmethod
+    def cellc5_label(
+        cls, proj_dir: Path | str, overwrite: bool = False, tuning: bool = False
+    ) -> None:
+        """Cell counting pipeline - Step 5a: Label contiguous regions with globally unique labels.
+
+        Args:
+            proj_dir (str): Project directory path.
+            overwrite (bool, optional): If True, overwrite existing outputs. Defaults to False.
+            tuning (bool, optional): If True, use the tuning project file model. Defaults to False.
+
+        Returns:
+            None
+        """
+        pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
+        if not overwrite:
+            for fp in (pfm.threshd_labels,):
+                if fp.exists():
+                    logger.warning(file_exists_msg(fp))
+                    return
+        # Getting configs
+        configs = ConfigParamsModel.read_fp(pfm.config_params)
+        max_labels_per_chunk = int(np.prod(configs.zarr_chunksize)) + 1
+        # Making Dask cluster
+        with cluster_process(cls.gpu_cluster()):
+            # Reading input images
+            threshd_arr = da.from_zarr(pfm.threshd)
+            # Declaring processing instructions
+            labels_arr = da.map_blocks(
+                cls.cellc_funcs.mask2label,
+                threshd_arr,
+                block_info=True,
+                max_labels_per_chunk=max_labels_per_chunk,
+                dtype=np.int64,
+            )
+            # Computing and saving
+            disk_cache(labels_arr, pfm.threshd_labels)
+
+    @classmethod
+    def cellc5_size(
+        cls, proj_dir: Path | str, overwrite: bool = False, tuning: bool = False
+    ) -> None:
+        """Cell counting pipeline - Step 5b: Compute contiguous sizes using union-find.
+
+        Handles cross-chunk connectivity by:
+        1. Overlapping labeled array to expose boundaries
+        2. Finding adjacent label pairs across boundaries
+        3. Union-Find to merge labels belonging to same physical region
+        4. Mapping each label to its component size
 
         Args:
             proj_dir (str): Project directory path.
@@ -734,17 +800,95 @@ class Pipeline:
                 if fp.exists():
                     logger.warning(file_exists_msg(fp))
                     return
-        # Making Dask cluster
+
+        # Reading labeled array
+        labels_arr = da.from_zarr(pfm.threshd_labels)
+
+        # Step 1: Overlap array to expose boundaries
+        labels_overlap = da.overlap.overlap(labels_arr, depth=1, boundary=0)
+
+        # Step 2: Find cross-boundary pairs
+        logger.debug("Finding cross-boundary pairs...")
+        delayed_blocks = labels_overlap.to_delayed().ravel()
+        pair_arrays = dask.compute(
+            *[dask.delayed(cls.cellc_funcs.find_boundary_pairs)(b) for b in delayed_blocks]
+        )
+        valid = [p for p in pair_arrays if len(p) > 0]
+        all_pairs = np.concatenate(valid, axis=0) if valid else np.empty((0, 2), dtype=np.int64)
+        logger.debug("Cross-boundary pairs found: %d", len(all_pairs))
+
+        # Step 3: Union-Find
+        logger.debug("Running Union-Find...")
+        parent: dict[int, int] = {}
+        rank: dict[int, int] = {}
+
+        def find(x: int) -> int:
+            while parent.get(x, x) != x:
+                parent[x] = parent.get(parent.get(x, x), parent.get(x, x))
+                x = parent[x]
+            return x
+
+        def union(x: int, y: int) -> None:
+            px, py = find(x), find(y)
+            if px == py:
+                return
+            rx, ry = rank.get(px, 0), rank.get(py, 0)
+            if rx < ry:
+                px, py = py, px
+            parent[py] = px
+            if rx == ry:
+                rank[px] = rx + 1
+
+        for a, b in all_pairs:
+            union(int(a), int(b))
+        logger.debug("Union-Find complete.")
+
+        # Step 4: Count voxels per label
+        logger.debug("Counting voxels per label...")
+        label_voxel_counts: dict[int, int] = defaultdict(int)
+        labels_for_count = da.from_zarr(pfm.threshd_labels)
+        for blk in labels_for_count.to_delayed().ravel():
+            arr_blk = blk.compute()
+            fg = arr_blk.ravel()
+            fg = fg[fg > 0]
+            if len(fg) == 0:
+                continue
+            unique, counts = np.unique(fg, return_counts=True)
+            for u, c in zip(unique.tolist(), counts.tolist()):
+                label_voxel_counts[u] += c
+
+        logger.debug("Unique labels (foreground): %d", len(label_voxel_counts))
+
+        # Aggregate by component root
+        component_sizes: dict[int, int] = defaultdict(int)
+        for label, count in label_voxel_counts.items():
+            component_sizes[find(label)] += count
+
+        n_components = len(component_sizes)
+        max_size = max(component_sizes.values()) if component_sizes else 0
+        logger.debug("Connected components: %d, largest: %d voxels", n_components, max_size)
+
+        # Build lookup table
+        label_keys = np.array(list(label_voxel_counts.keys()), dtype=np.int64)
+        label_sizes = np.array(
+            [component_sizes[find(lbl)] for lbl in label_keys], dtype=np.int64
+        )
+        sort_idx = np.argsort(label_keys)
+        sorted_keys = label_keys[sort_idx]
+        sorted_sizes = label_sizes[sort_idx]
+
+        # Step 5: Map labels to sizes
+        logger.debug("Writing output array...")
         with cluster_process(cls.gpu_cluster()):
-            # Reading input images
-            threshd_arr = da.from_zarr(pfm.threshd)
-            # Declaring processing instructions
-            threshd_volumes_arr = da.map_blocks(
-                cls.cellc_funcs.mask2volume,
-                threshd_arr,
+            labels_for_output = da.from_zarr(pfm.threshd_labels)
+            sizes_arr = da.map_blocks(
+                cls.cellc_funcs.map_labels_to_sizes,
+                labels_for_output,
+                sorted_keys=sorted_keys,
+                sorted_sizes=sorted_sizes,
+                dtype=np.int64,
             )
-            # Computing and saving
-            threshd_volumes_arr = disk_cache(threshd_volumes_arr, pfm.threshd_volumes)
+            disk_cache(sizes_arr, pfm.threshd_volumes)
 
     @classmethod
     def cellc6(
@@ -838,6 +982,9 @@ class Pipeline:
                 if fp.exists():
                     logger.warning(file_exists_msg(fp))
                     return
+        # Getting configs
+        configs = ConfigParamsModel.read_fp(pfm.config_params)
+        max_labels_per_chunk = int(np.prod(configs.zarr_chunksize)) + 1
         with cluster_process(cls.gpu_cluster()):
             # Reading input images
             maxima_arr = da.from_zarr(pfm.maxima)
@@ -845,6 +992,9 @@ class Pipeline:
             maxima_labels_arr = da.map_blocks(
                 cls.cellc_funcs.mask2label,
                 maxima_arr,
+                block_info=True,
+                max_labels_per_chunk=max_labels_per_chunk,
+                dtype=np.int64,
             )
             maxima_labels_arr = disk_cache(maxima_labels_arr, pfm.maxima_labels)
 

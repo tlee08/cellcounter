@@ -187,6 +187,81 @@ class CpuCellcFuncs:
         return res
 
     @classmethod
+    def find_boundary_pairs(cls, block: np.ndarray, depth: int = 1) -> np.ndarray:
+        """Find adjacent label pairs at chunk boundaries.
+
+        Only checks the halo-interior interfaces, not the entire chunk interior.
+        This is valid because labeling already merged all intra-chunk adjacencies,
+        so different labels can only meet at chunk boundaries.
+
+        Parameters
+        ----------
+        block : np.ndarray
+            Overlabeled array chunk with halo of depth=1
+        depth : int
+            Overlap depth (default 1)
+
+        Returns
+        -------
+        np.ndarray
+            Array of shape (N, 2) with adjacent label pairs
+        """
+        pairs = set()
+        for axis in range(block.ndim):
+            # Check both faces of this axis
+            for face in [(depth - 1, depth), (-depth - 1, -depth)]:
+                idx_a, idx_b = face
+                sl_a = [slice(None)] * block.ndim
+                sl_b = [slice(None)] * block.ndim
+                sl_a[axis] = idx_a
+                sl_b[axis] = idx_b
+                a = block[tuple(sl_a)].ravel()
+                b = block[tuple(sl_b)].ravel()
+                mask = (a > 0) & (b > 0) & (a != b)
+                if mask.any():
+                    lo = cls.xp.minimum(a[mask], b[mask])
+                    hi = cls.xp.maximum(a[mask], b[mask])
+                    pairs.update(zip(lo.tolist(), hi.tolist()))
+        if pairs:
+            return cls.xp.array(list(pairs), dtype=cls.xp.int64)
+        return cls.xp.empty((0, 2), dtype=cls.xp.int64)
+
+    @classmethod
+    def map_labels_to_sizes(
+        cls,
+        block: np.ndarray,
+        sorted_keys: np.ndarray,
+        sorted_sizes: np.ndarray,
+    ) -> np.ndarray:
+        """Map label values to their connected component sizes.
+
+        Parameters
+        ----------
+        block : np.ndarray
+            Label array chunk
+        sorted_keys : np.ndarray
+            Sorted array of label IDs for lookup
+        sorted_sizes : np.ndarray
+            Corresponding component sizes for each label
+
+        Returns
+        -------
+        np.ndarray
+            Array where each voxel contains its component size (0 for background)
+        """
+        out = cls.xp.zeros(block.shape, dtype=cls.xp.int64)
+        mask = block > 0
+        if not mask.any():
+            return out
+        labels_fg = block[mask]
+        # Find each label's position in the sorted lookup table
+        pos = cls.xp.searchsorted(sorted_keys, labels_fg)
+        pos = cls.xp.clip(pos, 0, len(sorted_keys) - 1)
+        valid = sorted_keys[pos] == labels_fg  # guard against missing keys
+        out[mask] = cls.xp.where(valid, sorted_sizes[pos], 0)
+        return out
+
+    @classmethod
     def visualise_stats(cls, arr: np.ndarray):
         """Visualise statistics.
 
