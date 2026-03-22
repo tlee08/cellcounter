@@ -122,28 +122,38 @@ labeled_overlap = da.overlap.overlap(labeled, depth=1, boundary=0)
 
 # ── 5. FIND CROSS-BOUNDARY ADJACENT LABEL PAIRS ───────────────────────────────
 #
-# For each overlapped chunk we compare every voxel with its +1 neighbour along
-# each axis.  Because scipy already merged all *intra*-chunk adjacencies, any
-# pair (a, b) with a≠b and both>0 must straddle a chunk boundary.
+# For each overlapped chunk, we only need to check the planes at the halo-interior
+# interfaces. Because scipy already merged all *intra*-chunk adjacencies, any pair
+# (a, b) with a≠b and both>0 must straddle a chunk boundary - these only occur at
+# the first and last planes of each axis.
 #
 # We normalise pairs so min(a,b) < max(a,b) before inserting into a set;
 # this deduplicates (a,b) and (b,a) cheaply.
 
 
-def find_boundary_pairs(block):
+def find_boundary_pairs(block, depth=1):
+    """Find adjacent label pairs at chunk boundaries.
+
+    Only checks the halo-interior interfaces, not the entire chunk interior.
+    This is valid because scipy.ndimage.label already merged all intra-chunk
+    adjacencies, so different labels can only meet at chunk boundaries.
+    """
     pairs = set()
     for axis in range(block.ndim):
-        sl_a = [slice(None)] * block.ndim
-        sl_b = [slice(None)] * block.ndim
-        sl_a[axis] = slice(None, -1)
-        sl_b[axis] = slice(1, None)
-        a = block[tuple(sl_a)].ravel()
-        b = block[tuple(sl_b)].ravel()
-        mask = (a > 0) & (b > 0) & (a != b)
-        if mask.any():
-            lo = np.minimum(a[mask], b[mask])
-            hi = np.maximum(a[mask], b[mask])
-            pairs.update(zip(lo.tolist(), hi.tolist()))
+        # Check both faces of this axis
+        for face in [(depth - 1, depth), (-depth - 1, -depth)]:
+            idx_a, idx_b = face
+            sl_a = [slice(None)] * block.ndim
+            sl_b = [slice(None)] * block.ndim
+            sl_a[axis] = idx_a
+            sl_b[axis] = idx_b
+            a = block[tuple(sl_a)].ravel()
+            b = block[tuple(sl_b)].ravel()
+            mask = (a > 0) & (b > 0) & (a != b)
+            if mask.any():
+                lo = np.minimum(a[mask], b[mask])
+                hi = np.maximum(a[mask], b[mask])
+                pairs.update(zip(lo.tolist(), hi.tolist()))
     if pairs:
         return np.array(list(pairs), dtype=np.int64)
     return np.empty((0, 2), dtype=np.int64)

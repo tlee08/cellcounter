@@ -1,4 +1,6 @@
 from enum import Enum
+from pathlib import Path
+from typing import Self
 
 import numpy as np
 from pydantic import BaseModel, ConfigDict, model_validator
@@ -12,25 +14,29 @@ from cellcounter.utils.io_utils import read_json, write_json
 
 
 class RefVersions(Enum):
+    """RefVersions."""
+
     AVERAGE_TEMPLATE_25 = "average_template_25"
     ARA_NISSL_25 = "ara_nissl_25"
 
 
 class AnnotVersions(Enum):
+    """AnnotVersions."""
+
     CCF_2017_25 = "ccf_2017_25"
     CCF_2016_25 = "ccf_2016_25"
     CCF_2015_25 = "ccf_2015_25"
 
 
 class MapVersions(Enum):
+    """MapVersions."""
+
     ABA_ANNOTATIONS = "ABA_annotations"
     CM_ANNOTATIONS = "CM_annotations"
 
 
 class ConfigParamsModel(BaseModel):
-    """
-    Pydantic model for registration parameters.
-    """
+    """Pydantic model for registration parameters."""
 
     # NOTE: can set extra as "forbid" to prevent extra keys
     model_config = ConfigDict(
@@ -41,7 +47,7 @@ class ConfigParamsModel(BaseModel):
     )
 
     # REFERENCE
-    atlas_dir: str = ATLAS_DIR
+    atlas_dir: Path = ATLAS_DIR
     ref_version: str = RefVersions.AVERAGE_TEMPLATE_25.value
     annot_version: str = AnnotVersions.CCF_2016_25.value
     map_version: str = MapVersions.ABA_ANNOTATIONS.value
@@ -92,7 +98,7 @@ class ConfigParamsModel(BaseModel):
     combine_cellc_x_trim: tuple[int | None, int | None, int | None] = (None, None, None)
 
     @model_validator(mode="after")
-    def _validate_trims(self) -> "ConfigParamsModel":
+    def _validate_trims(self) -> Self:
         # Orient validation
         vect = np.array(self.ref_orient_ls)
         vect_abs = np.abs(vect)
@@ -103,16 +109,19 @@ class ConfigParamsModel(BaseModel):
         return self
 
     @classmethod
-    def read_fp(cls, fp: str) -> "ConfigParamsModel":
+    def read_fp(cls, fp: Path | str) -> Self:
+        """Read configs from file."""
         model = cls.model_validate(read_json(fp))
         return model
 
-    def update(self, **kwargs):
+    def update(self, **kwargs) -> Self:
+        """Update configs."""
         return self.model_validate(self.model_copy(update=kwargs))
 
     @classmethod
-    def update_file(cls, fp: str, **kwargs) -> "ConfigParamsModel":
-        """
+    def update_file(cls, fp: str, **kwargs) -> Self:
+        """Updates configs with given fields in json file.
+
         Reads the json file in `fp`, updates the parameters with `kwargs`,
         writes the updated parameters back to `fp` (if there are any updates),
         and returns the model instance.

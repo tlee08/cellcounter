@@ -1,14 +1,21 @@
+from __future__ import annotations
+
 import asyncio
+import contextlib
 import json
 import os
 import re
 import shutil
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
-from typing import Callable
+from pathlib import Path
+from typing import TYPE_CHECKING
 
 import numpy as np
-import pandas as pd
 from natsort import natsorted
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 # TODO: add request functionality to download Allen Mouse Atlas image:
 # Atlas from https://download.alleninstitute.org/informatics-archive/current-release/mouse_ccf/
@@ -18,38 +25,39 @@ from natsort import natsorted
 #####################################################################
 
 
-def get_filepaths(dir, pattern):
-    """
-    Looks in dir for filepaths with the pattern.
+def get_filepaths(my_dir: Path | str, pattern: str) -> list[Path]:
+    r"""Looks in dir for filepaths with the pattern.
+
     The pattern follows the regex search syntax:
         - Write the pattern identical to the filenames, except for the Z0000 number.
-        - Use `*` to indicate "any character any number of times" (i.e. for the Z number)
+        - Use `*` to indicate "any character any number of times" (i.e. for Z number)
     An example pattern is:
     ```
-    `r"Sample_11_zoom0.52_2.5x_dual_side_fusion_2x4 vertical-stitched_T001_Z(\\d+?)_C01.tif"`
+    `r"Sample_11_zoom0.52_2.5x_dual_side_fusion_2x4 vertical-stitched_T001_Z(\d+?)_C01.tif"`
     ```
-    """
-    fps_all = natsorted(os.listdir(dir))
-    fps = [os.path.join(dir, i) for i in fps_all if re.search(pattern, i)]
+    """  # noqa: E501
+    my_dir = Path(my_dir)
+    fps_all = natsorted(my_dir.iterdir())
+    fps = [(my_dir / i) for i in fps_all if re.search(pattern, i)]
     return fps
 
 
-def rename_slices_filepaths(dir, pattern):
-    """
+def rename_slices_filepaths(my_dir: Path | str, pattern: str) -> None:
+    """Rename slices.
+
     TODO: make pattern modular, instead of current (pref)(to_change)(suffix) setup
     Currently just converts slices filenames to <Z,4>.
     """
-
-    for fp in os.listdir(dir):
+    my_dir = Path(my_dir)
+    for fp in my_dir.iterdir():
         print(fp)
         fp_new = re.sub(
             pattern,
             lambda x: x.group(0).zfill(4),
-            fp,
+            str(fp),
         )
         print(fp_new)
         print()
-        # os.rename(os.path.join(dir, fp), os.path.join(dir, new_fp))
 
 
 #####################################################################
@@ -57,8 +65,10 @@ def rename_slices_filepaths(dir, pattern):
 #####################################################################
 
 
-def get_npy_header_size(fp):
-    with open(fp, "rb") as f:
+def get_npy_header_size(fp: Path | str) -> int:
+    """Get size of numpy header."""
+    fp = Path(fp)
+    with fp.open(mode="rb") as f:
         h_size = 0
         while True:
             char = f.read(1)
@@ -68,13 +78,14 @@ def get_npy_header_size(fp):
     return h_size
 
 
-def make_npy_header(fp):
-    """
-    Makes a npy mhd header file so ImageJ can read .npy spatial arrays.
+def make_npy_header(fp: Path | str) -> None:
+    """Makes a npy mhd header file so ImageJ can read .npy spatial arrays.
+
     If `fp` is does not have the `.npy` file extension, then adds it.
     """
+    fp = Path(fp)
     # Adding ".npy" extension if missing
-    if not re.search(r"\.npy$", fp):
+    if not re.search(r"\.npy$", str(fp)):
         fp = f"{fp}.npy"
     # Making datatype name mapper
     dtype_mapper = {
@@ -103,39 +114,40 @@ ElementType = {dtype_mapper[str(ar.dtype)]}
 ElementDataFile = {os.path.split(fp)[1]}
 """
     # Saving header file
-    header_fp = f"{fp}.mhd"
-    with open(header_fp, "w") as f:
+    header_fp = Path(f"{fp}.mhd")
+    with header_fp.open(mode="w") as f:
         f.write(header_content)
-    return
 
 
-def read_json(fp: str) -> dict:
-    with open(fp, "r") as f:
+def read_json(fp: Path | str) -> dict:
+    """Read json from file."""
+    fp = Path(fp)
+    with fp.open(mode="r") as f:
         return json.load(f)
 
 
-def write_json(fp: str, data: dict) -> None:
-    os.makedirs(os.path.dirname(fp), exist_ok=True)
-    with open(fp, "w") as f:
+def write_json(fp: Path | str, data: dict) -> None:
+    """Write json to file."""
+    fp = Path(fp)
+    fp.parent.mkdir(exist_ok=True)
+    with fp.open(mode="w") as f:
         json.dump(data, f, indent=4)
 
 
-def silent_remove(fp):
-    if os.path.isfile(fp):
-        try:
-            os.remove(fp)
-        except OSError:
-            pass
-    elif os.path.isdir(fp):
-        try:
+def silent_remove(fp: Path | str) -> None:
+    """Remove file or dir without throwing errors."""
+    fp = Path(fp)
+    if fp.is_file():
+        with contextlib.suppress(OSError):
+            fp.unlink()
+    elif fp.is_dir():
+        with contextlib.suppress(OSError):
             shutil.rmtree(fp)
-        except OSError:
-            pass
 
 
-def sanitise_smb_df(df):
-    """
-    Sanitizes the SMB share dataframe.
+def sanitise_smb_df(df: pd.DataFrame) -> pd.DataFrame:
+    """Sanitizes the SMB share dataframe.
+
     Removes any column called "smb-share:server".
     """
     if "smb-share:server" in df.columns:
@@ -148,8 +160,10 @@ def sanitise_smb_df(df):
 #####################################################################
 
 
-def write_parquet(df: pd.DataFrame, fp: str):
-    os.makedirs(os.path.dirname(fp), exist_ok=True)
+def write_parquet(df: pd.DataFrame, fp: Path | str) -> None:
+    """Write parquet."""
+    fp = Path(fp)
+    fp.mkdir(exist_ok=True)
     df.to_parquet(fp)
 
 
@@ -158,19 +172,21 @@ def write_parquet(df: pd.DataFrame, fp: str):
 #####################################################################
 
 
-async def async_read(fp: str, executor: ThreadPoolExecutor, read_func: Callable) -> list:
+async def async_read(
+    fp: str, executor: ThreadPoolExecutor, read_func: Callable
+) -> list:
     """Asynchronously read a single file."""
     loop = asyncio.get_running_loop()
     return await loop.run_in_executor(executor, read_func, fp)
 
 
-async def async_read_files(fp_ls, read_func: Callable) -> list:
+async def async_read_files(fp_ls: list[Path | str], read_func: Callable) -> list:
     """Asynchronously read a list of files and return a list of numpy arrays."""
     with ThreadPoolExecutor() as executor:
         tasks = [async_read(fp, executor, read_func) for fp in fp_ls]
         return await asyncio.gather(*tasks)
 
 
-def async_read_files_run(fp_ls, read_func: Callable) -> list:
+def async_read_files_run(fp_ls: list[Path | str], read_func: Callable) -> list:
     """Asynchronously read a list of files and return a list of numpy arrays."""
     return asyncio.run(async_read_files(fp_ls, read_func))

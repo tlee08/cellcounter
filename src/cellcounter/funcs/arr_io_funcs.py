@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 
 import dask
 import dask.array as da
@@ -7,26 +7,30 @@ import numpy as np
 import tifffile
 import zarr
 
-# from prefect import task
 from cellcounter.constants import PROC_CHUNKS
 from cellcounter.utils.io_utils import silent_remove
 
 
 class ArrIOFuncs:
+    """ArrIOFuncs."""
+
     #############################################
     # REGULAR IO
     #############################################
 
     @classmethod
-    def read_tiff(cls, src_fp: str) -> np.ndarray:
+    def read_tiff(cls, src_fp: Path | str) -> np.ndarray:
+        """Read tiff file."""
         arr = tifffile.imread(src_fp)
-        for i in np.arange(len(arr.shape)):
+        for _ in np.arange(len(arr.shape)):
             arr = np.squeeze(arr)
         return arr
 
     @classmethod
-    def write_tiff(cls, arr: np.ndarray, dst_fp: str) -> None:
-        os.makedirs(os.path.dirname(dst_fp), exist_ok=True)
+    def write_tiff(cls, arr: np.ndarray, dst_fp: Path | str) -> None:
+        """Write to tiff file."""
+        dst_fp = Path(dst_fp)
+        dst_fp.mkdir(exist_ok=True)
         tifffile.imwrite(dst_fp, arr)
 
     #############################################
@@ -35,8 +39,12 @@ class ArrIOFuncs:
 
     @classmethod
     def btiff2zarr(
-        cls, src_fp: str, dst_fp: str, chunks: tuple[int, ...] = PROC_CHUNKS
+        cls,
+        src_fp: Path | str,
+        dst_fp: Path | str,
+        chunks: tuple[int, ...] = PROC_CHUNKS,
     ) -> None:
+        """Convert bigtiff to zarr."""
         # To intermediate tiff
         mmap_arr = tifffile.memmap(src_fp)
         zarr_arr = zarr.open(
@@ -57,10 +65,11 @@ class ArrIOFuncs:
     @classmethod
     def tiffs2zarr(
         cls,
-        src_fp_ls: tuple[str, ...],
-        dst_fp: str,
+        src_fp_ls: tuple[Path | str, ...],
+        dst_fp: Path | str,
         chunks: tuple[int, ...] = PROC_CHUNKS,
     ) -> None:
+        """Convert folder of tiffs to zarr."""
         # Getting shape and dtype
         arr0 = cls.read_tiff(src_fp_ls[0])
         shape = (len(src_fp_ls), *arr0.shape)
@@ -80,15 +89,18 @@ class ArrIOFuncs:
 
     @classmethod
     def zarr2tiff(cls, src_fp: str, dst_fp: str) -> None:
+        """Convert zarr to tiff."""
         arr = da.from_zarr(src_fp)
         cls.write_tiff(arr, dst_fp)
 
     @classmethod
     def btiff2niftygz(cls, src_fp: str, dst_fp: str) -> None:
+        """Convert bigtiff to nifty-gz."""
         arr = tifffile.imread(src_fp)
         nib.Nifti1Image(arr, None).to_filename(dst_fp)
 
     @classmethod
     def read_niftygz(cls, fp: str) -> np.typing.NDArray:
+        """Read nifty-gz."""
         img = nib.load(fp)
         return np.array(img.dataobj)

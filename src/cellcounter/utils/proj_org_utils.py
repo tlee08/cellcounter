@@ -262,39 +262,44 @@ class ProjFpModel(FpModel):
         return self.root_dir / self.cellcount_sdir / "4_threshd.zarr"
 
     @property
+    def threshd_labels(self) -> Path:
+        """Threshd_labels."""
+        return self.root_dir / self.cellcount_sdir / "5_threshd_labels.zarr"
+
+    @property
     def threshd_volumes(self) -> Path:
         """Threshd_volumes."""
-        return self.root_dir / self.cellcount_sdir / "5_threshd_volumes.zarr"
+        return self.root_dir / self.cellcount_sdir / "6_threshd_volumes.zarr"
 
     @property
     def threshd_filt(self) -> Path:
         """Threshd_filt."""
-        return self.root_dir / self.cellcount_sdir / "6_threshd_filt.zarr"
+        return self.root_dir / self.cellcount_sdir / "7_threshd_filt.zarr"
 
     @property
     def maxima(self) -> Path:
         """Maxima."""
-        return self.root_dir / self.cellcount_sdir / "7_maxima.zarr"
+        return self.root_dir / self.cellcount_sdir / "8_maxima.zarr"
 
     @property
     def maxima_labels(self) -> Path:
         """Maxima_labels."""
-        return self.root_dir / self.cellcount_sdir / "8_maxima_labels.zarr"
+        return self.root_dir / self.cellcount_sdir / "9_maxima_labels.zarr"
 
     @property
     def wshed_labels(self) -> Path:
         """Wshed_labels."""
-        return self.root_dir / self.cellcount_sdir / "9_wshed_labels.zarr"
+        return self.root_dir / self.cellcount_sdir / "10_wshed_labels.zarr"
 
     @property
     def wshed_volumes(self) -> Path:
         """Wshed_volumes."""
-        return self.root_dir / self.cellcount_sdir / "10_wshed_volumes.zarr"
+        return self.root_dir / self.cellcount_sdir / "11_wshed_volumes.zarr"
 
     @property
     def wshed_filt(self) -> Path:
         """Wshed_filt."""
-        return self.root_dir / self.cellcount_sdir / "11_wshed_filt.zarr"
+        return self.root_dir / self.cellcount_sdir / "12_wshed_filt.zarr"
 
     @property
     def cells_raw_df(self) -> Path:
@@ -375,12 +380,10 @@ class ProjFpModel(FpModel):
 class ProjFpModelTuning(ProjFpModel):
     """Project filepath TUNING model."""
 
-    def __init__(self, root_dir: str) -> None:
+    def __init__(self, root_dir: Path | str) -> None:
         """Project filepath TUNING model."""
         super().__init__(root_dir)
         self.raw_sdir = f"{self.raw_sdir}_tuning"
-        # self.registration_sdir = "registration"
-        # self.mask_sdir = "mask"
         self.cellcount_sdir = f"{self.cellcount_sdir}_tuning"
         self.analysis_sdir = f"{self.analysis_sdir}_tuning"
         self.visual_sdir = f"{self.visual_sdir}_tuning"
