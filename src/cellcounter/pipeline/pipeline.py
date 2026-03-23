@@ -570,7 +570,8 @@ class Pipeline:
                 ]
             )
             for i in pair_arrays:
-                print(i.shape)
+                print(i)
+                print()
             all_pairs = (
                 np.concatenate([p for p in pair_arrays if len(p) > 0], axis=0)
                 if pair_arrays
@@ -801,6 +802,7 @@ class Pipeline:
                 cls.cellc_funcs.mask2label,
                 threshd_arr,
                 max_labels_per_chunk=max_labels_per_chunk,
+                block_info=True,
                 dtype=np.int64,
             )
             # Computing and saving
