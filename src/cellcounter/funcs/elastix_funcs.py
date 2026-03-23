@@ -22,6 +22,8 @@ else:
 
 
 class ElastixFuncs:
+    """Elastix Functions."""
+
     @classmethod
     def registration(
         cls,
