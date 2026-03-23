@@ -43,7 +43,6 @@ from cellcounter.utils.io_utils import (
     read_json,
     sanitise_smb_df,
     silent_remove,
-    write_file,
     write_parquet,
 )
 from cellcounter.utils.logging_utils import init_logger_file
