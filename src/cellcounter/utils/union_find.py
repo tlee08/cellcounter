@@ -13,9 +13,9 @@ class UnionFind:
 
     parent: dict[int, int]
     rank: dict[int, int]
-    sort_idx: npt.array | None
-    sorted_keys: npt.array | None
-    sorted_sizes: npt.array | None
+    sort_idx: npt.NDArray | None
+    sorted_keys: npt.NDArray | None
+    sorted_sizes: npt.NDArray | None
 
     def __init__(self) -> None:
         """Union Find."""
@@ -47,7 +47,7 @@ class UnionFind:
         if rx == ry:
             self.rank[px] = rx + 1
 
-    def build_lookup_table(self, labels: npt.ndarray, values: npt.ndarray) -> None:
+    def build_lookup_table(self, labels: npt.NDArray, values: npt.NDArray) -> None:
         """Build lookup table.
 
         We sum the values and store the given sorted labels and summed values.
