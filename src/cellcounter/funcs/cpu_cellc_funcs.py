@@ -130,6 +130,7 @@ class CpuCellcFuncs:
         block_info: dict | None = None,
         max_labels_per_chunk: int | None = None,
     ) -> npt.NDArray:
+        """Offset labels by block."""
         block = cls.xp.asarray(block)
         if (
             block_info is not None
