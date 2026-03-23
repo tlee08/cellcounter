@@ -180,6 +180,8 @@ class CpuCellcFuncs:
         res_block = cls.offset_labels_by_block(
             res_block, block_info, max_labels_per_chunk
         )
+        print(block.dtype)
+        print(res_block.dtype)
         return res_block
 
     @classmethod
