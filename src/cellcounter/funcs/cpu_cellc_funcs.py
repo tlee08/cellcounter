@@ -143,7 +143,7 @@ class CpuCellcFuncs:
             offset = flat_idx * max_labels_per_chunk
             block[block > 0] += offset
             logger.debug("Applied label offset: %s", offset)
-        return npt.NDArray
+        return block
 
     @classmethod
     def mask2label(
