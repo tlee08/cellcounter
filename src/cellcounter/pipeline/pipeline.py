@@ -569,9 +569,6 @@ class Pipeline:
                     for b in label_overlap.to_delayed().ravel()
                 ]
             )
-            for i in pair_arrays:
-                print(i)
-                print()
             all_pairs = (
                 np.concatenate([p for p in pair_arrays if len(p) > 0], axis=0)
                 if pair_arrays
@@ -899,12 +896,12 @@ class Pipeline:
             # Getting configs
             configs = ConfigParamsModel.read_fp(pfm.config_params)
             # Reading input images
-            overlap_arr = da.from_zarr(pfm.overlap)
+            raw_arr = da.from_zarr(pfm.raw)
             threshd_filt_arr = da.from_zarr(pfm.threshd_filt)
             # Declaring processing instructions
             maxima_arr = da.map_blocks(
                 cls.cellc_funcs.get_local_maxima,
-                overlap_arr,
+                raw_arr,
                 configs.maxima_sigma,
                 threshd_filt_arr,
             )
