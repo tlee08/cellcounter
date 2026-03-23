@@ -121,7 +121,7 @@ class GpuCellcFuncs(CpuCellcFuncs):
 
     @classmethod
     def get_label_sizemap(cls, *args, **kwargs):
-        return cls._clear_cuda_mem_dec(super().get_label_sizemap)(*args, **kwargs).get()
+        return cls._clear_cuda_mem_dec(super().get_label_sizemap)(*args, **kwargs)
 
     @classmethod
     def map_values_to_arr(cls, *args, **kwargs):
