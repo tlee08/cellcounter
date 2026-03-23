@@ -152,7 +152,8 @@ class CpuCellcFuncs:
         """
         block = cls.xp.asarray(block).astype(cls.xp.uint8)
         cls.logger.debug("Labelling contiguous objects uniquely")
-        res_block, _ = cls.xdimage.label(block).astype(cls.xp.int64)
+        res_block, _ = cls.xdimage.label(block)
+        res_block = res_block.astype(cls.xp.int64)
 
         # Add globally unique offset if parameters provided
         if block_info is not None and max_labels_per_chunk is not None:
