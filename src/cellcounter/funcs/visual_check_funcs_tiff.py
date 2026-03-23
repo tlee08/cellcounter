@@ -1,6 +1,7 @@
 import os
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 
 from cellcounter.constants import CACHE_DIR, AnnotColumns, Coords
@@ -14,7 +15,9 @@ from cellcounter.utils.io_utils import silent_remove
 
 class VisualCheckFuncsTiff:
     @classmethod
-    def coords2points_workers(cls, arr: np.ndarray, coords: pd.DataFrame):
+    def coords2points_workers(
+        cls, arr: npt.NDArray, coords: pd.DataFrame
+    ) -> npt.NDArray:
         # Formatting coord values as (z, y, x),
         # rounding to integers, and
         # Filtering
@@ -28,8 +31,8 @@ class VisualCheckFuncsTiff:
                 f"({Coords.Y.value} >= 0) & ({Coords.Y.value} < {s[1]}) & "
                 f"({Coords.X.value} >= 0) & ({Coords.X.value} < {s[2]})"
             )
-            .values
-        )  # type: ignore
+            .to_numpy()
+        )
         # Incrementing the coords in the array
         if coords.shape[0] > 0:
             arr[coords[:, 0], coords[:, 1], coords[:, 2]] += 1
@@ -58,8 +61,7 @@ class VisualCheckFuncsTiff:
         shape: tuple[int, ...],
         out_fp: str,
     ):
-        """
-        Converts list of coordinates to spatial array single points.
+        """Converts list of coordinates to spatial array single points.
 
         Params:
             coords: A pd.DataFrame of points, with the columns, `x`, `y`, and `z`.
@@ -87,8 +89,8 @@ class VisualCheckFuncsTiff:
         out_fp: str,
         radius: int,
     ):
-        """
-        Converts list of coordinates to spatial array as voxels.
+        """Converts list of coordinates to spatial array as voxels.
+
         Overlapping areas accumulate in intensity.
 
         Params:
@@ -106,12 +108,17 @@ class VisualCheckFuncsTiff:
 
         # Constructing sphere array mask
         zz, yy, xx = np.ogrid[1 : radius * 2, 1 : radius * 2, 1 : radius * 2]
-        circ = np.sqrt((xx - radius) ** 2 + (yy - radius) ** 2 + (zz - radius) ** 2) < radius
+        circ = (
+            np.sqrt((xx - radius) ** 2 + (yy - radius) ** 2 + (zz - radius) ** 2)
+            < radius
+        )
         # Constructing offset indices
         i = np.arange(-radius + 1, radius)
         z_ind, y_ind, x_ind = np.meshgrid(i, i, i, indexing="ij")
         # Adding coords to image
-        for z, y, x, t in zip(z_ind.ravel(), y_ind.ravel(), x_ind.ravel(), circ.ravel()):
+        for z, y, x, t in zip(
+            z_ind.ravel(), y_ind.ravel(), x_ind.ravel(), circ.ravel()
+        ):
             if t:
                 coords_i = coords.copy()
                 coords_i[Coords.Z.value] += z
@@ -126,8 +133,7 @@ class VisualCheckFuncsTiff:
 
     @classmethod
     def coords2regions(cls, coords, shape, out_fp):
-        """
-        Converts list of coordinates to spatial array.
+        """Converts list of coordinates to spatial array.
 
         Params:
             coords: A pd.DataFrame of points, with the columns, `x`, `y`, `z`, and `id`.
@@ -150,7 +156,11 @@ class VisualCheckFuncsTiff:
 
         # Formatting coord values as (z, y, x) and rounding to integers
         coords = (
-            coords[[Coords.Z.value, Coords.Y.value, Coords.X.value, AnnotColumns.ID.value]].round(0).astype(np.int16)
+            coords[
+                [Coords.Z.value, Coords.Y.value, Coords.X.value, AnnotColumns.ID.value]
+            ]
+            .round(0)
+            .astype(np.int16)
         )
         if coords.shape[0] > 0:
             np.apply_along_axis(f, 1, coords)

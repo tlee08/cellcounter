@@ -1,7 +1,5 @@
-from collections.abc import Callable
-
-import dask.array as da
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 from scipy import ndimage as sc_ndimage
 from skimage.segmentation import watershed
@@ -17,7 +15,7 @@ class CpuCellcFuncs:
     xdimage = sc_ndimage
 
     @classmethod
-    def tophat_filt(cls, block: np.ndarray, sigma: int = 10) -> np.ndarray:
+    def tophat_filt(cls, block: npt.NDArray, sigma: int = 10) -> npt.NDArray:
         """Calculate top hat filter.
 
         ```
@@ -32,7 +30,9 @@ class CpuCellcFuncs:
         return res_block.astype(cls.xp.uint16)
 
     @classmethod
-    def dog_filt(cls, block: np.ndarray, sigma1=1, sigma2=2) -> np.ndarray:
+    def dog_filt(
+        cls, block: npt.NDArray, sigma1: int = 1, sigma2: int = 2
+    ) -> npt.NDArray:
         block = cls.xp.asarray(block).astype(cls.xp.float32)
         logger.debug("Making gaussian blur 1")
         gaus1 = cls.xdimage.gaussian_filter(block, sigma=sigma1)
@@ -45,14 +45,14 @@ class CpuCellcFuncs:
         return res_block.astype(cls.xp.uint16)
 
     @classmethod
-    def gauss_blur_filt(cls, block: np.ndarray, sigma=10) -> np.ndarray:
+    def gauss_blur_filt(cls, block: npt.NDArray, sigma: int = 10) -> npt.NDArray:
         block = cls.xp.asarray(block).astype(cls.xp.float32)
         logger.debug("Calculate Gaussian blur")
         res_block = cls.xdimage.gaussian_filter(block, sigma=sigma)
         return res_block.astype(cls.xp.uint16)
 
     @classmethod
-    def gauss_subt_filt(cls, block: np.ndarray, sigma=10) -> np.ndarray:
+    def gauss_subt_filt(cls, block: npt.NDArray, sigma: int = 10) -> npt.NDArray:
         block = cls.xp.asarray(block).astype(cls.xp.float32)
         logger.debug("Calculate local Gaussian blur")
         gaus = cls.xdimage.gaussian_filter(block, sigma=sigma)
@@ -64,8 +64,8 @@ class CpuCellcFuncs:
 
     @classmethod
     def intensity_cutoff(
-        cls, block: np.ndarray, min_: None | float = None, max_: None | float = None
-    ) -> np.ndarray:
+        cls, block: npt.NDArray, min_: None | float = None, max_: None | float = None
+    ) -> npt.NDArray:
         """Performing cutoffs on a 3D tensor."""
         block = cls.xp.asarray(block)
         logger.debug("Making cutoffs")
@@ -77,7 +77,7 @@ class CpuCellcFuncs:
         return res_block
 
     @classmethod
-    def otsu_thresh(cls, block: np.ndarray) -> np.ndarray:
+    def otsu_thresh(cls, block: npt.NDArray) -> npt.NDArray:
         """Perform Otsu's thresholding on a 3D tensor."""
         block = cls.xp.asarray(block)
         logger.debug("Calculate histogram")
@@ -104,7 +104,7 @@ class CpuCellcFuncs:
         return res_block.astype(cls.xp.uint8)
 
     @classmethod
-    def mean_thresh(cls, block: np.ndarray, offset_sd: float = 0.0) -> np.ndarray:
+    def mean_thresh(cls, block: npt.NDArray, offset_sd: float = 0.0) -> npt.NDArray:
         """Perform adaptive thresholding on a 3D tensor on GPU."""
         block = cls.xp.asarray(block)
         logger.debug("Get mean and std of ONLY non-zero values")
@@ -116,7 +116,7 @@ class CpuCellcFuncs:
         return res_block.astype(cls.xp.uint8)
 
     @classmethod
-    def manual_thresh(cls, block: np.ndarray, val: int) -> np.ndarray:
+    def manual_thresh(cls, block: npt.NDArray, val: int) -> npt.NDArray:
         """Perform manual thresholding on a tensor."""
         block = cls.xp.asarray(block)
         logger.debug("Applying the threshold")
@@ -126,10 +126,10 @@ class CpuCellcFuncs:
     @classmethod
     def mask2label(
         cls,
-        block: np.ndarray,
+        block: npt.NDArray,
         block_info: dict | None = None,
         max_labels_per_chunk: int | None = None,
-    ) -> np.ndarray:
+    ) -> npt.NDArray:
         """Convert array of mask (usually binary) to contiguous label values.
 
         If block_info and max_labels_per_chunk are provided, adds a globally
@@ -138,7 +138,7 @@ class CpuCellcFuncs:
 
         Parameters
         ----------
-        arr : np.ndarray
+        arr : npt.NDArray
             Input mask array (usually binary)
         block_info : dict, optional
             Block info from dask map_blocks containing chunk-location and num-chunks
@@ -155,8 +155,10 @@ class CpuCellcFuncs:
         res_block, _ = cls.xdimage.label(block)
         res_block = res_block.astype(cls.xp.int64)
         # Add globally unique offset if parameters provided
+        logger.info("ABCD")
+        logger.info(block_info)
         if block_info is not None and max_labels_per_chunk is not None:
-            logger.info("HELLO")
+            logger.info("*******************")
             logger.info(block_info)
             if block_info and block_info[0]:
                 loc = block_info[0]["chunk-location"]
@@ -170,7 +172,7 @@ class CpuCellcFuncs:
         return res_block
 
     @classmethod
-    def get_boundary_pairs(cls, block: np.ndarray, depth: int = 1) -> np.ndarray:
+    def get_boundary_pairs(cls, block: npt.NDArray, depth: int = 1) -> npt.NDArray:
         """Find adjacent label pairs at chunk boundaries.
 
         Only checks the halo-interior interfaces, not the entire chunk interior.
@@ -179,7 +181,7 @@ class CpuCellcFuncs:
 
         Parameters:
         -----------
-        block : np.ndarray
+        block : npt.NDArray
             Overlabeled array chunk with halo of depth=1
         depth : int
             Overlap depth (default 1)
@@ -211,7 +213,7 @@ class CpuCellcFuncs:
         return cls.cp2np((0, 2))
 
     @classmethod
-    def get_label_sizemap(cls, block: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    def get_label_sizemap(cls, block: npt.NDArray) -> tuple[np.ndarray, np.ndarray]:
         """Get a dict of label_val : contiguous_size."""
         block = cls.xp.asarray(block)
         logger.debug("Getting vector of ids and volumes (not incl. 0)")
@@ -224,19 +226,19 @@ class CpuCellcFuncs:
     @classmethod
     def map_values_to_arr(
         cls,
-        block: np.ndarray,
-        ids: np.ndarray,
-        values: np.ndarray,
-    ) -> np.ndarray:
+        block: npt.NDArray,
+        ids: npt.NDArray,
+        values: npt.NDArray,
+    ) -> npt.NDArray:
         """Map label values to their component values.
 
         Parameters:
         -----------
-        block : np.ndarray
+        block : npt.NDArray
             Label array chunk
-        ids : np.ndarray
+        ids : npt.NDArray
             Sorted array of label IDs for lookup
-        values : np.ndarray
+        values : npt.NDArray
             Corresponding component values for each label
 
         Returns:
@@ -260,7 +262,7 @@ class CpuCellcFuncs:
         return res_block
 
     @classmethod
-    def label2volume(cls, block: np.ndarray) -> np.ndarray:
+    def label2volume(cls, block: npt.NDArray) -> npt.NDArray:
         """Convert array of label values to contiguous volume (i.e. count) values."""
         ids, counts = cls.get_label_sizemap(block)
         res_block = cls.map_values_to_arr(block, ids, counts)
@@ -268,8 +270,8 @@ class CpuCellcFuncs:
 
     @classmethod
     def volume_filter(
-        cls, block: np.ndarray, smin: int | None = None, smax: int | None = None
-    ) -> np.ndarray:
+        cls, block: npt.NDArray, smin: int | None = None, smax: int | None = None
+    ) -> npt.NDArray:
         """Assumes `arr` is array of objects labelled with their volumes."""
         block = cls.xp.asarray(block)
         logger.debug("Getting filter of small and large object to filter out")
@@ -283,10 +285,10 @@ class CpuCellcFuncs:
     @classmethod
     def get_local_maxima(
         cls,
-        block: np.ndarray,
+        block: npt.NDArray,
         sigma: int = 10,
         mask_block: None | np.ndarray = None,
-    ) -> np.ndarray:
+    ) -> npt.NDArray:
         """Getting local maxima (no connectivity) in a 3D tensor.
 
         If there is a connected region of maxima, then only the centre point is kept.
@@ -306,7 +308,7 @@ class CpuCellcFuncs:
         return res_block
 
     @classmethod
-    def mask(cls, block: np.ndarray, mask_block: np.ndarray) -> np.ndarray:
+    def mask(cls, block: npt.NDArray, mask_block: npt.NDArray) -> npt.NDArray:
         block = cls.xp.asarray(block)
         mask_block = cls.xp.asarray(mask_block).astype(cls.xp.uint8)
         logger.debug("Masking for only maxima within mask")
@@ -315,8 +317,8 @@ class CpuCellcFuncs:
 
     @classmethod
     def wshed_segm(
-        cls, raw_block: np.ndarray, maxima_block: np.ndarray, mask_block: np.ndarray
-    ) -> np.ndarray:
+        cls, raw_block: npt.NDArray, maxima_block: npt.NDArray, mask_block: npt.NDArray
+    ) -> npt.NDArray:
         """Do watershed segmentation.
 
         NOTE: NOT GPU accelerated
@@ -333,8 +335,8 @@ class CpuCellcFuncs:
 
     @classmethod
     def wshed_segm_volumes(
-        cls, raw_block: np.ndarray, maxima_block: np.ndarray, mask_block: np.ndarray
-    ) -> np.ndarray:
+        cls, raw_block: npt.NDArray, maxima_block: npt.NDArray, mask_block: npt.NDArray
+    ) -> npt.NDArray:
         """Do watershed segmentation with volumes.
 
         NOTE: NOT GPU accelerated
@@ -348,7 +350,7 @@ class CpuCellcFuncs:
         return res_block
 
     @classmethod
-    def get_coords(cls, block: np.ndarray) -> pd.DataFrame:
+    def get_coords(cls, block: npt.NDArray) -> pd.DataFrame:
         """Get coordinates of regions in 3D tensor.
 
         TODO: Keep only the first row (i.e cell) for each label (groupby).
@@ -374,11 +376,11 @@ class CpuCellcFuncs:
     @classmethod
     def get_cells(
         cls,
-        raw_block: np.ndarray,
-        overlap_block: np.ndarray,
-        maxima_labels_block: np.ndarray,
-        wshed_labels_block: np.ndarray,
-        wshed_filt_block: np.ndarray,
+        raw_block: npt.NDArray,
+        overlap_block: npt.NDArray,
+        maxima_labels_block: npt.NDArray,
+        wshed_labels_block: npt.NDArray,
+        wshed_filt_block: npt.NDArray,
         depth: int = DEPTH,
     ) -> pd.DataFrame:
         """Get the cells from the maxima labels and the watershed segmentation.
@@ -450,7 +452,7 @@ class CpuCellcFuncs:
         return cells_df
 
     @staticmethod
-    def cp2np(arr) -> np.ndarray:
+    def cp2np(arr) -> npt.NDArray:
         """Convert cupy to numpy array."""
         try:
             return arr.get()

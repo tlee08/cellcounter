@@ -569,6 +569,8 @@ class Pipeline:
                     for b in label_overlap.to_delayed().ravel()
                 ]
             )
+            for i in pair_arrays:
+                print(i.shape)
             all_pairs = (
                 np.concatenate([p for p in pair_arrays if len(p) > 0], axis=0)
                 if pair_arrays

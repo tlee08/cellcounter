@@ -2,6 +2,7 @@ import os
 import re
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 
 from cellcounter.constants import CACHE_DIR, ELASTIX_ENABLED, Coords
@@ -28,7 +29,7 @@ class ElastixFuncs:
         output_img_fp: str,
         affine_fp: None | str = None,
         bspline_fp: None | str = None,
-    ) -> np.ndarray:
+    ) -> npt.NDArray:
         """Uses SimpleElastix (a plugin for SimpleITK).
 
         Params:
@@ -132,7 +133,7 @@ class ElastixFuncs:
         return coords_transformed
 
     @staticmethod
-    def _make_fixed_points_file(coords: np.ndarray, fixed_points_fp: str) -> None:
+    def _make_fixed_points_file(coords: npt.NDArray, fixed_points_fp: str) -> None:
         """
         https://simpleelastix.readthedocs.io/PointBasedRegistration.html
 
@@ -176,7 +177,7 @@ class ElastixFuncs:
         cls,
         moving_img_fp: str,
         output_img_fp: str,
-    ) -> np.ndarray:
+    ) -> npt.NDArray:
         """
         Uses the transformation parameter output from registration to transform
         cell coordinates from the fixed image space to moving image space.

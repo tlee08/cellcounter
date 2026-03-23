@@ -4,6 +4,7 @@ import dask
 import dask.array as da
 import nibabel as nib
 import numpy as np
+import numpy.typing as npt
 import tifffile
 import zarr
 
@@ -19,7 +20,7 @@ class ArrIOFuncs:
     #############################################
 
     @classmethod
-    def read_tiff(cls, src_fp: Path | str) -> np.ndarray:
+    def read_tiff(cls, src_fp: Path | str) -> npt.NDArray:
         """Read tiff file."""
         arr = tifffile.imread(src_fp)
         for _ in np.arange(len(arr.shape)):
@@ -27,7 +28,7 @@ class ArrIOFuncs:
         return arr
 
     @classmethod
-    def write_tiff(cls, arr: np.ndarray, dst_fp: Path | str) -> None:
+    def write_tiff(cls, arr: npt.NDArray, dst_fp: Path | str) -> None:
         """Write to tiff file."""
         dst_fp = Path(dst_fp)
         dst_fp.parent.mkdir(exist_ok=True)

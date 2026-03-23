@@ -1,4 +1,5 @@
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 
 from cellcounter.constants import MASK_VOLUME, AnnotColumns, Coords
@@ -6,9 +7,8 @@ from cellcounter.constants import MASK_VOLUME, AnnotColumns, Coords
 
 class MaskFuncs:
     @classmethod
-    def make_outline(cls, arr: np.ndarray) -> pd.DataFrame:
-        """
-        Returning a dataframe with the outline coordinates of a 3D binary array.
+    def make_outline(cls, arr: npt.NDArray) -> pd.DataFrame:
+        """Returning a dataframe with the outline coordinates of a 3D binary array.
 
         The dataframe index is an ascending integer (of the outline coordinates)
         and the columns are:
@@ -18,8 +18,12 @@ class MaskFuncs:
         - is_in: 1 if CURRENT voxel is inside mask, 0 if NEXT voxel is outside mask.
         """
         # Shifting along last axis with 0 padding
-        l_shift = np.concatenate([arr[..., 1:], np.zeros((*arr.shape[:-1], 1))], axis=-1)
-        r_shift = np.concatenate([np.zeros((*arr.shape[:-1], 1)), arr[..., :-1]], axis=-1)
+        l_shift = np.concatenate(
+            [arr[..., 1:], np.zeros((*arr.shape[:-1], 1))], axis=-1
+        )
+        r_shift = np.concatenate(
+            [np.zeros((*arr.shape[:-1], 1)), arr[..., :-1]], axis=-1
+        )
         # Finding outline (ins and outs)
         # is_in = 1 means starts in (last axis - x) from pixel
         # is_in = 0 means NEXT pixel starts out (last axis - x)
@@ -36,17 +40,21 @@ class MaskFuncs:
             ]
         )
         # Ordering by z, y, x, so fill outline works
-        coords_df = coords_df.sort_values(by=[Coords.Z.value, Coords.Y.value, Coords.X.value]).reset_index(drop=True)
+        coords_df = coords_df.sort_values(
+            by=[Coords.Z.value, Coords.Y.value, Coords.X.value]
+        ).reset_index(drop=True)
         return coords_df
 
     @classmethod
-    def fill_outline(cls, coords_df: pd.DataFrame, shape: tuple) -> np.ndarray:
+    def fill_outline(cls, coords_df: pd.DataFrame, shape: tuple) -> npt.NDArray:
         # Initialize mask
         res = np.zeros(shape, dtype=np.uint8)
         # Checking that type is 0 or 1
         assert coords_df["is_in"].isin([0, 1]).all()
         # Ordering by z, y, x, so fill outline works
-        coords_df = coords_df.sort_values(by=[Coords.Z.value, Coords.Y.value, Coords.X.value]).reset_index(drop=True)
+        coords_df = coords_df.sort_values(
+            by=[Coords.Z.value, Coords.Y.value, Coords.X.value]
+        ).reset_index(drop=True)
         # For each outline coord
         for i, x in coords_df.iterrows():
             # is_in = 1, fill in (from current voxel)
@@ -58,7 +66,9 @@ class MaskFuncs:
         return res
 
     @classmethod
-    def mask2region_counts(cls, mask_arr: np.ndarray, annot_arr: np.ndarray) -> pd.DataFrame:
+    def mask2region_counts(
+        cls, mask_arr: npt.NDArray, annot_arr: npt.NDArray
+    ) -> pd.DataFrame:
         """
         Given an nd-array mask and an same-shaped annotation array,
         returns a dataframe with region IDs (from annotation array)

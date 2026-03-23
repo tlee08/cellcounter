@@ -1,28 +1,31 @@
 import numpy as np
+import numpy.typing as npt
 from scipy import ndimage
 
 
 class RegFuncs:
     @classmethod
-    def downsmpl_rough(cls, arr: np.ndarray, z_scale: int, y_scale: int, x_scale: int) -> np.ndarray:
-        """
-        Expects scales to be ints
-        """
+    def downsmpl_rough(
+        cls, arr: npt.NDArray, z_scale: int, y_scale: int, x_scale: int
+    ) -> npt.NDArray:
+        """Expects scales to be ints."""
         res = arr[::z_scale, ::y_scale, ::x_scale]
         return res
 
     @classmethod
-    def downsmpl_fine(cls, arr: np.ndarray, z_scale: float, y_scale: float, x_scale: float) -> np.ndarray:
-        """
-        Expects scales to be floats
-        """
+    def downsmpl_fine(
+        cls, arr: npt.NDArray, z_scale: float, y_scale: float, x_scale: float
+    ) -> npt.NDArray:
+        """Expects scales to be floats."""
         res = ndimage.zoom(arr, (z_scale, y_scale, x_scale))
         return res
 
     @classmethod
-    def reorient(cls, arr: np.ndarray, orient_ls: list[int] | tuple[int, ...]):
-        """
-        Order of orient_ls is the axis order.
+    def reorient(
+        cls, arr: npt.NDArray, orient_ls: list[int] | tuple[int, ...]
+    ) -> npt.NDArray:
+        """Order of orient_ls is the axis order.
+
         Negative of an element in orient_ls means that axis is flipped
         Axis order starts from 1, 2, 3, ...
 
