@@ -587,6 +587,7 @@ class Pipeline:
                 uf.union(int(a), int(b))
             # Step 4: Count voxels per label
             logger.debug("aggregating voxels per label...")
+            print("1")
             label_voxel_counts_ls = dask.compute(
                 *[
                     dask.delayed(cls.cellc_funcs.get_label_sizemap)(b)
@@ -597,7 +598,9 @@ class Pipeline:
             counts = np.concatenate([i[1] for i in label_voxel_counts_ls])
             logger.debug("Unique labels (foreground): %d", len(labels))
             # Aggregate by component root
+            print("a")
             uf.build_lookup_table(labels, counts)
+            print("b")
             # Step 5: Map labels to sizes
             logger.debug("Writing output array...")
             sizes_arr = da.map_blocks(
