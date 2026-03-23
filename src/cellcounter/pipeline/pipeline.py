@@ -179,6 +179,8 @@ class Pipeline:
             logger.debug("The configs file does NOT exists.")
             configs = ConfigParamsModel()
             logger.debug("Saving newly created configs file.")
+            print(configs)
+            print(configs.model_dumps())
             write_json(pfm.config_params, configs.model_dump())
         if kwargs != {}:
             logger.debug("kwargs is not empty. They are: %s", kwargs)
@@ -187,8 +189,6 @@ class Pipeline:
                 logger.debug(
                     "New configs are different from old configs. Overwriting to file."
                 )
-                print(configs_new)
-                print(configs_new.model_dumps())
                 write_json(pfm.config_params, configs_new.model_dump())
         logger.debug("Returning the configs file")
         return configs
