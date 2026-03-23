@@ -30,7 +30,7 @@ class ArrIOFuncs:
     def write_tiff(cls, arr: np.ndarray, dst_fp: Path | str) -> None:
         """Write to tiff file."""
         dst_fp = Path(dst_fp)
-        dst_fp.mkdir(exist_ok=True)
+        dst_fp.parent.mkdir(exist_ok=True)
         tifffile.imwrite(dst_fp, arr)
 
     #############################################

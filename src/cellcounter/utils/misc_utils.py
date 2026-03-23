@@ -1,8 +1,9 @@
 import importlib.util
 import inspect
+from collections.abc import Iterable
 from enum import EnumType
 from importlib.util import find_spec
-from typing import Any, Iterable
+from typing import Any
 
 
 # Checking if CPU or GPU version

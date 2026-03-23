@@ -4,6 +4,7 @@ import os
 from collections.abc import Callable
 from curses.ascii import SP
 from multiprocessing import current_process
+from pathlib import Path
 from typing import Any
 
 import dask
@@ -202,13 +203,14 @@ def spatial_connect_agg(arr: da.array, agg: Callable, cluster: SpecCluster):
 #############################################
 
 
-def disk_cache(arr: da.Array, fp):
+def disk_cache(arr: da.Array, fp: Path | str):
     """Save array to disk and return the array.
 
     This is a good way to cache results.
     """
+    fp = Path(fp)
     # Make parent dir
-    os.makedirs(os.path.dirname(fp), exist_ok=True)
+    fp.parent.mkdir(exist_ok=True)
     # Remove existing file (if there) - otherwise error thrown by dask
     silent_remove(fp)
     # Write arr to disk as zarr
