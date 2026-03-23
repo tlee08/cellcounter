@@ -127,7 +127,7 @@ class CpuCellcFuncs:
     def mask2label(
         cls,
         block: npt.NDArray,
-        block_info: dict | None = None,
+        block_info=None,
         max_labels_per_chunk: int | None = None,
     ) -> npt.NDArray:
         """Convert array of mask (usually binary) to contiguous label values.
