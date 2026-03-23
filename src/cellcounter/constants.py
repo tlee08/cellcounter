@@ -6,7 +6,7 @@ import numpy as np
 
 from cellcounter.utils.misc_utils import package_is_importable
 
-PROC_CHUNKS = (500, 1000, 1000)
+PROC_CHUNKS = (500, 500, 500)
 
 ROWS_PARTITION = 10000000
 
