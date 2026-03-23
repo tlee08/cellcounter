@@ -157,6 +157,7 @@ class CpuCellcFuncs:
         # Add globally unique offset if parameters provided
         logger.info("ABCD")
         logger.info(block_info)
+        logger.info(max_labels_per_chunk)
         if block_info is not None and max_labels_per_chunk is not None:
             logger.info("*******************")
             logger.info(block_info)
