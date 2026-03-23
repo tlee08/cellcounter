@@ -141,10 +141,12 @@ class CpuCellcFuncs:
             grid_shape = block_info[0]["num-chunks"]
             flat_idx = cls.xp.ravel_multi_index(loc, grid_shape)
             offset = flat_idx * max_labels_per_chunk
-            print(block[block > 0])
-            print(block[block > 0].dtype)
+            print(grid_shape)
+            print(flat_idx)
             print(offset)
             print(offset.dtype)
+            print(block[block > 0])
+            print(block[block > 0].dtype)
             block[block > 0] += offset
             logger.debug("Applied label offset: %s", offset)
         return block
