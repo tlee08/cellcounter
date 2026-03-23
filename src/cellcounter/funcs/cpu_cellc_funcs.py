@@ -124,6 +124,27 @@ class CpuCellcFuncs:
         return res_block.astype(cls.xp.uint8)
 
     @classmethod
+    def offset_labels_by_block(
+        cls,
+        block: npt.NDArray,
+        block_info: dict | None = None,
+        max_labels_per_chunk: int | None = None,
+    ) -> npt.NDArray:
+        block = cls.xp.asarray(block)
+        if (
+            block_info is not None
+            and block_info[0]
+            and max_labels_per_chunk is not None
+        ):
+            loc = cls.xp.asarray(block_info[0]["chunk-location"])
+            grid_shape = block_info[0]["num-chunks"]
+            flat_idx = cls.xp.ravel_multi_index(loc, grid_shape)
+            offset = flat_idx * max_labels_per_chunk
+            block[block > 0] += offset
+            logger.debug("Applied label offset: %s", offset)
+        return npt.NDArray
+
+    @classmethod
     def mask2label(
         cls,
         block: npt.NDArray,
@@ -155,16 +176,9 @@ class CpuCellcFuncs:
         res_block, _ = cls.xdimage.label(block)
         res_block = res_block.astype(cls.xp.int64)
         # Add globally unique offset if parameters provided
-        if block_info is not None and max_labels_per_chunk is not None:
-            if block_info and block_info[0]:
-                loc = cls.xp.asarray(block_info[0]["chunk-location"])
-                grid_shape = block_info[0]["num-chunks"]
-                flat_idx = cls.xp.ravel_multi_index(loc, grid_shape)
-                offset = flat_idx * max_labels_per_chunk
-                res_block[res_block > 0] += offset
-                logger.debug("Applied label offset: %s", offset)
-            return res_block
-        logger.debug("Returning")
+        res_block = cls.offset_labels_by_block(
+            res_block, block_info, max_labels_per_chunk
+        )
         return res_block
 
     @classmethod
@@ -283,7 +297,9 @@ class CpuCellcFuncs:
         cls,
         block: npt.NDArray,
         sigma: int = 10,
-        mask_block: None | np.ndarray = None,
+        mask_block: None | npt.NDArray = None,
+        block_info: dict | None = None,
+        max_labels_per_chunk: int | None = None,
     ) -> npt.NDArray:
         """Getting local maxima (no connectivity) in a 3D tensor.
 
@@ -301,6 +317,10 @@ class CpuCellcFuncs:
             logger.debug("Mask provided. Maxima only in mask regions considered.")
             mask_block = (cls.xp.asarray(mask_block) > 0).astype(cls.xp.uint8)
             res_block = (res_block * mask_block).astype(cls.xp.uint8)
+        # Add globally unique offset if parameters provided
+        res_block = cls.offset_labels_by_block(
+            res_block, block_info, max_labels_per_chunk
+        )
         return res_block
 
     @classmethod

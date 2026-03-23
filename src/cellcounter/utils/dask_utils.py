@@ -12,6 +12,7 @@ import dask.array
 import dask.array as da
 import dask.dataframe as dd
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 from dask import compute
 from dask.distributed import Client, SpecCluster, get_worker
@@ -121,81 +122,6 @@ def coords2block(df: pd.DataFrame, block_info: dict) -> pd.DataFrame:
     df[Coords.Y.value] = df[Coords.Y.value] - y[0]
     df[Coords.X.value] = df[Coords.X.value] - x[0]
     return df
-
-
-#############################################
-# Spatially aware array -> coords
-#############################################
-
-
-def spatial_connect_agg(arr: da.array, agg: Callable, cluster: SpecCluster):
-    """Connects contiguous foreground components, and aggregate with given func."""
-    with cluster_process(cls.gpu_cluster()):
-        # Reading labeled array
-        labels_arr = da.from_zarr(pfm.threshd_labels)
-        # Step 1: Overlap array to expose boundaries
-        labels_overlap = da.overlap.overlap(labels_arr, depth=1, boundary=0)
-        # Step 2: Find cross-boundary pairs
-        logger.debug("Finding cross-boundary pairs...")
-        delayed_blocks = labels_overlap.to_delayed().ravel()
-        pair_arrays = dask.compute(
-            *[
-                dask.delayed(cls.cellc_funcs.find_boundary_pairs)(b)
-                for b in delayed_blocks
-            ]
-        )
-        all_pairs = (
-            np.concatenate([p for p in pair_arrays if len(p) > 0], axis=0)
-            if pair_arrays
-            else np.empty((0, 2), dtype=np.int64)
-        )
-    logger.debug("Cross-boundary pairs found: %d", len(all_pairs))
-    # Step 3: Union-Find
-    uf = UnionFind()
-    for a, b in all_pairs:
-        uf.union(int(a), int(b))
-    # Step 4: Count voxels per label
-    logger.debug("Counting voxels per label...")
-    label_voxel_counts: dict[int, int] = defaultdict(int)
-    labels_for_count = da.from_zarr(pfm.threshd_labels)
-    for blk in labels_for_count.to_delayed().ravel():
-        arr_blk = blk.compute()
-        fg = arr_blk.ravel()
-        fg = fg[fg > 0]
-        if len(fg) == 0:
-            continue
-        unique, counts = np.unique(fg, return_counts=True)
-        for u, c in zip(unique.tolist(), counts.tolist(), strict=True):
-            label_voxel_counts[u] += c
-    logger.debug("Unique labels (foreground): %d", len(label_voxel_counts))
-    # Aggregate by component root
-    component_sizes: dict[int, int] = defaultdict(int)
-    for label, count in label_voxel_counts.items():
-        component_sizes[uf.find(label)] += count
-    n_components = len(component_sizes)
-    max_size = max(component_sizes.values()) if component_sizes else 0
-    logger.debug("Connected components: %d, largest: %d voxels", n_components, max_size)
-    # Build lookup table
-    label_keys = np.array(list(label_voxel_counts.keys()), dtype=np.int64)
-    label_sizes = np.array(
-        [component_sizes[find(lbl)] for lbl in label_keys], dtype=np.int64
-    )
-    sort_idx = np.argsort(label_keys)
-    sorted_keys = label_keys[sort_idx]
-    sorted_sizes = label_sizes[sort_idx]
-
-    # Step 5: Map labels to sizes
-    logger.debug("Writing output array...")
-    with cluster_process(cls.gpu_cluster()):
-        labels_for_output = da.from_zarr(pfm.threshd_labels)
-        sizes_arr = da.map_blocks(
-            cls.cellc_funcs.map_labels_to_sizes,
-            labels_for_output,
-            sorted_keys=sorted_keys,
-            sorted_sizes=sorted_sizes,
-            dtype=np.int64,
-        )
-        disk_cache(sizes_arr, pfm.threshd_volumes)
 
 
 #############################################

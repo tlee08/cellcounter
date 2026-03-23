@@ -93,6 +93,17 @@ class GpuCellcFuncs(CpuCellcFuncs):
         return cls._clear_cuda_mem_dec(super().manual_thresh)(*args, **kwargs).get()
 
     @classmethod
+    def offset_labels_by_block(
+        cls,
+        block: npt.NDArray,
+        block_info: dict | None = None,
+        max_labels_per_chunk: int | None = None,
+    ):
+        return cls._clear_cuda_mem_dec(super().offset_labels_by_block)(
+            block, block_info, max_labels_per_chunk
+        ).get()
+
+    @classmethod
     def mask2label(
         cls,
         block: npt.NDArray,
@@ -124,8 +135,17 @@ class GpuCellcFuncs(CpuCellcFuncs):
         return cls._clear_cuda_mem_dec(super().volume_filter)(*args, **kwargs).get()
 
     @classmethod
-    def get_local_maxima(cls, *args, **kwargs):
-        return cls._clear_cuda_mem_dec(super().get_local_maxima)(*args, **kwargs).get()
+    def get_local_maxima(
+        cls,
+        block: npt.NDArray,
+        sigma: int = 10,
+        mask_block: None | npt.NDArray = None,
+        block_info: dict | None = None,
+        max_labels_per_chunk: int | None = None,
+    ) -> npt.NDArray:
+        return cls._clear_cuda_mem_dec(super().get_local_maxima)(
+            block, sigma, mask_block, block_info, max_labels_per_chunk
+        ).get()
 
     @classmethod
     def mask(cls, *args, **kwargs):
