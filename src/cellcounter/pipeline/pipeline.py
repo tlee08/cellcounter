@@ -180,7 +180,7 @@ class Pipeline:
             configs = ConfigParamsModel()
             logger.debug("Saving newly created configs file.")
             print(configs)
-            print(configs.model_dumps())
+            print(configs.model_dump())
             write_json(pfm.config_params, configs.model_dump())
         if kwargs != {}:
             logger.debug("kwargs is not empty. They are: %s", kwargs)
