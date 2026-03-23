@@ -187,6 +187,7 @@ class CpuCellcFuncs:
         np.ndarray
             Array of shape (N, 2) with adjacent label pairs
         """
+        block = cls.xp.asarray(block)
         pairs = set()
         for axis in range(block.ndim):
             # Check both faces of this axis
@@ -204,8 +205,8 @@ class CpuCellcFuncs:
                     hi = cls.xp.maximum(a[mask], b[mask])
                     pairs.update(zip(lo.tolist(), hi.tolist(), strict=True))
         if pairs:
-            return cls.xp.array(list(pairs), dtype=cls.xp.int64)
-        return cls.xp.empty((0, 2), dtype=cls.xp.int64)
+            return cls.cp2np(list(pairs))
+        return cls.cp2np((0, 2))
 
     @classmethod
     def get_label_sizemap(cls, block: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
@@ -215,7 +216,7 @@ class CpuCellcFuncs:
         mask = block > 0
         labels_fg = block[mask]
         ids, counts = cls.xp.unique(labels_fg, return_counts=True)
-        # Return ids and corresponding counts
+        # Return ids and corresponding counts (as np array)
         return cls.cp2np(ids), cls.cp2np(counts)
 
     @classmethod
