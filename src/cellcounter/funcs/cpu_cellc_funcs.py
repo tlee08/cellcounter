@@ -141,14 +141,6 @@ class CpuCellcFuncs:
             grid_shape = block_info[0]["num-chunks"]
             flat_idx = cls.xp.ravel_multi_index(loc, grid_shape)
             offset = flat_idx * max_labels_per_chunk
-            print(loc)
-            print(grid_shape)
-            print(flat_idx)
-            print(offset)
-            print(offset.dtype)
-            print(block[block > 0])
-            print(block[block > 0].dtype)
-            print()
             block[block > 0] += offset.astype(block.dtype)
             logger.debug("Applied label offset: %s", offset)
         return block
@@ -402,7 +394,6 @@ class CpuCellcFuncs:
     def get_cells(
         cls,
         raw_block: npt.NDArray,
-        overlap_block: npt.NDArray,
         maxima_labels_block: npt.NDArray,
         wshed_labels_block: npt.NDArray,
         wshed_filt_block: npt.NDArray,
@@ -412,13 +403,10 @@ class CpuCellcFuncs:
 
         Also get corresponding labels.
         """
-        # NOTE: we NEED raw_arr as the first da.Array to get chunking coord offsets correct
-        # Asserting arr sizes match between arr_raw, arr_overlap, and depth
-        assert raw_block.shape == tuple(i - 2 * depth for i in overlap_block.shape)
-        assert overlap_block.shape == maxima_labels_block.shape
-        assert overlap_block.shape == wshed_filt_block.shape
+        assert raw_block.shape == maxima_labels_block.shape
+        assert raw_block.shape == wshed_filt_block.shape
         # Converting to xp arrays
-        overlap_block = cls.xp.asarray(overlap_block)
+        raw_block = cls.xp.asarray(raw_block)
         maxima_labels_block = cls.xp.asarray(maxima_labels_block)
         wshed_labels_block = cls.xp.asarray(wshed_labels_block)
         wshed_filt_block = cls.xp.asarray(wshed_filt_block)
@@ -464,7 +452,7 @@ class CpuCellcFuncs:
         if cls.xp.any(wshed_filt_block > 0) and cells_df.shape[0] > 0:
             sum_intensity = cls.xp.bincount(
                 wshed_labels_block[wshed_filt_block > 0].ravel(),
-                weights=overlap_block[wshed_filt_block > 0].ravel(),
+                weights=raw_block[wshed_filt_block > 0].ravel(),
                 minlength=label_max + 1,
             )
             cells_df[CellColumns.SUM_INTENSITY.value] = pd.Series(

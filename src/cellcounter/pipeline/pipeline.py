@@ -36,7 +36,6 @@ from cellcounter.utils.config_params_model import ConfigParamsModel
 from cellcounter.utils.dask_utils import (
     block2coords,
     cluster_process,
-    da_overlap,
     disk_cache,
 )
 from cellcounter.utils.diagnostics_utils import file_exists_msg
@@ -557,7 +556,14 @@ class Pipeline:
 
     @classmethod
     def spatial_connect_count(cls, label_arr: da.array) -> da.array:
-        """Connects contiguous foreground components, and aggregate with given func."""
+        """Connects contiguous foreground components, and aggregate with given func.
+
+        Handles cross-chunk connectivity by:
+        1. Overlapping labeled array to expose boundaries
+        2. Finding adjacent label pairs across boundaries
+        3. Union-Find to merge labels belonging to same physical region
+        4. Mapping each label to its component size
+        """
         with cluster_process(cls.gpu_cluster()):
             # Step 1: Overlap array to expose boundaries
             label_overlap = da.overlap.overlap(label_arr, depth=1, boundary=0)
@@ -606,24 +612,6 @@ class Pipeline:
     #############################################
     # CELL COUNTING PIPELINE FUNCS
     #############################################
-    @classmethod
-    def img_overlap(
-        cls, proj_dir: Path | str, overwrite: bool = False, tuning: bool = False
-    ) -> None:
-        """Overlap image."""
-        pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
-        if not overwrite:
-            for fp in (pfm.overlap,):
-                if fp.exists():
-                    logger.warning(file_exists_msg(fp))
-                    return
-        # Getting configs
-        configs = ConfigParamsModel.read_fp(pfm.config_params)
-        # Making overlap image
-        with cluster_process(cls.heavy_cluster()):
-            raw_arr = da.from_zarr(pfm.raw, chunks=configs.zarr_chunksize)
-            overlap_arr = da_overlap(raw_arr, d=configs.overlap_depth)
-            overlap_arr = disk_cache(overlap_arr, pfm.overlap)
 
     @classmethod
     def cellc1(
@@ -650,7 +638,6 @@ class Pipeline:
             # Getting configs
             configs = ConfigParamsModel.read_fp(pfm.config_params)
             # Reading input images
-            # overlap_arr = da.from_zarr(pfm.overlap)
             raw_arr = da.from_zarr(pfm.raw)
             # Declaring processing instructions
             bgrm_arr = da.map_blocks(
@@ -810,12 +797,6 @@ class Pipeline:
     ) -> None:
         """Cell counting pipeline - Step 5b: Compute contiguous sizes using union-find.
 
-        Handles cross-chunk connectivity by:
-        1. Overlapping labeled array to expose boundaries
-        2. Finding adjacent label pairs across boundaries
-        3. Union-Find to merge labels belonging to same physical region
-        4. Mapping each label to its component size
-
         Args:
             proj_dir (str): Project directory path.
             overwrite (bool, optional): If True, overwrite existing outputs. Defaults to False.
@@ -966,13 +947,13 @@ class Pipeline:
                     return
         with cluster_process(cls.heavy_cluster()):
             # Reading input images
-            overlap_arr = da.from_zarr(pfm.overlap)
+            raw_arr = da.from_zarr(pfm.raw)
             maxima_labels_arr = da.from_zarr(pfm.maxima_labels)
             threshd_filt_arr = da.from_zarr(pfm.threshd_filt)
             # Declaring processing instructions
             wshed_labels_arr = da.map_blocks(
                 cls.cellc_funcs.wshed_segm,
-                overlap_arr,
+                raw_arr,
                 maxima_labels_arr,
                 threshd_filt_arr,
             )
@@ -1038,7 +1019,7 @@ class Pipeline:
 
         Saves a table of cells and their measures.
 
-        Uses raw, overlap, maxima_labels, wshed_labels, and wshed_filt
+        Uses raw, maxima_labels, wshed_labels, and wshed_filt
         (so wshed computation not run again).
         Also allows GPU processing.
         """
@@ -1054,7 +1035,6 @@ class Pipeline:
             configs = ConfigParamsModel.read_fp(pfm.config_params)
             # Reading input images
             raw_arr = da.from_zarr(pfm.raw)
-            overlap_arr = da.from_zarr(pfm.overlap)
             maxima_labels_arr = da.from_zarr(pfm.maxima_labels)
             wshed_labels_arr = da.from_zarr(pfm.wshed_labels)
             wshed_filt_arr = da.from_zarr(pfm.wshed_filt)
@@ -1063,7 +1043,6 @@ class Pipeline:
             cells_df = block2coords(
                 GpuCellcFuncs.get_cells,
                 raw_arr,
-                overlap_arr,
                 maxima_labels_arr,
                 wshed_labels_arr,
                 wshed_filt_arr,
@@ -1367,7 +1346,6 @@ class Pipeline:
         cls.make_tuning_arr(proj_dir, overwrite=overwrite)
         # Cell counting (tuning and final)
         for is_tuning in [True, False]:
-            cls.img_overlap(proj_dir, overwrite=overwrite, tuning=is_tuning)
             cls.cellc1(proj_dir, overwrite=overwrite, tuning=is_tuning)
             cls.cellc2(proj_dir, overwrite=overwrite, tuning=is_tuning)
             cls.cellc3(proj_dir, overwrite=overwrite, tuning=is_tuning)
