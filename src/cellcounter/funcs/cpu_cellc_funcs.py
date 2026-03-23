@@ -154,7 +154,6 @@ class CpuCellcFuncs:
         cls.logger.debug("Labelling contiguous objects uniquely")
         res_block, _ = cls.xdimage.label(block)
         res_block = res_block.astype(cls.xp.int64)
-
         # Add globally unique offset if parameters provided
         if block_info is not None and max_labels_per_chunk is not None:
             if block_info and block_info[0]:
@@ -167,6 +166,46 @@ class CpuCellcFuncs:
             return res_block
         cls.logger.debug("Returning")
         return res_block
+
+    @classmethod
+    def get_boundary_pairs(cls, block: np.ndarray, depth: int = 1) -> np.ndarray:
+        """Find adjacent label pairs at chunk boundaries.
+
+        Only checks the halo-interior interfaces, not the entire chunk interior.
+        This is valid because labeling already merged all intra-chunk adjacencies,
+        so different labels can only meet at chunk boundaries.
+
+        Parameters:
+        -----------
+        block : np.ndarray
+            Overlabeled array chunk with halo of depth=1
+        depth : int
+            Overlap depth (default 1)
+
+        Returns:
+        --------
+        np.ndarray
+            Array of shape (N, 2) with adjacent label pairs
+        """
+        pairs = set()
+        for axis in range(block.ndim):
+            # Check both faces of this axis
+            for face in [(depth - 1, depth), (-depth - 1, -depth)]:
+                idx_a, idx_b = face
+                sl_a = [slice(None)] * block.ndim
+                sl_b = [slice(None)] * block.ndim
+                sl_a[axis] = idx_a
+                sl_b[axis] = idx_b
+                a = block[tuple(sl_a)].ravel()
+                b = block[tuple(sl_b)].ravel()
+                mask = (a > 0) & (b > 0) & (a != b)
+                if mask.any():
+                    lo = cls.xp.minimum(a[mask], b[mask])
+                    hi = cls.xp.maximum(a[mask], b[mask])
+                    pairs.update(zip(lo.tolist(), hi.tolist(), strict=True))
+        if pairs:
+            return cls.xp.array(list(pairs), dtype=cls.xp.int64)
+        return cls.xp.empty((0, 2), dtype=cls.xp.int64)
 
     @classmethod
     def get_label_sizemap(cls, block: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
@@ -223,46 +262,6 @@ class CpuCellcFuncs:
         ids, counts = cls.get_label_sizemap(block)
         res_block = cls.map_values_to_arr(block, ids, counts)
         return res_block
-
-    @classmethod
-    def find_boundary_pairs(cls, block: np.ndarray, depth: int = 1) -> np.ndarray:
-        """Find adjacent label pairs at chunk boundaries.
-
-        Only checks the halo-interior interfaces, not the entire chunk interior.
-        This is valid because labeling already merged all intra-chunk adjacencies,
-        so different labels can only meet at chunk boundaries.
-
-        Parameters:
-        -----------
-        block : np.ndarray
-            Overlabeled array chunk with halo of depth=1
-        depth : int
-            Overlap depth (default 1)
-
-        Returns:
-        --------
-        np.ndarray
-            Array of shape (N, 2) with adjacent label pairs
-        """
-        pairs = set()
-        for axis in range(block.ndim):
-            # Check both faces of this axis
-            for face in [(depth - 1, depth), (-depth - 1, -depth)]:
-                idx_a, idx_b = face
-                sl_a = [slice(None)] * block.ndim
-                sl_b = [slice(None)] * block.ndim
-                sl_a[axis] = idx_a
-                sl_b[axis] = idx_b
-                a = block[tuple(sl_a)].ravel()
-                b = block[tuple(sl_b)].ravel()
-                mask = (a > 0) & (b > 0) & (a != b)
-                if mask.any():
-                    lo = cls.xp.minimum(a[mask], b[mask])
-                    hi = cls.xp.maximum(a[mask], b[mask])
-                    pairs.update(zip(lo.tolist(), hi.tolist(), strict=True))
-        if pairs:
-            return cls.xp.array(list(pairs), dtype=cls.xp.int64)
-        return cls.xp.empty((0, 2), dtype=cls.xp.int64)
 
     @classmethod
     def volume_filter(

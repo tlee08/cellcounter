@@ -95,6 +95,12 @@ class GpuCellcFuncs(CpuCellcFuncs):
         return cls._clear_cuda_mem_dec(super().mask2label)(*args, **kwargs).get()
 
     @classmethod
+    def get_boundary_pairs(cls, *args, **kwargs):
+        return cls._clear_cuda_mem_dec(super().get_boundary_pairs)(
+            *args, **kwargs
+        ).get()
+
+    @classmethod
     def get_label_sizemap(cls, *args, **kwargs):
         return cls._clear_cuda_mem_dec(super().get_label_sizemap)(*args, **kwargs).get()
 
@@ -105,11 +111,6 @@ class GpuCellcFuncs(CpuCellcFuncs):
     @classmethod
     def label2volume(cls, *args, **kwargs):
         return cls._clear_cuda_mem_dec(super().label2volume)(*args, **kwargs).get()
-
-    @classmethod
-    def find_boundary_pairs(cls, *args, **kwargs):
-        # NOTE: Returns numpy array
-        return cls._clear_cuda_mem_dec(super().find_boundary_pairs)(*args, **kwargs)
 
     @classmethod
     def volume_filter(cls, *args, **kwargs):

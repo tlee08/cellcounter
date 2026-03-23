@@ -565,7 +565,7 @@ class Pipeline:
             logger.debug("Finding cross-boundary pairs...")
             pair_arrays = dask.compute(
                 *[
-                    dask.delayed(cls.cellc_funcs.find_boundary_pairs)(b)
+                    dask.delayed(cls.cellc_funcs.get_boundary_pairs)(b)
                     for b in label_overlap.to_delayed().ravel()
                 ]
             )
