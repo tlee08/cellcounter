@@ -156,8 +156,6 @@ class CpuCellcFuncs:
         res_block = res_block.astype(cls.xp.int64)
         # Add globally unique offset if parameters provided
         if block_info is not None and max_labels_per_chunk is not None:
-            logger.info("*******************")
-            logger.info(block_info)
             if block_info and block_info[0]:
                 loc = cls.xp.asarray(block_info[0]["chunk-location"])
                 grid_shape = block_info[0]["num-chunks"]
