@@ -9,12 +9,12 @@ from skimage.segmentation import watershed
 from cellcounter.constants import CELL_IDX_NAME, DEPTH, CellColumns, Coords
 from cellcounter.utils.logging_utils import init_logger_file
 
+logger = init_logger_file(__name__)
+
 
 class CpuCellcFuncs:
     xp = np
     xdimage = sc_ndimage
-
-    logger = init_logger_file(__name__)
 
     @classmethod
     def tophat_filt(cls, block: np.ndarray, sigma: int = 10) -> np.ndarray:
@@ -25,40 +25,40 @@ class CpuCellcFuncs:
         ```
         """
         block = cls.xp.asarray(block).astype(cls.xp.float32)
-        cls.logger.debug("Perform white top-hat filter")
+        logger.debug("Perform white top-hat filter")
         res_block = cls.xdimage.white_tophat(block, sigma)
-        cls.logger.debug("ReLu")
+        logger.debug("ReLu")
         res_block = cls.xp.maximum(res_block, 0)
         return res_block.astype(cls.xp.uint16)
 
     @classmethod
     def dog_filt(cls, block: np.ndarray, sigma1=1, sigma2=2) -> np.ndarray:
         block = cls.xp.asarray(block).astype(cls.xp.float32)
-        cls.logger.debug("Making gaussian blur 1")
+        logger.debug("Making gaussian blur 1")
         gaus1 = cls.xdimage.gaussian_filter(block, sigma=sigma1)
-        cls.logger.debug("Making gaussian blur 2")
+        logger.debug("Making gaussian blur 2")
         gaus2 = cls.xdimage.gaussian_filter(block, sigma=sigma2)
-        cls.logger.debug("Subtracting gaussian blurs")
+        logger.debug("Subtracting gaussian blurs")
         res_block = gaus1 - gaus2
-        cls.logger.debug("ReLu")
+        logger.debug("ReLu")
         res_block = cls.xp.maximum(res_block, 0)
         return res_block.astype(cls.xp.uint16)
 
     @classmethod
     def gauss_blur_filt(cls, block: np.ndarray, sigma=10) -> np.ndarray:
         block = cls.xp.asarray(block).astype(cls.xp.float32)
-        cls.logger.debug("Calculate Gaussian blur")
+        logger.debug("Calculate Gaussian blur")
         res_block = cls.xdimage.gaussian_filter(block, sigma=sigma)
         return res_block.astype(cls.xp.uint16)
 
     @classmethod
     def gauss_subt_filt(cls, block: np.ndarray, sigma=10) -> np.ndarray:
         block = cls.xp.asarray(block).astype(cls.xp.float32)
-        cls.logger.debug("Calculate local Gaussian blur")
+        logger.debug("Calculate local Gaussian blur")
         gaus = cls.xdimage.gaussian_filter(block, sigma=sigma)
-        cls.logger.debug("Apply the adaptive filter")
+        logger.debug("Apply the adaptive filter")
         res_block = block - gaus
-        cls.logger.debug("ReLu")
+        logger.debug("ReLu")
         res_block = cls.xp.maximum(res_block, 0)
         return res_block.astype(cls.xp.uint16)
 
@@ -68,7 +68,7 @@ class CpuCellcFuncs:
     ) -> np.ndarray:
         """Performing cutoffs on a 3D tensor."""
         block = cls.xp.asarray(block)
-        cls.logger.debug("Making cutoffs")
+        logger.debug("Making cutoffs")
         res_block = block
         if min_ is not None:
             res_block = cls.xp.maximum(res_block, min_)
@@ -80,26 +80,26 @@ class CpuCellcFuncs:
     def otsu_thresh(cls, block: np.ndarray) -> np.ndarray:
         """Perform Otsu's thresholding on a 3D tensor."""
         block = cls.xp.asarray(block)
-        cls.logger.debug("Calculate histogram")
+        logger.debug("Calculate histogram")
         hist, bin_edges = cls.xp.histogram(block, bins=256)
-        cls.logger.debug("Normalize histogram")
+        logger.debug("Normalize histogram")
         prob_hist = hist / hist.sum()
-        cls.logger.debug("Compute cumulative sum and cumulative mean")
+        logger.debug("Compute cumulative sum and cumulative mean")
         cum_sum = cls.xp.cumsum(prob_hist)
         cum_mean = cls.xp.cumsum(prob_hist * cls.xp.arange(256))
-        cls.logger.debug("Compute global mean")
+        logger.debug("Compute global mean")
         global_mean = cum_mean[-1]
-        cls.logger.debug(
+        logger.debug(
             "Compute between class variance for all thresholds and find the threshold that maximizes it"
         )
         numerator = (global_mean * cum_sum - cum_mean) ** 2
         denominator = cum_sum * (1.0 - cum_sum)
-        cls.logger.debug("Avoid division by zero")
+        logger.debug("Avoid division by zero")
         denominator = cls.xp.where(denominator == 0, float("inf"), denominator)
         between_class_variance = numerator / denominator
-        cls.logger.debug("Find the threshold that maximizes the between class variance")
+        logger.debug("Find the threshold that maximizes the between class variance")
         optimal_threshold = cls.xp.argmax(between_class_variance)
-        cls.logger.debug("Apply threshold")
+        logger.debug("Apply threshold")
         res_block = block > optimal_threshold
         return res_block.astype(cls.xp.uint8)
 
@@ -107,11 +107,11 @@ class CpuCellcFuncs:
     def mean_thresh(cls, block: np.ndarray, offset_sd: float = 0.0) -> np.ndarray:
         """Perform adaptive thresholding on a 3D tensor on GPU."""
         block = cls.xp.asarray(block)
-        cls.logger.debug("Get mean and std of ONLY non-zero values")
+        logger.debug("Get mean and std of ONLY non-zero values")
         arr0 = block[block > 0]
         mu = arr0.mean()
         sd = arr0.std()
-        cls.logger.debug("Apply the threshold")
+        logger.debug("Apply the threshold")
         res_block = block > mu + offset_sd * sd
         return res_block.astype(cls.xp.uint8)
 
@@ -119,7 +119,7 @@ class CpuCellcFuncs:
     def manual_thresh(cls, block: np.ndarray, val: int) -> np.ndarray:
         """Perform manual thresholding on a tensor."""
         block = cls.xp.asarray(block)
-        cls.logger.debug("Applying the threshold")
+        logger.debug("Applying the threshold")
         res_block = block >= val
         return res_block.astype(cls.xp.uint8)
 
@@ -151,22 +151,22 @@ class CpuCellcFuncs:
             Labeled array with uint32 dtype (or int64 if using global offsets)
         """
         block = cls.xp.asarray(block).astype(cls.xp.uint8)
-        cls.logger.debug("Labelling contiguous objects uniquely")
+        logger.debug("Labelling contiguous objects uniquely")
         res_block, _ = cls.xdimage.label(block)
         res_block = res_block.astype(cls.xp.int64)
         # Add globally unique offset if parameters provided
         if block_info is not None and max_labels_per_chunk is not None:
-            print("HELLO")
-            print(block_info)
+            logger.info("HELLO")
+            logger.info(block_info)
             if block_info and block_info[0]:
                 loc = block_info[0]["chunk-location"]
                 grid_shape = block_info[0]["num-chunks"]
                 flat_idx = cls.xp.ravel_multi_index(loc, grid_shape)
                 offset = flat_idx * max_labels_per_chunk
                 res_block[res_block > 0] += offset
-                cls.logger.debug("Applied label offset: %s", offset)
+                logger.debug("Applied label offset: %s", offset)
             return res_block
-        cls.logger.debug("Returning")
+        logger.debug("Returning")
         return res_block
 
     @classmethod
@@ -214,7 +214,7 @@ class CpuCellcFuncs:
     def get_label_sizemap(cls, block: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         """Get a dict of label_val : contiguous_size."""
         block = cls.xp.asarray(block)
-        cls.logger.debug("Getting vector of ids and volumes (not incl. 0)")
+        logger.debug("Getting vector of ids and volumes (not incl. 0)")
         mask = block > 0
         labels_fg = block[mask]
         ids, counts = cls.xp.unique(labels_fg, return_counts=True)
@@ -272,11 +272,11 @@ class CpuCellcFuncs:
     ) -> np.ndarray:
         """Assumes `arr` is array of objects labelled with their volumes."""
         block = cls.xp.asarray(block)
-        cls.logger.debug("Getting filter of small and large object to filter out")
+        logger.debug("Getting filter of small and large object to filter out")
         smin = smin or 0
         smax = smax or block.max()
         filt_objs = (block < smin) | (block > smax)
-        cls.logger.debug("Filter out objects (by setting them to 0)")
+        logger.debug("Filter out objects (by setting them to 0)")
         block[filt_objs] = 0
         return block
 
@@ -294,13 +294,13 @@ class CpuCellcFuncs:
         If `mask_arr` is provided, then only maxima within the mask are kept.
         """
         block = cls.xp.asarray(block)
-        cls.logger.debug("Making max filter for raw arr (maximum in given area)")
+        logger.debug("Making max filter for raw arr (maximum in given area)")
         max_arr = cls.xdimage.maximum_filter(block, sigma)
-        cls.logger.debug("Getting local maxima (where arr == max_arr)")
+        logger.debug("Getting local maxima (where arr == max_arr)")
         res_block = block == max_arr
         # If a mask is given, then keep only the maxima within the mask
         if mask_block is not None:
-            cls.logger.debug("Mask provided. Maxima only in mask regions considered.")
+            logger.debug("Mask provided. Maxima only in mask regions considered.")
             mask_block = (cls.xp.asarray(mask_block) > 0).astype(cls.xp.uint8)
             res_block = (res_block * mask_block).astype(cls.xp.uint8)
         return res_block
@@ -309,7 +309,7 @@ class CpuCellcFuncs:
     def mask(cls, block: np.ndarray, mask_block: np.ndarray) -> np.ndarray:
         block = cls.xp.asarray(block)
         mask_block = cls.xp.asarray(mask_block).astype(cls.xp.uint8)
-        cls.logger.debug("Masking for only maxima within mask")
+        logger.debug("Masking for only maxima within mask")
         res_block = block * (mask_block > 0)
         return res_block
 
@@ -323,7 +323,7 @@ class CpuCellcFuncs:
 
         Expects `maxima_arr` to have unique labels for each maxima.
         """
-        cls.logger.debug("Watershed segmentation")
+        logger.debug("Watershed segmentation")
         res_block = watershed(
             image=-raw_block,
             markers=maxima_block,
@@ -353,11 +353,11 @@ class CpuCellcFuncs:
 
         TODO: Keep only the first row (i.e cell) for each label (groupby).
         """
-        cls.logger.debug("Getting coordinates of regions")
+        logger.debug("Getting coordinates of regions")
         z, y, x = np.where(block)
-        cls.logger.debug("Getting IDs of regions (from coords)")
+        logger.debug("Getting IDs of regions (from coords)")
         ids = block[z, y, x]
-        cls.logger.debug("Making dataframe")
+        logger.debug("Making dataframe")
         df = pd.DataFrame(
             {
                 Coords.Z.value: z,
