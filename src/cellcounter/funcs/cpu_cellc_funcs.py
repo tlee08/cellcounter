@@ -155,15 +155,12 @@ class CpuCellcFuncs:
         res_block, _ = cls.xdimage.label(block)
         res_block = res_block.astype(cls.xp.int64)
         # Add globally unique offset if parameters provided
-        logger.info("ABCD")
-        logger.info(block_info)
-        logger.info(max_labels_per_chunk)
         if block_info is not None and max_labels_per_chunk is not None:
             logger.info("*******************")
             logger.info(block_info)
             if block_info and block_info[0]:
-                loc = block_info[0]["chunk-location"]
-                grid_shape = block_info[0]["num-chunks"]
+                loc = cls.xp.asarray(block_info[0]["chunk-location"])
+                grid_shape = cls.xp.asarray(block_info[0]["num-chunks"])
                 flat_idx = cls.xp.ravel_multi_index(loc, grid_shape)
                 offset = flat_idx * max_labels_per_chunk
                 res_block[res_block > 0] += offset
