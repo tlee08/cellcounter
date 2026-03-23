@@ -110,9 +110,10 @@ class GpuCellcFuncs(CpuCellcFuncs):
         block_info: dict | None = None,
         max_labels_per_chunk: int | None = None,
     ) -> npt.NDArray:
+        # NOTE: already converted to numpy inside
         return cls._clear_cuda_mem_dec(super().mask2label)(
             block, block_info, max_labels_per_chunk
-        ).get()
+        )
 
     @classmethod
     def get_boundary_pairs(cls, *args, **kwargs):
@@ -128,7 +129,8 @@ class GpuCellcFuncs(CpuCellcFuncs):
 
     @classmethod
     def label2volume(cls, *args, **kwargs):
-        return cls._clear_cuda_mem_dec(super().label2volume)(*args, **kwargs).get()
+        # NOTE: already converted to numpy inside
+        return cls._clear_cuda_mem_dec(super().label2volume)(*args, **kwargs)
 
     @classmethod
     def volume_filter(cls, *args, **kwargs):
@@ -143,9 +145,10 @@ class GpuCellcFuncs(CpuCellcFuncs):
         block_info: dict | None = None,
         max_labels_per_chunk: int | None = None,
     ) -> npt.NDArray:
+        # NOTE: already converted to numpy inside
         return cls._clear_cuda_mem_dec(super().get_local_maxima)(
             block, sigma, mask_block, block_info, max_labels_per_chunk
-        ).get()
+        )
 
     @classmethod
     def mask(cls, *args, **kwargs):
