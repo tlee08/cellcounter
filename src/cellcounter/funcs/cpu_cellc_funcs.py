@@ -137,10 +137,12 @@ class CpuCellcFuncs:
             and block_info[0]
             and max_labels_per_chunk is not None
         ):
+            print(block_info)
             loc = cls.xp.asarray(block_info[0]["chunk-location"])
             grid_shape = block_info[0]["num-chunks"]
             flat_idx = cls.xp.ravel_multi_index(loc, grid_shape)
             offset = flat_idx * max_labels_per_chunk
+            print(loc)
             print(grid_shape)
             print(flat_idx)
             print(offset)
