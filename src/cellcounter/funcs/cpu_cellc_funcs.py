@@ -160,7 +160,7 @@ class CpuCellcFuncs:
             logger.info(block_info)
             if block_info and block_info[0]:
                 loc = cls.xp.asarray(block_info[0]["chunk-location"])
-                grid_shape = cls.xp.asarray(block_info[0]["num-chunks"])
+                grid_shape = block_info[0]["num-chunks"]
                 flat_idx = cls.xp.ravel_multi_index(loc, grid_shape)
                 offset = flat_idx * max_labels_per_chunk
                 res_block[res_block > 0] += offset
