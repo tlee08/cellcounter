@@ -16,7 +16,7 @@ from cellcounter.gui.gui_funcs import (
 )
 from cellcounter.pipeline.pipeline import Pipeline
 from cellcounter.utils.config_params_model import ConfigParamsModel
-from cellcounter.utils.io_utils import write_json
+from cellcounter.utils.io_utils import write_file
 from cellcounter.utils.misc_utils import const2list, dictlists2listdicts, enum2list
 
 UPDATE = "update"
@@ -377,7 +377,7 @@ def configs_save_func():
     proj_dir = st.session_state[PROJ_DIR]
     pfm = Pipeline.get_pfm(proj_dir)
     fp = pfm.config_params
-    write_json(fp, configs.model_dump())
+    configs.write2file(fp)
 
 
 @page_decorator()

@@ -126,12 +126,12 @@ def read_json(fp: Path | str) -> dict:
         return json.load(f)
 
 
-def write_json(fp: Path | str, data: dict) -> None:
+def write_file(fp: Path | str, content: str) -> None:
     """Write json to file."""
     fp = Path(fp)
     fp.parent.mkdir(exist_ok=True)
     with fp.open(mode="w") as f:
-        json.dump(data, f, indent=4)
+        f.write(content)
 
 
 def silent_remove(fp: Path | str) -> None:

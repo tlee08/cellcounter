@@ -43,7 +43,7 @@ from cellcounter.utils.io_utils import (
     read_json,
     sanitise_smb_df,
     silent_remove,
-    write_json,
+    write_file,
     write_parquet,
 )
 from cellcounter.utils.logging_utils import init_logger_file
@@ -173,15 +173,13 @@ class Pipeline:
         logger.debug("Making all the project sub-directories")
         logger.debug("Reading/creating params json")
         try:
-            configs = ConfigParamsModel.read_fp(pfm.config_params)
+            configs = ConfigParamsModel.read_file(pfm.config_params)
             logger.debug("The configs file exists so using this file.")
         except FileNotFoundError:
             logger.debug("The configs file does NOT exists.")
             configs = ConfigParamsModel()
             logger.debug("Saving newly created configs file.")
-            print(configs)
-            print(configs.model_dump())
-            write_json(pfm.config_params, configs.model_dump())
+            configs.write_file(pfm.config_params)
         if kwargs != {}:
             logger.debug("kwargs is not empty. They are: %s", kwargs)
             configs_new = configs.model_validate(configs.model_copy(update=kwargs))
@@ -189,7 +187,7 @@ class Pipeline:
                 logger.debug(
                     "New configs are different from old configs. Overwriting to file."
                 )
-                write_json(pfm.config_params, configs_new.model_dump())
+                configs.write_file(pfm.config_params)
         logger.debug("Returning the configs file")
         return configs
 
@@ -225,7 +223,7 @@ class Pipeline:
                     logger.warning(file_exists_msg(fp))
                     return
         logger.debug("Reading config params")
-        configs = ConfigParamsModel.read_fp(pfm.config_params)
+        configs = ConfigParamsModel.read_file(pfm.config_params)
         logger.debug("Making zarr from tiff file(s)")
         with cluster_process(LocalCluster(n_workers=1, threads_per_worker=6)):
             if in_fp.is_dir():
@@ -268,7 +266,7 @@ class Pipeline:
                     logger.warning(file_exists_msg(fp))
                     return
         # Getting configs
-        configs = ConfigParamsModel.read_fp(pfm.config_params)
+        configs = ConfigParamsModel.read_file(pfm.config_params)
         # Making ref_fp_model of original atlas images filepaths
         rfm = RefFpModel(
             configs.atlas_dir,
@@ -307,7 +305,7 @@ class Pipeline:
             logger.warning(file_exists_msg(pfm.downsmpl1))
             return
         # Getting configs
-        configs = ConfigParamsModel.read_fp(pfm.config_params)
+        configs = ConfigParamsModel.read_file(pfm.config_params)
         with cluster_process(cls.busy_cluster()):
             # Reading
             raw_arr = da.from_zarr(pfm.raw)
@@ -330,7 +328,7 @@ class Pipeline:
                     logger.warning(file_exists_msg(fp))
                     return
         # Getting configs
-        configs = ConfigParamsModel.read_fp(pfm.config_params)
+        configs = ConfigParamsModel.read_file(pfm.config_params)
         # Reading
         downsmpl1_arr = tifffile.imread(pfm.downsmpl1)
         # Fine downsample
@@ -349,7 +347,7 @@ class Pipeline:
                     logger.warning(file_exists_msg(fp))
                     return
         # Getting configs
-        configs = ConfigParamsModel.read_fp(pfm.config_params)
+        configs = ConfigParamsModel.read_file(pfm.config_params)
         # Reading
         downsmpl2_arr = tifffile.imread(pfm.downsmpl2)
         # Trim
@@ -371,7 +369,7 @@ class Pipeline:
                     logger.warning(file_exists_msg(fp))
                     return
         # Getting configs
-        configs = ConfigParamsModel.read_fp(pfm.config_params)
+        configs = ConfigParamsModel.read_file(pfm.config_params)
         # Asserting that lower bound is less than upper bound
         assert configs.lower_bound[0] < configs.upper_bound[0], (
             "Error in config parameters: lower bound condition must be less than upper bound condition."
@@ -432,7 +430,7 @@ class Pipeline:
                     logger.warning(file_exists_msg(fp))
                     return
         # Getting configs
-        configs = ConfigParamsModel.read_fp(pfm.config_params)
+        configs = ConfigParamsModel.read_file(pfm.config_params)
         # Reading annot img (proj oriented and trimmed) and bounded img
         annot_arr = tifffile.imread(pfm.annot)
         bounded_arr = tifffile.imread(pfm.bounded)
@@ -533,7 +531,7 @@ class Pipeline:
         pfm = ProjFpModel(proj_dir)
         pfm_tuning = ProjFpModelTuning(proj_dir)
         logger.debug("Reading config params")
-        configs = ConfigParamsModel.read_fp(pfm.config_params)
+        configs = ConfigParamsModel.read_file(pfm.config_params)
         with cluster_process(cls.busy_cluster()):
             logger.debug("Reading raw zarr")
             raw_arr = da.from_zarr(pfm.raw)
@@ -638,7 +636,7 @@ class Pipeline:
         # Making Dask cluster
         with cluster_process(cls.gpu_cluster()):
             # Getting configs
-            configs = ConfigParamsModel.read_fp(pfm.config_params)
+            configs = ConfigParamsModel.read_file(pfm.config_params)
             # Reading input images
             raw_arr = da.from_zarr(pfm.raw)
             # Declaring processing instructions
@@ -673,7 +671,7 @@ class Pipeline:
         # Making Dask cluster
         with cluster_process(cls.gpu_cluster()):
             # Getting configs
-            configs = ConfigParamsModel.read_fp(pfm.config_params)
+            configs = ConfigParamsModel.read_file(pfm.config_params)
             # Reading input images
             bgrm_arr = da.from_zarr(pfm.bgrm)
             # Declaring processing instructions
@@ -709,7 +707,7 @@ class Pipeline:
         # Making Dask cluster
         with cluster_process(cls.gpu_cluster()):
             # Getting configs
-            configs = ConfigParamsModel.read_fp(pfm.config_params)
+            configs = ConfigParamsModel.read_file(pfm.config_params)
             # Reading input images
             dog_arr = da.from_zarr(pfm.dog)
             # Declaring processing instructions
@@ -744,7 +742,7 @@ class Pipeline:
         # Making Dask cluster
         with cluster_process(cls.gpu_cluster()):
             # Getting configs
-            configs = ConfigParamsModel.read_fp(pfm.config_params)
+            configs = ConfigParamsModel.read_file(pfm.config_params)
             # Reading input images
             adaptv_arr = da.from_zarr(pfm.adaptv)
             # Declaring processing instructions
@@ -779,7 +777,7 @@ class Pipeline:
         # Making Dask cluster
         with cluster_process(cls.gpu_cluster()):
             # Getting configs
-            configs = ConfigParamsModel.read_fp(pfm.config_params)
+            configs = ConfigParamsModel.read_file(pfm.config_params)
             max_labels_per_chunk = int(np.ceil(np.prod(configs.zarr_chunksize)) / 2) + 1
             # Reading input images
             threshd_arr = da.from_zarr(pfm.threshd)
@@ -842,7 +840,7 @@ class Pipeline:
                     return
         with cluster_process(cls.gpu_cluster()):
             # Getting configs
-            configs = ConfigParamsModel.read_fp(pfm.config_params)
+            configs = ConfigParamsModel.read_file(pfm.config_params)
             # Reading input images
             threshd_volumes_arr = da.from_zarr(pfm.threshd_volumes)
             # Declaring processing instructions
@@ -877,7 +875,7 @@ class Pipeline:
                     return
         with cluster_process(cls.gpu_cluster()):
             # Getting configs
-            configs = ConfigParamsModel.read_fp(pfm.config_params)
+            configs = ConfigParamsModel.read_file(pfm.config_params)
             # Reading input images
             raw_arr = da.from_zarr(pfm.raw)
             threshd_filt_arr = da.from_zarr(pfm.threshd_filt)
@@ -913,7 +911,7 @@ class Pipeline:
                     logger.warning(file_exists_msg(fp))
                     return
         # Getting configs
-        configs = ConfigParamsModel.read_fp(pfm.config_params)
+        configs = ConfigParamsModel.read_file(pfm.config_params)
         max_labels_per_chunk = int(np.ceil(np.prod(configs.zarr_chunksize)) / 2) + 1
         with cluster_process(cls.gpu_cluster()):
             # Reading input images
@@ -1000,7 +998,7 @@ class Pipeline:
                     return
         with cluster_process(cls.gpu_cluster()):
             # Getting configs
-            configs = ConfigParamsModel.read_fp(pfm.config_params)
+            configs = ConfigParamsModel.read_file(pfm.config_params)
             # Reading input images
             wshed_volumes_arr = da.from_zarr(pfm.wshed_volumes)
             # Declaring processing instructions
@@ -1034,7 +1032,7 @@ class Pipeline:
                     return
         with cluster_process(cls.gpu_cluster()):
             # Getting configs
-            configs = ConfigParamsModel.read_fp(pfm.config_params)
+            configs = ConfigParamsModel.read_file(pfm.config_params)
             # Reading input images
             raw_arr = da.from_zarr(pfm.raw)
             maxima_labels_arr = da.from_zarr(pfm.maxima_labels)
@@ -1092,7 +1090,7 @@ class Pipeline:
                     logger.warning(file_exists_msg(fp))
                     return
         # Getting configs
-        configs = ConfigParamsModel.read_fp(pfm.config_params)
+        configs = ConfigParamsModel.read_file(pfm.config_params)
         with cluster_process(cls.busy_cluster()):
             # Setting output key (in the form "<maxima/region>_trfm_df")
             # Getting cell coords
@@ -1310,7 +1308,7 @@ class Pipeline:
     def rechunk(cls, proj_dir: Path | str, src_fp: str, dst_fp: str) -> None:
         """Rechunk a zarr file based on the project config's chunksize."""
         pfm = ProjFpModel(proj_dir)
-        configs = ConfigParamsModel.read_fp(pfm.config_params)
+        configs = ConfigParamsModel.read_file(pfm.config_params)
         with cluster_process(cls.busy_cluster()):
             # Read
             zarr_arr = da.from_zarr(src_fp)

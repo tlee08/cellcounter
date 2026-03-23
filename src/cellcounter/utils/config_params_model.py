@@ -6,7 +6,7 @@ import numpy as np
 from pydantic import BaseModel, ConfigDict, model_validator
 
 from cellcounter.constants import ATLAS_DIR, PROC_CHUNKS
-from cellcounter.utils.io_utils import read_json, write_json
+from cellcounter.utils.io_utils import read_json
 
 
 class RefVersions(Enum):
@@ -102,27 +102,18 @@ class ConfigParamsModel(BaseModel):
         # TODO: Trim validation
         return self
 
-    @classmethod
-    def read_fp(cls, fp: Path | str) -> Self:
-        """Read configs from file."""
-        model = cls.model_validate(read_json(fp))
-        return model
-
     def update(self, **kwargs) -> Self:
         """Update configs."""
         return self.model_validate(self.model_copy(update=kwargs))
 
     @classmethod
-    def update_file(cls, fp: str, **kwargs) -> Self:
-        """Updates configs with given fields in json file.
+    def read_file(cls, fp: Path | str) -> Self:
+        """Read configs from file."""
+        model = cls.model_validate(read_json(fp))
+        return model
 
-        Reads the json file in `fp`, updates the parameters with `kwargs`,
-        writes the updated parameters back to `fp` (if there are any updates),
-        and returns the model instance.
-        """
-        configs = cls.model_validate(read_json(fp))
-        # Updating and saving if kwargs is not empty
-        if kwargs != {}:
-            configs = cls.model_validate(configs.model_copy(update=kwargs))
-            write_json(fp, configs.model_dump())
-        return configs
+    def write_file(self, fp: Path | str) -> None:
+        fp = Path(fp)
+        fp.parent.mkdir(exist_ok=True)
+        with fp.open(mode="w") as f:
+            f.write(self.model_dump_json(indent=2))
