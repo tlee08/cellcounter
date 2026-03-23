@@ -203,7 +203,7 @@ class CpuCellcFuncs:
         """
         block = cls.xp.asarray(block)
         ids = cls.xp.asarray(ids)
-        values = cls.xp.asarray(ids)
+        values = cls.xp.asarray(values)
         res_block = cls.xp.zeros(block.shape, dtype=cls.xp.int64)
         mask = block > 0
         if not mask.any():

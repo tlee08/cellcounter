@@ -583,7 +583,7 @@ class Pipeline:
             logger.debug("aggregating voxels per label...")
             label_voxel_counts_ls = dask.compute(
                 *[
-                    dask.delayed(cls.cellc_funcs.get_label_sizemap)
+                    dask.delayed(cls.cellc_funcs.get_label_sizemap)(b)
                     for b in label_arr.to_delayed().ravel()
                 ]
             )
