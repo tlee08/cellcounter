@@ -5,11 +5,7 @@ from typing import Self
 import numpy as np
 from pydantic import BaseModel, ConfigDict, model_validator
 
-from cellcounter.constants import (
-    ATLAS_DIR,
-    DEPTH,
-    PROC_CHUNKS,
-)
+from cellcounter.constants import ATLAS_DIR, PROC_CHUNKS
 from cellcounter.utils.io_utils import read_json, write_json
 
 
@@ -76,8 +72,6 @@ class ConfigParamsModel(BaseModel):
     tuning_z_trim: tuple[int | None, int | None, int | None] = (0, 100, None)
     tuning_y_trim: tuple[int | None, int | None, int | None] = (0, 2000, None)
     tuning_x_trim: tuple[int | None, int | None, int | None] = (0, 2000, None)
-    # OVERLAP
-    overlap_depth: int = DEPTH
     # CELL COUNTING
     tophat_sigma: int = 10
     dog_sigma1: int = 1

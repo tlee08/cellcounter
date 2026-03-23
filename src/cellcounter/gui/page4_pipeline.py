@@ -45,7 +45,6 @@ def page4_pipeline():
             Pipeline.reg_img_trim: False,
             Pipeline.reg_elastix: False,
             Pipeline.make_mask: False,
-            Pipeline.img_overlap: False,
             Pipeline.cellc1: False,
             Pipeline.cellc2: False,
             Pipeline.cellc3: False,
@@ -57,15 +56,10 @@ def page4_pipeline():
             Pipeline.cellc9: False,
             Pipeline.cellc10: False,
             Pipeline.cellc11: False,
-            Pipeline.cellc_coords_only: False,
             Pipeline.transform_coords: False,
             Pipeline.cell_mapping: False,
             Pipeline.group_cells: False,
             Pipeline.cells2csv: False,
-            Pipeline.coords2points_raw: False,
-            Pipeline.coords2heatmap_raw: False,
-            Pipeline.coords2points_trfm: False,
-            Pipeline.coords2heatmap_trfm: False,
         },
     )
     init_var(OVERWRITE, False)

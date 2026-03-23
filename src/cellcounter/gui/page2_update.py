@@ -98,7 +98,9 @@ class ConfigsUpdater:
         **kwargs,
     ) -> Any | None:
         # Initialising container, nullable, and default widgets
-        container, curr, is_none = cls.init_inputter(label, curr, nullable, default, container)
+        container, curr, is_none = cls.init_inputter(
+            label, curr, nullable, default, container
+        )
         # Selectbox
         output = container.selectbox(
             label=label,
@@ -121,7 +123,9 @@ class ConfigsUpdater:
         **kwargs,
     ) -> int | None:
         # Initialising container, nullable, and default widgets
-        container, curr, is_none = cls.init_inputter(label, curr, nullable, default, container)
+        container, curr, is_none = cls.init_inputter(
+            label, curr, nullable, default, container
+        )
         output = container.number_input(
             label=label,
             value=curr,
@@ -143,7 +147,9 @@ class ConfigsUpdater:
         **kwargs,
     ) -> float | None:
         # Initialising container, nullable, and default widgets
-        container, curr, is_none = cls.init_inputter(label, curr, nullable, default, container)
+        container, curr, is_none = cls.init_inputter(
+            label, curr, nullable, default, container
+        )
         output = container.number_input(
             label=label,
             value=curr,
@@ -165,7 +171,9 @@ class ConfigsUpdater:
         **kwargs,
     ) -> str | None:
         # Initialising container, nullable, and default widgets
-        container, curr, is_none = cls.init_inputter(label, curr, nullable, default, container)
+        container, curr, is_none = cls.init_inputter(
+            label, curr, nullable, default, container
+        )
         output = container.text_input(
             label=label,
             value=curr,
@@ -196,12 +204,17 @@ class ConfigsUpdater:
         columns_ls = container.columns(n)
         output_ls = [None for _ in range(n)]
         func_ls = func if isinstance(func, tuple) else const2list(func, n)
-        nullable_ls = nullable if isinstance(nullable, tuple) else const2list(nullable, n)
+        nullable_ls = (
+            nullable if isinstance(nullable, tuple) else const2list(nullable, n)
+        )
         default_ls = default if isinstance(default, tuple) else const2list(default, n)
         sublabels_ls = sublabels if isinstance(sublabels, tuple) else range(n)
         sublabels_ls = [f"{label}_{sublabel}" for sublabel in sublabels_ls]
         # Making kwargs into kwargs_ls dict of lists
-        kwargs_ls = {k: v if isinstance(v, tuple) else const2list(v, n) for k, v in kwargs.items()}
+        kwargs_ls = {
+            k: v if isinstance(v, tuple) else const2list(v, n)
+            for k, v in kwargs.items()
+        }
         # Asserting all list lengths are equal to n
         assert len(func_ls) == n
         assert len(nullable_ls) == n
@@ -373,7 +386,7 @@ def page2_configs():
     Displays and allows editing of configuration parameters for the project.
     This function uses Streamlit to create an interactive GUI for editing various
     configuration parameters stored in the session state. The parameters are grouped
-    into different categories such as Reference, Raw, Registration, Mask, Overlap,
+    into different categories such as Reference, Raw, Registration, Mask,
     and Cell Counting. Each category is expandable and allows the user to update
     specific fields.
 
@@ -428,8 +441,6 @@ def page2_configs():
         ConfigsUpdater.field2updater_mapped(configs, "tuning_z_trim")
         ConfigsUpdater.field2updater_mapped(configs, "tuning_y_trim")
         ConfigsUpdater.field2updater_mapped(configs, "tuning_x_trim")
-    with st.expander("Overlap"):
-        ConfigsUpdater.field2updater_mapped(configs, "overlap_depth")
     with st.expander("Cell Counting"):
         ConfigsUpdater.field2updater_mapped(configs, "tophat_sigma")
         ConfigsUpdater.field2updater_mapped(configs, "dog_sigma1")

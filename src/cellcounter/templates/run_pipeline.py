@@ -93,7 +93,9 @@ if __name__ == "__main__":
                 True,  # Tuning
                 False,  # Final (COMMENT OUT UNTIL YOU'RE HAPPY WITH THE CELL COUNT PARAMETERS)
             ]:
-                Pipeline.img_overlap(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
+                Pipeline.img_overlap(
+                    analysis_img_dir, overwrite=overwrite, tuning=is_tuning
+                )
                 Pipeline.cellc1(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
                 Pipeline.cellc2(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
                 Pipeline.cellc3(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
@@ -103,18 +105,32 @@ if __name__ == "__main__":
                 Pipeline.cellc7(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
                 Pipeline.cellc8(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
                 Pipeline.cellc9(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
-                Pipeline.cellc10(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
-                Pipeline.cellc11(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
-                Pipeline.cellc12(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
+                Pipeline.cellc10(
+                    analysis_img_dir, overwrite=overwrite, tuning=is_tuning
+                )
+                Pipeline.cellc11(
+                    analysis_img_dir, overwrite=overwrite, tuning=is_tuning
+                )
+                Pipeline.cellc12(
+                    analysis_img_dir, overwrite=overwrite, tuning=is_tuning
+                )
                 # Cell mapping
                 # COMMENT OUT UNTIL YOU'RE HAPPY WITH THE CELL COUNT PARAMETERS
-                Pipeline.transform_coords(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
+                Pipeline.transform_coords(
+                    analysis_img_dir, overwrite=overwrite, tuning=is_tuning
+                )
                 # COMMENT OUT UNTIL YOU'RE HAPPY WITH THE CELL COUNT PARAMETERS
-                Pipeline.cell_mapping(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
+                Pipeline.cell_mapping(
+                    analysis_img_dir, overwrite=overwrite, tuning=is_tuning
+                )
                 # COMMENT OUT UNTIL YOU'RE HAPPY WITH THE CELL COUNT PARAMETERS
-                Pipeline.group_cells(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
+                Pipeline.group_cells(
+                    analysis_img_dir, overwrite=overwrite, tuning=is_tuning
+                )
                 # COMMENT OUT UNTIL YOU'RE HAPPY WITH THE CELL COUNT PARAMETERS
-                Pipeline.cells2csv(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
+                Pipeline.cells2csv(
+                    analysis_img_dir, overwrite=overwrite, tuning=is_tuning
+                )
 
             # Registration visual check
             VisualCheck.combine_reg(analysis_img_dir, overwrite=overwrite)
@@ -123,11 +139,18 @@ if __name__ == "__main__":
                 True,  # Tuning
                 False,  # Final (COMMENT OUT UNTIL YOU'RE HAPPY WITH THE CELL COUNT PARAMETERS)
             ]:
-                VisualCheck.cellc_trim_to_final(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
-                VisualCheck.combine_cellc(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
-                VisualCheck.coords2heatmap_trfm(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
-                VisualCheck.combine_heatmap_trfm(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
+                VisualCheck.combine_cellc(
+                    analysis_img_dir, overwrite=overwrite, tuning=is_tuning
+                )
+                VisualCheck.coords2heatmap_trfm(
+                    analysis_img_dir, overwrite=overwrite, tuning=is_tuning
+                )
+                VisualCheck.combine_heatmap_trfm(
+                    analysis_img_dir, overwrite=overwrite, tuning=is_tuning
+                )
         except Exception as e:
             print(f"Error in {img_name}: {e}")
     # Combining all experiment dataframes
-    BatchCombineFuncs.combine_root_pipeline(analysis_root_dir, os.path.dirname(analysis_root_dir), overwrite=True)
+    BatchCombineFuncs.combine_root_pipeline(
+        analysis_root_dir, os.path.dirname(analysis_root_dir), overwrite=True
+    )

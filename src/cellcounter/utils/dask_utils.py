@@ -17,7 +17,7 @@ import pandas as pd
 from dask import compute
 from dask.distributed import Client, SpecCluster, get_worker
 
-from cellcounter.constants import DEPTH, Coords
+from cellcounter.constants import Coords
 from cellcounter.utils.io_utils import silent_remove
 from cellcounter.utils.misc_utils import const2iter
 
@@ -143,21 +143,6 @@ def disk_cache(arr: da.Array, fp: Path | str):
     arr.to_zarr(fp, mode="w")
     # Return arr
     return da.from_zarr(fp)
-
-
-def da_overlap(arr, d=DEPTH):
-    """Dask overlap blocks."""
-    return da.overlap.overlap(arr, depth=d, boundary="reflect").rechunk(
-        [i + 2 * d for i in arr.chunksize]
-    )
-
-
-def da_trim(arr, d=DEPTH):
-    """Dask trim overlapped blocks."""
-    return arr.map_blocks(
-        lambda x: x[d:-d, d:-d, d:-d],
-        chunks=[tuple(np.array(i) - d * 2) for i in arr.chunks],
-    )
 
 
 @contextlib.contextmanager

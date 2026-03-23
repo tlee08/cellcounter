@@ -8,8 +8,6 @@ from cellcounter.utils.misc_utils import package_is_importable
 
 PROC_CHUNKS = (500, 1000, 1000)
 
-DEPTH = 50
-
 ROWS_PARTITION = 10000000
 
 

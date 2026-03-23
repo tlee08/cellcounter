@@ -9,14 +9,12 @@ from cellcounter.funcs.viewer_funcs import ViewerFuncs
 from cellcounter.funcs.visual_check_funcs_dask import VisualCheckFuncsDask
 from cellcounter.funcs.visual_check_funcs_tiff import VisualCheckFuncsTiff
 from cellcounter.utils.config_params_model import ConfigParamsModel
-from cellcounter.utils.dask_utils import (
-    cluster_process,
-    da_trim,
-    disk_cache,
-)
+from cellcounter.utils.dask_utils import cluster_process
 from cellcounter.utils.diagnostics_utils import file_exists_msg
 from cellcounter.utils.logging_utils import init_logger_file
 from cellcounter.utils.proj_org_utils import ProjFpModel, ProjFpModelTuning
+
+logger = init_logger_file(__name__)
 
 
 class VisualCheck:
@@ -27,52 +25,24 @@ class VisualCheck:
 
     @classmethod
     def cluster(cls):
-        return LocalCluster(n_workers=cls.n_workers, threads_per_worker=cls.threads_per_worker)
+        return LocalCluster(
+            n_workers=cls.n_workers, threads_per_worker=cls.threads_per_worker
+        )
 
     ###################################################################################################
     # VISUAL CHECKS FROM DF POINTS
     ###################################################################################################
 
     @classmethod
-    def cellc_trim_to_final(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
-        """
-        [DEPRECATED]
-
-        Trimming filtered regions overlaps to make:
-        - Trimmed maxima image
-        - Trimmed threshold image
-        - Trimmed watershed image
-        """
-        logger = init_logger_file()
-        pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
-        if not overwrite:
-            for fp in (pfm.maxima_final, pfm.threshd_final, pfm.wshed_final):
-                if os.path.exists(fp):
-                    return logger.warning(file_exists_msg(fp))
-        with cluster_process(cls.cluster()):
-            # Getting configs
-            configs = ConfigParamsModel.read_fp(pfm.config_params)
-            # Reading input images
-            maxima_arr = da.from_zarr(pfm.maxima)
-            threshd_filt_arr = da.from_zarr(pfm.threshd_filt)
-            wshed_volumes_arr = da.from_zarr(pfm.wshed_volumes)
-            # Declaring processing instructions
-            maxima_final_arr = da_trim(maxima_arr, d=configs.overlap_depth)
-            threshd_final_arr = da_trim(threshd_filt_arr, d=configs.overlap_depth)
-            wshed_final_arr = da_trim(wshed_volumes_arr, d=configs.overlap_depth)
-            # Computing and saving
-            maxima_final_arr = disk_cache(maxima_final_arr, pfm.maxima_final)
-            threshd_final_arr = disk_cache(threshd_final_arr, pfm.threshd_final)
-            wshed_final_arr = disk_cache(wshed_final_arr, pfm.wshed_final)
-
-    @classmethod
-    def coords2points_raw(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
-        logger = init_logger_file()
+    def coords2points_raw(
+        cls, proj_dir: str, overwrite: bool = False, tuning: bool = False
+    ) -> None:
         pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
         if not overwrite:
             for fp in (pfm.points_raw,):
                 if os.path.exists(fp):
-                    return logger.warning(file_exists_msg(fp))
+                    logger.warning(file_exists_msg(fp))
+                    return
         with cluster_process(cls.cluster()):
             VisualCheckFuncsDask.coords2points(
                 coords=pd.read_parquet(pfm.cells_raw_df),
@@ -81,13 +51,15 @@ class VisualCheck:
             )
 
     @classmethod
-    def coords2heatmap_raw(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
-        logger = init_logger_file()
+    def coords2heatmap_raw(
+        cls, proj_dir: str, overwrite: bool = False, tuning: bool = False
+    ) -> None:
         pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
         if not overwrite:
             for fp in (pfm.heatmap_raw,):
                 if os.path.exists(fp):
-                    return logger.warning(file_exists_msg(fp))
+                    logger.warning(file_exists_msg(fp))
+                    return
         with cluster_process(cls.cluster()):
             configs = ConfigParamsModel.read_fp(pfm.config_params)
             VisualCheckFuncsDask.coords2heatmap(
@@ -98,13 +70,15 @@ class VisualCheck:
             )
 
     @classmethod
-    def coords2points_trfm(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
-        logger = init_logger_file()
+    def coords2points_trfm(
+        cls, proj_dir: str, overwrite: bool = False, tuning: bool = False
+    ) -> None:
         pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
         if not overwrite:
             for fp in (pfm.points_trfm,):
                 if os.path.exists(fp):
-                    return logger.warning(file_exists_msg(fp))
+                    logger.warning(file_exists_msg(fp))
+                    return
         VisualCheckFuncsTiff.coords2points(
             coords=pd.read_parquet(pfm.cells_trfm_df),
             shape=tifffile.imread(pfm.ref).shape,
@@ -112,13 +86,15 @@ class VisualCheck:
         )
 
     @classmethod
-    def coords2heatmap_trfm(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
-        logger = init_logger_file()
+    def coords2heatmap_trfm(
+        cls, proj_dir: str, overwrite: bool = False, tuning: bool = False
+    ) -> None:
         pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
         if not overwrite:
             for fp in (pfm.heatmap_trfm,):
                 if os.path.exists(fp):
-                    return logger.warning(file_exists_msg(fp))
+                    logger.warning(file_exists_msg(fp))
+                    return
         configs = ConfigParamsModel.read_fp(pfm.config_params)
         VisualCheckFuncsTiff.coords2heatmap(
             coords=pd.read_parquet(pfm.cells_trfm_df),
@@ -133,25 +109,27 @@ class VisualCheck:
 
     @classmethod
     def combine_reg(cls, proj_dir: str, overwrite: bool = False) -> None:
-        logger = init_logger_file()
         pfm = ProjFpModel(proj_dir)
         if not overwrite:
             for fp in (pfm.comb_reg,):
                 if os.path.exists(fp):
-                    return logger.warning(file_exists_msg(fp))
+                    logger.warning(file_exists_msg(fp))
+                    return
         ViewerFuncs.combine_arrs(
             fp_in_ls=(pfm.trimmed, pfm.bounded, pfm.regresult),
             fp_out=pfm.comb_reg,
         )
 
     @classmethod
-    def combine_cellc(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
-        logger = init_logger_file()
+    def combine_cellc(
+        cls, proj_dir: str, overwrite: bool = False, tuning: bool = False
+    ) -> None:
         pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
         if not overwrite:
             for fp in (pfm.comb_cellc,):
                 if os.path.exists(fp):
-                    return logger.warning(file_exists_msg(fp))
+                    logger.warning(file_exists_msg(fp))
+                    return
         configs = ConfigParamsModel.read_fp(pfm.config_params)
         z_trim = slice(None)
         y_trim = slice(None)
@@ -167,13 +145,15 @@ class VisualCheck:
         )
 
     @classmethod
-    def combine_heatmap_trfm(cls, proj_dir: str, overwrite: bool = False, tuning: bool = False) -> None:
-        logger = init_logger_file()
+    def combine_heatmap_trfm(
+        cls, proj_dir: str, overwrite: bool = False, tuning: bool = False
+    ) -> None:
         pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
         if not overwrite:
             for fp in (pfm.comb_heatmap,):
                 if os.path.exists(fp):
-                    return logger.warning(file_exists_msg(fp))
+                    logger.warning(file_exists_msg(fp))
+                    return
         ViewerFuncs.combine_arrs(
             fp_in_ls=(pfm.ref, pfm.annot, pfm.heatmap_trfm),
             # 2nd regresult means the combining works in ImageJ
@@ -186,9 +166,7 @@ class VisualCheck:
 
     @classmethod
     def run_make_visual_checks(cls, proj_dir: str, overwrite: bool = False) -> None:
-        """
-        Running all visual check pipelines in order.
-        """
+        """Running all visual check pipelines in order."""
         # Registration visual check
         cls.combine_reg(proj_dir, overwrite=overwrite)
         for is_tuning in [
@@ -196,7 +174,6 @@ class VisualCheck:
             False,  # Final
         ]:
             # Cell counting visual checks
-            cls.cellc_trim_to_final(proj_dir, overwrite=overwrite, tuning=is_tuning)
             cls.coords2points_raw(proj_dir, overwrite=overwrite, tuning=is_tuning)
             cls.combine_cellc(proj_dir, overwrite=overwrite, tuning=is_tuning)
             # Transformed space visual checks

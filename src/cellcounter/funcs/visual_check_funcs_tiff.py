@@ -91,7 +91,7 @@ class VisualCheckFuncsTiff:
     ):
         """Converts list of coordinates to spatial array as voxels.
 
-        Overlapping areas accumulate in intensity.
+        Overlaying areas accumulate in intensity.
 
         Params:
             coords: A pd.DataFrame of points, with the columns, `x`, `y`, and `z`.

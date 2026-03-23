@@ -4,7 +4,7 @@ import pandas as pd
 from scipy import ndimage as sc_ndimage
 from skimage.segmentation import watershed
 
-from cellcounter.constants import CELL_IDX_NAME, DEPTH, CellColumns, Coords
+from cellcounter.constants import CELL_IDX_NAME, CellColumns, Coords
 from cellcounter.utils.logging_utils import init_logger_file
 
 logger = init_logger_file(__name__)
@@ -397,7 +397,6 @@ class CpuCellcFuncs:
         maxima_labels_block: npt.NDArray,
         wshed_labels_block: npt.NDArray,
         wshed_filt_block: npt.NDArray,
-        depth: int = DEPTH,
     ) -> pd.DataFrame:
         """Get the cells from the maxima labels and the watershed segmentation.
 
@@ -410,18 +409,12 @@ class CpuCellcFuncs:
         maxima_labels_block = cls.xp.asarray(maxima_labels_block)
         wshed_labels_block = cls.xp.asarray(wshed_labels_block)
         wshed_filt_block = cls.xp.asarray(wshed_filt_block)
-        # Trimming maxima labels array to raw array dimensions using `depth`
-        slicer = slice(depth, -depth) if depth > 0 else slice(None)
-        maxima_labels_trimmed_arr = maxima_labels_block[slicer, slicer, slicer]
-        assert raw_block.shape == maxima_labels_trimmed_arr.shape
         # Getting first coord of each unique label in trimmed arr (as some maxima are contiguous)
         # NOTE: np.unique auto flattens arr so reshaping it back with np.unravel_index
-        labels_vect, coords_flat = cls.xp.unique(
-            maxima_labels_trimmed_arr, return_index=True
-        )
+        labels_vect, coords_flat = cls.xp.unique(maxima_labels_block, return_index=True)
         label_max = cls.cp2np(labels_vect.max())
         # Making df of coordinates and measures
-        z, y, x = cls.xp.unravel_index(coords_flat, maxima_labels_trimmed_arr.shape)
+        z, y, x = cls.xp.unravel_index(coords_flat, maxima_labels_block.shape)
         cells_df = (
             pd.DataFrame(
                 {
@@ -437,12 +430,12 @@ class CpuCellcFuncs:
             .astype(np.uint16)
         )
         cells_df[CellColumns.COUNT.value] = 1
-        # Getting wshed_filt_arr (volume) values for each cell (z, y, x). Offsetting by depth.
+        # Getting wshed_filt_arr (volume) values for each cell (z, y, x).
         cells_df[CellColumns.VOLUME.value] = cls.cp2np(
             wshed_filt_block[
-                cells_df[Coords.Z.value] + depth,
-                cells_df[Coords.Y.value] + depth,
-                cells_df[Coords.X.value] + depth,
+                cells_df[Coords.Z.value],
+                cells_df[Coords.Y.value],
+                cells_df[Coords.X.value],
             ]
         )
         # Filtering out cells with 0 volume. These cells were evidently filtered out previously in wshed_filt_arr

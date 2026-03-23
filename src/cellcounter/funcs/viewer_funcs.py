@@ -44,7 +44,6 @@ VIEW_IMGS_PARAMS = {
     "mask": {VRANGE: (0, 5), CMAP: Colormaps.RED.value},
     "outline": {VRANGE: (0, 5), CMAP: Colormaps.RED.value},
     "mask_reg": {VRANGE: (0, 5), CMAP: Colormaps.RED.value},
-    "overlap": {VRANGE: (0, 10000), CMAP: Colormaps.GRAY.value},
     "bgrm": {VRANGE: (0, 2000), CMAP: Colormaps.GRAY.value},
     "dog": {VRANGE: (0, 500), CMAP: Colormaps.GRAY.value},
     "adaptv": {VRANGE: (0, 500), CMAP: Colormaps.GRAY.value},

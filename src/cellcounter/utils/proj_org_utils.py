@@ -237,11 +237,6 @@ class ProjFpModel(FpModel):
         return self.root_dir / self.mask_sdir / "5_mask.parquet"
 
     @property
-    def overlap(self) -> Path:
-        """Averlap."""
-        return self.root_dir / self.cellcount_sdir / "0_overlap.zarr"
-
-    @property
     def bgrm(self) -> Path:
         """Bgrm."""
         return self.root_dir / self.cellcount_sdir / "1_bgrm.zarr"

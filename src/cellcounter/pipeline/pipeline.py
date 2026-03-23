@@ -1046,7 +1046,6 @@ class Pipeline:
                 maxima_labels_arr,
                 wshed_labels_arr,
                 wshed_filt_arr,
-                configs.overlap_depth,
             )
             # If tuning, then offset by the tuning crop. Allows trfm and subsequent region grouping on tuning image.
             if tuning:
