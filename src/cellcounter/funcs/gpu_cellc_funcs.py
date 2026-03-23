@@ -5,6 +5,8 @@ from cellcounter.funcs.cpu_cellc_funcs import CpuCellcFuncs
 from cellcounter.utils.logging_utils import init_logger_file
 from cellcounter.utils.misc_utils import import_extra_error_func
 
+logger = init_logger_file(__name__)
+
 # Optional dependency: gpu
 if GPU_ENABLED:
     import cupy as cp
@@ -17,8 +19,6 @@ class GpuCellcFuncs(CpuCellcFuncs):
     xp = cp
     xdimage = cp_ndimage
 
-    logger = init_logger_file(__name__)
-
     ###################################################################################################
     # GPU HELPER FUNCTIONS
     ###################################################################################################
@@ -26,14 +26,14 @@ class GpuCellcFuncs(CpuCellcFuncs):
     @classmethod
     def _clear_cuda_mem(cls):
         # Also removing ALL references to the arguments
-        cls.logger.debug("Removing all cp arrays in program (global and local)")
+        logger.debug("Removing all cp arrays in program (global and local)")
         all_vars = {**globals(), **locals()}
         var_keys = set(all_vars.keys())
         for k in var_keys:
             if isinstance(all_vars[k], cp.ndarray):
-                cls.logger.debug(f"REMOVING: {k}")
+                logger.debug(f"REMOVING: {k}")
                 exec("del k")
-        cls.logger.debug("Clearing CUDA memory")
+        logger.debug("Clearing CUDA memory")
         cp.get_default_memory_pool().free_all_blocks()
         cp.get_default_pinned_memory_pool().free_all_blocks()
 
@@ -50,9 +50,9 @@ class GpuCellcFuncs(CpuCellcFuncs):
 
     @classmethod
     def _check_cuda_mem(cls):
-        cls.logger.info(cp.get_default_memory_pool().used_bytes())
-        cls.logger.info(cp.get_default_memory_pool().n_free_blocks())
-        cls.logger.info(cp.get_default_pinned_memory_pool().n_free_blocks())
+        logger.info(cp.get_default_memory_pool().used_bytes())
+        logger.info(cp.get_default_memory_pool().n_free_blocks())
+        logger.info(cp.get_default_pinned_memory_pool().n_free_blocks())
 
     ###################################################################################################
     # PROCESSING FUNCTIONS

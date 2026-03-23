@@ -24,6 +24,7 @@ from cellcounter.utils.proj_org_utils import ProjFpModel
 # TODO: move to pipeline and refactor
 
 COMBINED_FP = "combined_df"
+logger = init_logger(__name__)
 
 
 class CombinedColumns(Enum):
@@ -32,8 +33,6 @@ class CombinedColumns(Enum):
 
 
 class BatchCombineFuncs:
-    logger = init_logger(__name__)
-
     @classmethod
     def combine_ls_pipeline(
         cls,
@@ -46,7 +45,7 @@ class BatchCombineFuncs:
         out_fp_parquet = os.path.join(out_dir, f"{COMBINED_FP}.parquet")
         out_fp_csv = os.path.join(out_dir, f"{COMBINED_FP}.csv")
         if not overwrite and os.path.exists(out_fp_parquet):
-            cls.logger.info(f"Skipping as {out_fp_parquet} already exists.")
+            logger.info(f"Skipping as {out_fp_parquet} already exists.")
             return
 
         # Asserting that proj_dir_ls is not empty
@@ -95,8 +94,12 @@ class BatchCombineFuncs:
         total_df = MapFuncs.annot_df_get_parents(total_df)
         # Adding special rows (e.g. "universe")
         # TODO: is neither clean nor modular
-        total_df.loc[-1] = pd.Series({AnnotColumns.NAME.value: SpecialRegions.INVALID.value})
-        total_df.loc[0] = pd.Series({AnnotColumns.NAME.value: SpecialRegions.UNIVERSE.value})
+        total_df.loc[-1] = pd.Series(
+            {AnnotColumns.NAME.value: SpecialRegions.INVALID.value}
+        )
+        total_df.loc[0] = pd.Series(
+            {AnnotColumns.NAME.value: SpecialRegions.UNIVERSE.value}
+        )
         # total_df.loc[np.nan] = pd.Series(
         #     {AnnotColumns.NAME.value: SpecialRegions.NO_LABEL.value}
         # )
@@ -114,7 +117,7 @@ class BatchCombineFuncs:
         for proj_dir in proj_dir_ls:
             # Logging which file is being processed
             name = os.path.basename(proj_dir)
-            cls.logger.info(f"Running: {name}")
+            logger.info(f"Running: {name}")
             # Filenames
             pfm = ProjFpModel(proj_dir)
             # CELL_AGG_DF

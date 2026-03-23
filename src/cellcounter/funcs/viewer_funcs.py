@@ -14,6 +14,8 @@ from cellcounter.utils.logging_utils import init_logger_file
 from cellcounter.utils.misc_utils import dictlists2listdicts
 from cellcounter.utils.proj_org_utils import ProjFpModel, ProjFpModelTuning
 
+logger = init_logger_file(__name__)
+
 VRANGE = "vrange"
 CMAP = "cmap"
 
@@ -63,8 +65,6 @@ VIEW_IMGS_PARAMS = {
 
 
 class ViewerFuncs:
-    logger = init_logger_file(__name__)
-
     @classmethod
     def read_img(cls, fp, trimmer: None | tuple[slice, ...] = None):
         """
@@ -96,7 +96,7 @@ class ViewerFuncs:
         viewer = napari.Viewer()
         # Adding image to napari viewer
         for i, arr in enumerate(arr_ls):
-            cls.logger.info(f"Napari viewer - adding image # {i} / {len(arr_ls)}")
+            logger.info(f"Napari viewer - adding image # {i} / {len(arr_ls)}")
             # NOTE: best kwargs to use are name, contrast_limits, and colormap
             viewer.add_image(
                 data=arr,
@@ -108,7 +108,11 @@ class ViewerFuncs:
 
     @classmethod
     def view_arrs_from_pfm(
-        cls, proj_dir: str, imgs_to_view_ls: list[str], trimmer: tuple[slice, ...], tuning: bool = True
+        cls,
+        proj_dir: str,
+        imgs_to_view_ls: list[str],
+        trimmer: tuple[slice, ...],
+        tuning: bool = True,
     ) -> None:
         pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
         return cls.view_arrs(
