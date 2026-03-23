@@ -16,7 +16,6 @@ from cellcounter.gui.gui_funcs import (
 )
 from cellcounter.pipeline.pipeline import Pipeline
 from cellcounter.utils.config_params_model import ConfigParamsModel
-from cellcounter.utils.io_utils import write_file
 from cellcounter.utils.misc_utils import const2list, dictlists2listdicts, enum2list
 
 UPDATE = "update"
