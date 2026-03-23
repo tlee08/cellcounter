@@ -12,9 +12,9 @@ class UnionFind:
 
     parent: dict[int, int]
     rank: dict[int, int]
-    sort_idx: np.array | None
-    sorted_keys: np.array | None
-    sorted_sizes: np.array | None
+    sort_idx: np.array | None = None
+    sorted_keys: np.array | None = None
+    sorted_sizes: np.array | None = None
 
     def __init__(self) -> None:
         """Union Find."""
