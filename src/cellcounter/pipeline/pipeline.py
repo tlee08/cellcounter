@@ -187,7 +187,8 @@ class Pipeline:
                 logger.debug(
                     "New configs are different from old configs. Overwriting to file."
                 )
-                print(configs_new.model_dump())
+                print(configs_new)
+                print(configs_new.model_dumps())
                 write_json(pfm.config_params, configs_new.model_dump())
         logger.debug("Returning the configs file")
         return configs
