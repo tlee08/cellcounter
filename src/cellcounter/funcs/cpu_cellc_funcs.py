@@ -147,6 +147,7 @@ class CpuCellcFuncs:
             print(offset.dtype)
             print(block[block > 0])
             print(block[block > 0].dtype)
+            print()
             block[block > 0] += offset
             logger.debug("Applied label offset: %s", offset)
         return block
