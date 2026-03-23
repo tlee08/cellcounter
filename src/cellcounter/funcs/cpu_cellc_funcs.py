@@ -143,7 +143,8 @@ class CpuCellcFuncs:
             offset = flat_idx * max_labels_per_chunk
             print(block[block > 0])
             print(block[block > 0].dtype)
-            print(type(offset))
+            print(offset)
+            print(offset.dtype)
             block[block > 0] += offset
             logger.debug("Applied label offset: %s", offset)
         return block
