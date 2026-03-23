@@ -1,5 +1,7 @@
 import functools
 
+import numpy.typing as npt
+
 from cellcounter.constants import GPU_ENABLED
 from cellcounter.funcs.cpu_cellc_funcs import CpuCellcFuncs
 from cellcounter.utils.logging_utils import init_logger_file
@@ -91,8 +93,15 @@ class GpuCellcFuncs(CpuCellcFuncs):
         return cls._clear_cuda_mem_dec(super().manual_thresh)(*args, **kwargs).get()
 
     @classmethod
-    def mask2label(cls, *args, **kwargs):
-        return cls._clear_cuda_mem_dec(super().mask2label)(*args, **kwargs).get()
+    def mask2label(
+        cls,
+        block: npt.NDArray,
+        block_info: dict | None = None,
+        max_labels_per_chunk: int | None = None,
+    ) -> npt.NDArray:
+        return cls._clear_cuda_mem_dec(super().mask2label)(
+            block, block_info, max_labels_per_chunk
+        ).get()
 
     @classmethod
     def get_boundary_pairs(cls, *args, **kwargs):

@@ -802,7 +802,6 @@ class Pipeline:
                 cls.cellc_funcs.mask2label,
                 threshd_arr,
                 max_labels_per_chunk=max_labels_per_chunk,
-                block_info=True,
                 dtype=np.int64,
             )
             # Computing and saving
