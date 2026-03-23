@@ -453,7 +453,7 @@ class Pipeline:
                 str(pfm.regresult),
             )[[Coords.Z.value, Coords.Y.value, Coords.X.value]]
             .round(0)
-            .astype(np.int32)
+            .astype(np.uint32)
         )
         # Filtering out of bounds coords
         outline_df = outline_df.query(
@@ -572,7 +572,7 @@ class Pipeline:
             all_pairs = (
                 np.concatenate([p for p in pair_arrays if len(p) > 0], axis=0)
                 if pair_arrays
-                else np.empty((0, 2), dtype=np.int64)
+                else np.empty((0, 2), dtype=np.uint64)
             )
             logger.debug("Cross-boundary pairs found: %d", len(all_pairs))
             # Step 3: Union-Find
@@ -599,7 +599,7 @@ class Pipeline:
                 label_arr,
                 ids=uf.sorted_keys,
                 values=uf.sorted_sizes,
-                dtype=np.int64,
+                dtype=np.uint64,
             )
             return sizes_arr
 
@@ -799,7 +799,7 @@ class Pipeline:
                 cls.cellc_funcs.mask2label,
                 threshd_arr,
                 max_labels_per_chunk=max_labels_per_chunk,
-                dtype=np.int64,
+                dtype=np.uint64,
             )
             # Computing and saving
             disk_cache(labels_arr, pfm.threshd_labels)
@@ -940,7 +940,7 @@ class Pipeline:
                 cls.cellc_funcs.mask2label,
                 maxima_arr,
                 max_labels_per_chunk=max_labels_per_chunk,
-                dtype=np.int64,
+                dtype=np.uint64,
             )
             maxima_labels_arr = disk_cache(maxima_labels_arr, pfm.maxima_labels)
 
@@ -1157,8 +1157,7 @@ class Pipeline:
     def cell_mapping(
         cls, proj_dir: Path | str, overwrite: bool = False, tuning: bool = False
     ) -> None:
-        """
-        Map transformed cell coordinates to region IDs and names in the reference atlas.
+        """Map transformed cell coordinates to region IDs and names in the reference atlas.
 
         Args:
             proj_dir (str): Project directory path.
@@ -1175,7 +1174,8 @@ class Pipeline:
         if not overwrite:
             for fp in (pfm.cells_df,):
                 if fp.exists():
-                    return logger.warning(file_exists_msg(fp))
+                    logger.warning(file_exists_msg(fp))
+                    return
         # Getting region for each detected cell (i.e. row) in cells_df
         with cluster_process(cls.busy_cluster()):
             # Reading cells_raw and cells_trfm dataframes
@@ -1205,7 +1205,7 @@ class Pipeline:
                     ]
                 ]
                 .round(0)
-                .astype(np.int32)
+                .astype(np.uint32)
                 .query(
                     f"({Coords.Z.value}_{TRFM} >= 0) & ({Coords.Z.value}_{TRFM} < {s[0]}) & "
                     f"({Coords.Y.value}_{TRFM} >= 0) & ({Coords.Y.value}_{TRFM} < {s[1]}) & "
@@ -1233,8 +1233,7 @@ class Pipeline:
     def group_cells(
         cls, proj_dir: Path | str, overwrite: bool = False, tuning: bool = False
     ) -> None:
-        """
-        Group cells by region name and aggregate total cell volume and cell count for each region.
+        """Group cells by region name and aggregate total cell volume and cell count for each region.
 
         Args:
             proj_dir (str): Project directory path.
@@ -1251,7 +1250,8 @@ class Pipeline:
         if not overwrite:
             for fp in (pfm.cells_agg_df,):
                 if fp.exists():
-                    return logger.warning(file_exists_msg(fp))
+                    logger.warning(file_exists_msg(fp))
+                    return
         # Making cells_agg_df
         with cluster_process(cls.busy_cluster()):
             # Reading cells dataframe
@@ -1284,8 +1284,7 @@ class Pipeline:
     def cells2csv(
         cls, proj_dir: Path | str, overwrite: bool = False, tuning: bool = False
     ) -> None:
-        """
-        Save the aggregated cell dataframe to a CSV file.
+        """Save the aggregated cell dataframe to a CSV file.
 
         Args:
             proj_dir (str): Project directory path.
@@ -1299,7 +1298,8 @@ class Pipeline:
         if not overwrite:
             for fp in (pfm.cells_agg_csv,):
                 if fp.exists():
-                    return logger.warning(file_exists_msg(fp))
+                    logger.warning(file_exists_msg(fp))
+                    return
         # Reading cells dataframe
         cells_agg_df = pd.read_parquet(pfm.cells_agg_df)
         # Sanitising (removing smb columns)

@@ -57,7 +57,7 @@ class UnionFind:
         for label, value in zip(labels, values, strict=True):
             component_sizes[self.find(label)] += value
         component_values = np.array(
-            [component_sizes[self.find(lbl)] for lbl in labels], dtype=np.int64
+            [component_sizes[self.find(lbl)] for lbl in labels], dtype=np.uint64
         )
         # Build lookup table
         sort_idx = np.argsort(labels)

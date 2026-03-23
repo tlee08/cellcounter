@@ -28,7 +28,7 @@ class VisualCheckFuncsDask:
         coords = (
             coords[[Coords.Z.value, Coords.Y.value, Coords.X.value]]
             .round(0)
-            .astype(np.int16)
+            .astype(np.uint16)
             .query(
                 f"({Coords.Z.value} >= 0) & ({Coords.Z.value} < {s[0]}) & "
                 f"({Coords.Y.value} >= 0) & ({Coords.Y.value} < {s[1]}) & "
@@ -69,7 +69,7 @@ class VisualCheckFuncsDask:
         coords = (
             coords[[Coords.Z.value, Coords.Y.value, Coords.X.value]]
             .round(0)
-            .astype(np.int16)
+            .astype(np.uint16)
             .query(
                 f"({Coords.Z.value} > {-1 * r}) & ({Coords.Z.value} < {s[0] + r}) & "
                 f"({Coords.Y.value} > {-1 * r}) & ({Coords.Y.value} < {s[1] + r}) & "
@@ -189,7 +189,7 @@ class VisualCheckFuncsDask:
                 [Coords.Z.value, Coords.Y.value, Coords.X.value, AnnotColumns.ID.value]
             ]
             .round(0)
-            .astype(np.int16)
+            .astype(np.uint16)
         )
         if coords.shape[0] > 0:
             np.apply_along_axis(f, 1, coords)
