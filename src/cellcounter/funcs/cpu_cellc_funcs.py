@@ -398,23 +398,19 @@ class CpuCellcFuncs:
         wshed_labels_block: npt.NDArray,
         wshed_filt_block: npt.NDArray,
     ) -> pd.DataFrame:
-        """Get the cells from the maxima labels and the watershed segmentation.
-
-        Also get corresponding labels.
-        """
+        """Get cells from maxima labels and watershed segmentation."""
         assert raw_block.shape == maxima_labels_block.shape
         assert raw_block.shape == wshed_filt_block.shape
-        # Converting to xp arrays
-        raw_block = cls.xp.asarray(raw_block)
-        maxima_labels_block = cls.xp.asarray(maxima_labels_block)
-        wshed_labels_block = cls.xp.asarray(wshed_labels_block)
-        wshed_filt_block = cls.xp.asarray(wshed_filt_block)
-        # Getting first coord of each unique label in trimmed arr (as some maxima are contiguous)
-        # NOTE: np.unique auto flattens arr so reshaping it back with np.unravel_index
-        labels_vect, coords_flat = cls.xp.unique(maxima_labels_block, return_index=True)
-        label_max = cls.cp2np(labels_vect.max())
-        # Making df of coordinates and measures
-        z, y, x = cls.xp.unravel_index(coords_flat, maxima_labels_block.shape)
+        # Convert to xp arrays (GPU-aware)
+        raw = cls.xp.asarray(raw_block)
+        maxima_labels = cls.xp.asarray(maxima_labels_block)
+        wshed_labels = cls.xp.asarray(wshed_labels_block)
+        wshed_filt = cls.xp.asarray(wshed_filt_block)
+        mask = wshed_filt > 0
+        # Get maxima positions (first occurrence of each label)
+        labels, coords_flat = cls.xp.unique(maxima_labels[mask], return_index=True)
+        z, y, x = cls.xp.unravel_index(coords_flat, maxima_labels.shape)
+        # Build cells DataFrame
         cells_df = (
             pd.DataFrame(
                 {
@@ -422,39 +418,36 @@ class CpuCellcFuncs:
                     Coords.Y.value: cls.cp2np(y),
                     Coords.X.value: cls.cp2np(x),
                 },
-                index=pd.Index(
-                    cls.cp2np(labels_vect).astype(np.uint32), name=CELL_IDX_NAME
-                ),
+                index=pd.Index(cls.cp2np(labels).astype(np.uint32), name=CELL_IDX_NAME),
             )
-            .drop(index=0)  # Not including the 0 valued row (because it's background)
+            .drop(index=0)  # Remove background
             .astype(np.uint16)
         )
         cells_df[CellColumns.COUNT.value] = 1
-        # Getting wshed_filt_arr (volume) values for each cell (z, y, x).
+        # Get volume at each maxima position
         cells_df[CellColumns.VOLUME.value] = cls.cp2np(
-            wshed_filt_block[
+            wshed_filt[
                 cells_df[Coords.Z.value],
                 cells_df[Coords.Y.value],
                 cells_df[Coords.X.value],
             ]
         )
-        # Filtering out cells with 0 volume. These cells were evidently filtered out previously in wshed_filt_arr
-        cells_df = cells_df.query(f"{CellColumns.VOLUME.value} > 0")
-        # Getting summed intensities for each cell
-        # For bincount, positional arg is label cat and weights sums is raw arr (helpful for intensity)
-        if cls.xp.any(wshed_filt_block > 0) and cells_df.shape[0] > 0:
-            sum_intensity = cls.xp.bincount(
-                wshed_labels_block[wshed_filt_block > 0].ravel(),
-                weights=raw_block[wshed_filt_block > 0].ravel(),
-                minlength=label_max + 1,
-            )
-            cells_df[CellColumns.SUM_INTENSITY.value] = pd.Series(
-                data=cls.cp2np(sum_intensity)
-            )
-        else:
+        # Filter out cells with 0 volume
+        cells_df = cells_df[cells_df[CellColumns.VOLUME.value] > 0]
+        # Compute summed intensities per watershed label
+        if cells_df.empty:
             cells_df[CellColumns.SUM_INTENSITY.value] = 0.0
-        # There should be no na values
-        assert np.all(cells_df.notna()), f"{cells_df}\n{cells_df.isna().sum()}"
+            return cells_df
+        fg_labels, inverse = cls.xp.unique(
+            wshed_labels[mask].ravel(), return_inverse=True
+        )
+        intensities = cls.xp.bincount(inverse, weights=raw[mask].ravel())
+        label_to_intensity = dict(
+            zip(cls.cp2np(fg_labels), cls.cp2np(intensities), strict=True)
+        )
+        cells_df[CellColumns.SUM_INTENSITY.value] = cells_df.index.map(
+            label_to_intensity.get
+        ).fillna(0.0)
         return cells_df
 
     @staticmethod
