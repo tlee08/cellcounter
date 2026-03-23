@@ -96,9 +96,7 @@ class GpuCellcFuncs(CpuCellcFuncs):
 
     @classmethod
     def get_boundary_pairs(cls, *args, **kwargs):
-        return cls._clear_cuda_mem_dec(super().get_boundary_pairs)(
-            *args, **kwargs
-        ).get()
+        return cls._clear_cuda_mem_dec(super().get_boundary_pairs)(*args, **kwargs)
 
     @classmethod
     def get_label_sizemap(cls, *args, **kwargs):
