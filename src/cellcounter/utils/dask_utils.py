@@ -26,7 +26,7 @@ from cellcounter.utils.misc_utils import const2iter
 #############################################
 
 
-def block2coords(func, *args: Any) -> dd.DataFrame:
+def block2coords(func: Callable, *args) -> dd.DataFrame:
     """Applies the `func` to `arr`.
 
     Expects `func` to convert `arr` to coords df (of sorts).
@@ -65,7 +65,7 @@ def block2coords(func, *args: Any) -> dd.DataFrame:
         for i in args
     ]
     # Transposing from (arg, blocks) to (block, arg) dimensions
-    args_blocks = list(zip(*blocks_args))
+    args_blocks = list(zip(*blocks_args, strict=True))
     # Applying the function to each block
     results_ls = [
         func_offsetted_delayed(func, args_block, z_offset, y_offset, x_offset)
@@ -73,16 +73,15 @@ def block2coords(func, *args: Any) -> dd.DataFrame:
             args_blocks, z_off, y_off, x_off, strict=True
         )
     ]
-    # NOTE: current workaround for memory/taking-on-too-many-blocks issue is compute each block separately
+    # NOTE: current workaround for memory/taking-on-too-many-blocks issue
+    # is compute each block separately
     return dd.concat([compute(i)[0] for i in results_ls], axis=0, ignore_index=True)
-    # return dd.concat(compute(*results_ls), axis=0, ignore_index=True)
-    # return dd.from_delayed(results_ls)
 
 
 @dask.delayed
 def func_offsetted_delayed(
     func: Callable, args: tuple, z_off: int, y_off: int, x_off: int
-):
+) -> dd.DataFrame:
     """Offsets the coords in each block.
 
     Given the block args and offsets, applies the function to each block
@@ -129,7 +128,7 @@ def coords2block(df: pd.DataFrame, block_info: dict) -> pd.DataFrame:
 #############################################
 
 
-def disk_cache(arr: da.Array, fp: Path | str):
+def disk_cache(arr: da.Array, fp: Path | str) -> da.Array:
     """Save array to disk and return the array.
 
     This is a good way to cache results.
@@ -159,15 +158,3 @@ def cluster_process(cluster: SpecCluster):
     finally:
         client.close()
         cluster.close()
-
-
-@staticmethod
-def get_cpid() -> int:
-    """Get child process ID for multiprocessing."""
-    return current_process()._identity[0] if current_process()._identity else 0
-
-
-def get_dask_pid() -> int:
-    """Get the Dask process ID."""
-    worker_id = get_worker().id
-    return int(worker_id)
