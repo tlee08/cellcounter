@@ -1,6 +1,7 @@
 from collections import defaultdict
 
 import numpy as np
+import numpy.typing as npt
 
 
 class UnionFind:
@@ -12,9 +13,9 @@ class UnionFind:
 
     parent: dict[int, int]
     rank: dict[int, int]
-    sort_idx: np.array | None = None
-    sorted_keys: np.array | None = None
-    sorted_sizes: np.array | None = None
+    sort_idx: npt.array | None
+    sorted_keys: npt.array | None
+    sorted_sizes: npt.array | None
 
     def __init__(self) -> None:
         """Union Find."""
@@ -46,7 +47,7 @@ class UnionFind:
         if rx == ry:
             self.rank[px] = rx + 1
 
-    def build_lookup_table(self, labels: np.ndarray, values: np.ndarray) -> None:
+    def build_lookup_table(self, labels: npt.ndarray, values: npt.ndarray) -> None:
         """Build lookup table.
 
         We sum the values and store the given sorted labels and summed values.
