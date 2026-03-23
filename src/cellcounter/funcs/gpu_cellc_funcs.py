@@ -95,26 +95,21 @@ class GpuCellcFuncs(CpuCellcFuncs):
         return cls._clear_cuda_mem_dec(super().mask2label)(*args, **kwargs).get()
 
     @classmethod
-    def mask2volume(cls, *args, **kwargs):
-        # NOTE: Already returns a numpy array
-        return cls._clear_cuda_mem_dec(super().mask2volume)(*args, **kwargs)
+    def get_label_sizemap(cls, *args, **kwargs):
+        return cls._clear_cuda_mem_dec(super().get_label_sizemap)(*args, **kwargs).get()
 
     @classmethod
-    def find_boundary_pairs(cls, *args, **kwargs):
-        # NOTE: Returns numpy array
-        return cls._clear_cuda_mem_dec(super().find_boundary_pairs)(*args, **kwargs)
-
-    @classmethod
-    def map_labels_to_sizes(cls, *args, **kwargs):
-        return cls._clear_cuda_mem_dec(super().map_labels_to_sizes)(*args, **kwargs).get()
+    def map_values_to_arr(cls, *args, **kwargs):
+        return cls._clear_cuda_mem_dec(super().map_values_to_arr)(*args, **kwargs).get()
 
     @classmethod
     def label2volume(cls, *args, **kwargs):
         return cls._clear_cuda_mem_dec(super().label2volume)(*args, **kwargs).get()
 
     @classmethod
-    def visualise_stats(cls, *args, **kwargs):
-        return cls._clear_cuda_mem_dec(super().visualise_stats)(*args, **kwargs)
+    def find_boundary_pairs(cls, *args, **kwargs):
+        # NOTE: Returns numpy array
+        return cls._clear_cuda_mem_dec(super().find_boundary_pairs)(*args, **kwargs)
 
     @classmethod
     def volume_filter(cls, *args, **kwargs):

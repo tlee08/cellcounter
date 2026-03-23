@@ -1,8 +1,10 @@
 import contextlib
 import functools
 import os
+from collections.abc import Callable
+from curses.ascii import SP
 from multiprocessing import current_process
-from typing import Any, Callable
+from typing import Any
 
 import dask
 import dask.array
@@ -17,10 +19,14 @@ from cellcounter.constants import DEPTH, Coords
 from cellcounter.utils.io_utils import silent_remove
 from cellcounter.utils.misc_utils import const2iter
 
+#############################################
+# Spatially aware array -> coords
+#############################################
+
 
 def block2coords(func, *args: Any) -> dd.DataFrame:
-    """
-    Applies the `func` to `arr`.
+    """Applies the `func` to `arr`.
+
     Expects `func` to convert `arr` to coords df (of sorts).
 
     Importantly, this offsets the coords in each block using ONLY
@@ -62,7 +68,7 @@ def block2coords(func, *args: Any) -> dd.DataFrame:
     results_ls = [
         func_offsetted_delayed(func, args_block, z_offset, y_offset, x_offset)
         for args_block, z_offset, y_offset, x_offset in zip(
-            args_blocks, z_off, y_off, x_off
+            args_blocks, z_off, y_off, x_off, strict=True
         )
     ]
     # NOTE: current workaround for memory/taking-on-too-many-blocks issue is compute each block separately
@@ -75,8 +81,8 @@ def block2coords(func, *args: Any) -> dd.DataFrame:
 def func_offsetted_delayed(
     func: Callable, args: tuple, z_off: int, y_off: int, x_off: int
 ):
-    """
-    Defining the function that offsets the coords in each block
+    """Offsets the coords in each block.
+
     Given the block args and offsets, applies the function to each block
     and offsets the outputted coords for the block.
 
@@ -99,11 +105,11 @@ def func_offsetted_delayed(
 
 
 def coords2block(df: pd.DataFrame, block_info: dict) -> pd.DataFrame:
-    """
-    Converts the coords to a block, given the block info (so relevant block offsets are used).
+    """Converts the coords to a block, given the block info.
 
     The block info is from Dask, in the map_blocks function
     (and other relevant functions like map_overlap).
+    The block info is required so relevant block offsets are used.
     """
     # Getting block info
     z, y, x = block_info[0]["array-location"]
@@ -116,7 +122,91 @@ def coords2block(df: pd.DataFrame, block_info: dict) -> pd.DataFrame:
     return df
 
 
+#############################################
+# Spatially aware array -> coords
+#############################################
+
+
+def spatial_connect_agg(arr: da.array, agg: Callable, cluster: SpecCluster):
+    """Connects contiguous foreground components, and aggregate with given func."""
+    with cluster_process(cls.gpu_cluster()):
+        # Reading labeled array
+        labels_arr = da.from_zarr(pfm.threshd_labels)
+        # Step 1: Overlap array to expose boundaries
+        labels_overlap = da.overlap.overlap(labels_arr, depth=1, boundary=0)
+        # Step 2: Find cross-boundary pairs
+        logger.debug("Finding cross-boundary pairs...")
+        delayed_blocks = labels_overlap.to_delayed().ravel()
+        pair_arrays = dask.compute(
+            *[
+                dask.delayed(cls.cellc_funcs.find_boundary_pairs)(b)
+                for b in delayed_blocks
+            ]
+        )
+        all_pairs = (
+            np.concatenate([p for p in pair_arrays if len(p) > 0], axis=0)
+            if pair_arrays
+            else np.empty((0, 2), dtype=np.int64)
+        )
+    logger.debug("Cross-boundary pairs found: %d", len(all_pairs))
+    # Step 3: Union-Find
+    uf = UnionFind()
+    for a, b in all_pairs:
+        uf.union(int(a), int(b))
+    # Step 4: Count voxels per label
+    logger.debug("Counting voxels per label...")
+    label_voxel_counts: dict[int, int] = defaultdict(int)
+    labels_for_count = da.from_zarr(pfm.threshd_labels)
+    for blk in labels_for_count.to_delayed().ravel():
+        arr_blk = blk.compute()
+        fg = arr_blk.ravel()
+        fg = fg[fg > 0]
+        if len(fg) == 0:
+            continue
+        unique, counts = np.unique(fg, return_counts=True)
+        for u, c in zip(unique.tolist(), counts.tolist(), strict=True):
+            label_voxel_counts[u] += c
+    logger.debug("Unique labels (foreground): %d", len(label_voxel_counts))
+    # Aggregate by component root
+    component_sizes: dict[int, int] = defaultdict(int)
+    for label, count in label_voxel_counts.items():
+        component_sizes[uf.find(label)] += count
+    n_components = len(component_sizes)
+    max_size = max(component_sizes.values()) if component_sizes else 0
+    logger.debug("Connected components: %d, largest: %d voxels", n_components, max_size)
+    # Build lookup table
+    label_keys = np.array(list(label_voxel_counts.keys()), dtype=np.int64)
+    label_sizes = np.array(
+        [component_sizes[find(lbl)] for lbl in label_keys], dtype=np.int64
+    )
+    sort_idx = np.argsort(label_keys)
+    sorted_keys = label_keys[sort_idx]
+    sorted_sizes = label_sizes[sort_idx]
+
+    # Step 5: Map labels to sizes
+    logger.debug("Writing output array...")
+    with cluster_process(cls.gpu_cluster()):
+        labels_for_output = da.from_zarr(pfm.threshd_labels)
+        sizes_arr = da.map_blocks(
+            cls.cellc_funcs.map_labels_to_sizes,
+            labels_for_output,
+            sorted_keys=sorted_keys,
+            sorted_sizes=sorted_sizes,
+            dtype=np.int64,
+        )
+        disk_cache(sizes_arr, pfm.threshd_volumes)
+
+
+#############################################
+# Other helpful Dask functions
+#############################################
+
+
 def disk_cache(arr: da.Array, fp):
+    """Save array to disk and return the array.
+
+    This is a good way to cache results.
+    """
     # Make parent dir
     os.makedirs(os.path.dirname(fp), exist_ok=True)
     # Remove existing file (if there) - otherwise error thrown by dask
@@ -128,12 +218,14 @@ def disk_cache(arr: da.Array, fp):
 
 
 def da_overlap(arr, d=DEPTH):
+    """Dask overlap blocks."""
     return da.overlap.overlap(arr, depth=d, boundary="reflect").rechunk(
         [i + 2 * d for i in arr.chunksize]
     )
 
 
 def da_trim(arr, d=DEPTH):
+    """Dask trim overlapped blocks."""
     return arr.map_blocks(
         lambda x: x[d:-d, d:-d, d:-d],
         chunks=[tuple(np.array(i) - d * 2) for i in arr.chunks],
@@ -141,8 +233,8 @@ def da_trim(arr, d=DEPTH):
 
 
 def cluster_proc_dec(cluster_factory: Callable[[], SpecCluster]):
-    """
-    `cluster_factory` is a function that returns a Dask cluster.
+    """`cluster_factory` is a function that returns a Dask cluster.
+
     This function makes the Dask cluster and client, runs the function,
     then closes the client and cluster.
     """
@@ -165,7 +257,8 @@ def cluster_proc_dec(cluster_factory: Callable[[], SpecCluster]):
 
 @contextlib.contextmanager
 def cluster_process(cluster: SpecCluster):
-    """
+    """Context manager that runs the given Dask cluster and a client.
+
     Makes a Dask cluster and client, runs the body in the context manager,
     then closes the client and cluster.
     """

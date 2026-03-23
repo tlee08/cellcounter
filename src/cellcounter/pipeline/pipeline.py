@@ -1,6 +1,7 @@
 import re
 import shutil
 from collections import defaultdict
+from collections.abc import Callable
 from pathlib import Path
 
 import dask
@@ -53,6 +54,7 @@ from cellcounter.utils.proj_org_utils import (
     ProjFpModelTuning,
     RefFpModel,
 )
+from cellcounter.utils.union_find import UnionFind
 
 logger = init_logger_file(__name__)
 
@@ -554,6 +556,57 @@ class Pipeline:
     #############################################
 
     @classmethod
+    def spatial_connect_count(cls, label_arr: da.array) -> da.array:
+        """Connects contiguous foreground components, and aggregate with given func."""
+        with cluster_process(cls.gpu_cluster()):
+            # Step 1: Overlap array to expose boundaries
+            label_overlap = da.overlap.overlap(label_arr, depth=1, boundary=0)
+            # Step 2: Find cross-boundary pairs
+            logger.debug("Finding cross-boundary pairs...")
+            pair_arrays = dask.compute(
+                *[
+                    dask.delayed(cls.cellc_funcs.find_boundary_pairs)(b)
+                    for b in label_overlap.to_delayed().ravel()
+                ]
+            )
+            all_pairs = (
+                np.concatenate([p for p in pair_arrays if len(p) > 0], axis=0)
+                if pair_arrays
+                else np.empty((0, 2), dtype=np.int64)
+            )
+            logger.debug("Cross-boundary pairs found: %d", len(all_pairs))
+            # Step 3: Union-Find
+            uf = UnionFind()
+            for a, b in all_pairs:
+                uf.union(int(a), int(b))
+            # Step 4: Count voxels per label
+            logger.debug("aggregating voxels per label...")
+            label_voxel_counts_ls = dask.compute(
+                *[
+                    dask.delayed(cls.cellc_funcs.get_label_sizemap)
+                    for b in label_arr.to_delayed().ravel()
+                ]
+            )
+            labels = np.concatenate([i[0] for i in label_voxel_counts_ls])
+            counts = np.concatenate([i[1] for i in label_voxel_counts_ls])
+            logger.debug("Unique labels (foreground): %d", len(labels))
+            # Aggregate by component root
+            uf.build_lookup_table(labels, counts)
+            # Step 5: Map labels to sizes
+            logger.debug("Writing output array...")
+            sizes_arr = da.map_blocks(
+                cls.cellc_funcs.map_values_to_arr,
+                label_arr,
+                ids=uf.sorted_keys,
+                values=uf.sorted_sizes,
+                dtype=np.int64,
+            )
+            return sizes_arr
+
+    #############################################
+    # CELL COUNTING PIPELINE FUNCS
+    #############################################
+    @classmethod
     def img_overlap(
         cls, proj_dir: Path | str, overwrite: bool = False, tuning: bool = False
     ) -> None:
@@ -703,9 +756,6 @@ class Pipeline:
         with cluster_process(cls.gpu_cluster()):
             # Getting configs
             configs = ConfigParamsModel.read_fp(pfm.config_params)
-            # # Visually inspect sd offset
-            # t_p =adaptv_arr.sum() / (np.prod(adaptv_arr.shape) - (adaptv_arr == 0).sum())
-            # t_p = t_p.compute()
             # Reading input images
             adaptv_arr = da.from_zarr(pfm.adaptv)
             # Declaring processing instructions
@@ -719,25 +769,6 @@ class Pipeline:
 
     @classmethod
     def cellc5(
-        cls, proj_dir: Path | str, overwrite: bool = False, tuning: bool = False
-    ) -> None:
-        """Cell counting pipeline - Step 5: Get object sizes with cross-chunk connectivity.
-
-        This is a convenience method that calls cellc5_label and cellc5_size in sequence.
-
-        Args:
-            proj_dir (str): Project directory path.
-            overwrite (bool, optional): If True, overwrite existing outputs. Defaults to False.
-            tuning (bool, optional): If True, use the tuning project file model. Defaults to False.
-
-        Returns:
-            None
-        """
-        cls.cellc5_label(proj_dir, overwrite=overwrite, tuning=tuning)
-        cls.cellc5_size(proj_dir, overwrite=overwrite, tuning=tuning)
-
-    @classmethod
-    def cellc5_label(
         cls, proj_dir: Path | str, overwrite: bool = False, tuning: bool = False
     ) -> None:
         """Cell counting pipeline - Step 5a: Label contiguous regions with globally unique labels.
@@ -756,18 +787,17 @@ class Pipeline:
                 if fp.exists():
                     logger.warning(file_exists_msg(fp))
                     return
-        # Getting configs
-        configs = ConfigParamsModel.read_fp(pfm.config_params)
-        max_labels_per_chunk = int(np.prod(configs.zarr_chunksize)) + 1
         # Making Dask cluster
         with cluster_process(cls.gpu_cluster()):
+            # Getting configs
+            configs = ConfigParamsModel.read_fp(pfm.config_params)
+            max_labels_per_chunk = int(np.ceil(np.prod(configs.zarr_chunksize)) / 2) + 1
             # Reading input images
             threshd_arr = da.from_zarr(pfm.threshd)
             # Declaring processing instructions
             labels_arr = da.map_blocks(
                 cls.cellc_funcs.mask2label,
                 threshd_arr,
-                block_info=True,
                 max_labels_per_chunk=max_labels_per_chunk,
                 dtype=np.int64,
             )
@@ -775,7 +805,7 @@ class Pipeline:
             disk_cache(labels_arr, pfm.threshd_labels)
 
     @classmethod
-    def cellc5_size(
+    def cellc6(
         cls, proj_dir: Path | str, overwrite: bool = False, tuning: bool = False
     ) -> None:
         """Cell counting pipeline - Step 5b: Compute contiguous sizes using union-find.
@@ -800,98 +830,15 @@ class Pipeline:
                 if fp.exists():
                     logger.warning(file_exists_msg(fp))
                     return
-
-        # Reading labeled array
+        # Reading input images
         labels_arr = da.from_zarr(pfm.threshd_labels)
-
-        # Step 1: Overlap array to expose boundaries
-        labels_overlap = da.overlap.overlap(labels_arr, depth=1, boundary=0)
-
-        # Step 2: Find cross-boundary pairs
-        logger.debug("Finding cross-boundary pairs...")
-        delayed_blocks = labels_overlap.to_delayed().ravel()
-        pair_arrays = dask.compute(
-            *[dask.delayed(cls.cellc_funcs.find_boundary_pairs)(b) for b in delayed_blocks]
-        )
-        valid = [p for p in pair_arrays if len(p) > 0]
-        all_pairs = np.concatenate(valid, axis=0) if valid else np.empty((0, 2), dtype=np.int64)
-        logger.debug("Cross-boundary pairs found: %d", len(all_pairs))
-
-        # Step 3: Union-Find
-        logger.debug("Running Union-Find...")
-        parent: dict[int, int] = {}
-        rank: dict[int, int] = {}
-
-        def find(x: int) -> int:
-            while parent.get(x, x) != x:
-                parent[x] = parent.get(parent.get(x, x), parent.get(x, x))
-                x = parent[x]
-            return x
-
-        def union(x: int, y: int) -> None:
-            px, py = find(x), find(y)
-            if px == py:
-                return
-            rx, ry = rank.get(px, 0), rank.get(py, 0)
-            if rx < ry:
-                px, py = py, px
-            parent[py] = px
-            if rx == ry:
-                rank[px] = rx + 1
-
-        for a, b in all_pairs:
-            union(int(a), int(b))
-        logger.debug("Union-Find complete.")
-
-        # Step 4: Count voxels per label
-        logger.debug("Counting voxels per label...")
-        label_voxel_counts: dict[int, int] = defaultdict(int)
-        labels_for_count = da.from_zarr(pfm.threshd_labels)
-        for blk in labels_for_count.to_delayed().ravel():
-            arr_blk = blk.compute()
-            fg = arr_blk.ravel()
-            fg = fg[fg > 0]
-            if len(fg) == 0:
-                continue
-            unique, counts = np.unique(fg, return_counts=True)
-            for u, c in zip(unique.tolist(), counts.tolist()):
-                label_voxel_counts[u] += c
-
-        logger.debug("Unique labels (foreground): %d", len(label_voxel_counts))
-
-        # Aggregate by component root
-        component_sizes: dict[int, int] = defaultdict(int)
-        for label, count in label_voxel_counts.items():
-            component_sizes[find(label)] += count
-
-        n_components = len(component_sizes)
-        max_size = max(component_sizes.values()) if component_sizes else 0
-        logger.debug("Connected components: %d, largest: %d voxels", n_components, max_size)
-
-        # Build lookup table
-        label_keys = np.array(list(label_voxel_counts.keys()), dtype=np.int64)
-        label_sizes = np.array(
-            [component_sizes[find(lbl)] for lbl in label_keys], dtype=np.int64
-        )
-        sort_idx = np.argsort(label_keys)
-        sorted_keys = label_keys[sort_idx]
-        sorted_sizes = label_sizes[sort_idx]
-
-        # Step 5: Map labels to sizes
-        logger.debug("Writing output array...")
-        with cluster_process(cls.gpu_cluster()):
-            labels_for_output = da.from_zarr(pfm.threshd_labels)
-            sizes_arr = da.map_blocks(
-                cls.cellc_funcs.map_labels_to_sizes,
-                labels_for_output,
-                sorted_keys=sorted_keys,
-                sorted_sizes=sorted_sizes,
-                dtype=np.int64,
-            )
-            disk_cache(sizes_arr, pfm.threshd_volumes)
+        # Declaring processing instructions
+        sizes_arr = cls.spatial_connect_count(labels_arr)
+        # Saving
+        disk_cache(sizes_arr, pfm.threshd_volumes)
 
     @classmethod
-    def cellc6(
+    def cellc7(
         cls, proj_dir: Path | str, overwrite: bool = False, tuning: bool = False
     ) -> None:
         """Cell counting pipeline - Step 6: Filter out large objects (likely outlines, not cells).
@@ -926,7 +873,7 @@ class Pipeline:
             threshd_filt_arr = disk_cache(threshd_filt_arr, pfm.threshd_filt)
 
     @classmethod
-    def cellc7(
+    def cellc8(
         cls, proj_dir: Path | str, overwrite: bool = False, tuning: bool = False
     ) -> None:
         """Cell counting pipeline - Step 7: Get maxima mask of raw image with thresholded-filtered mask.
@@ -962,7 +909,7 @@ class Pipeline:
             maxima_arr = disk_cache(maxima_arr, pfm.maxima)
 
     @classmethod
-    def cellc8(
+    def cellc9(
         cls, proj_dir: Path | str, overwrite: bool = False, tuning: bool = False
     ) -> None:
         """Cell counting pipeline - Step 8: Convert maxima mask to uniquely labelled points.
@@ -984,7 +931,7 @@ class Pipeline:
                     return
         # Getting configs
         configs = ConfigParamsModel.read_fp(pfm.config_params)
-        max_labels_per_chunk = int(np.prod(configs.zarr_chunksize)) + 1
+        max_labels_per_chunk = int(np.ceil(np.prod(configs.zarr_chunksize)) / 2) + 1
         with cluster_process(cls.gpu_cluster()):
             # Reading input images
             maxima_arr = da.from_zarr(pfm.maxima)
@@ -992,14 +939,13 @@ class Pipeline:
             maxima_labels_arr = da.map_blocks(
                 cls.cellc_funcs.mask2label,
                 maxima_arr,
-                block_info=True,
                 max_labels_per_chunk=max_labels_per_chunk,
                 dtype=np.int64,
             )
             maxima_labels_arr = disk_cache(maxima_labels_arr, pfm.maxima_labels)
 
     @classmethod
-    def cellc9(
+    def cellc10(
         cls, proj_dir: Path | str, overwrite: bool = False, tuning: bool = False
     ) -> None:
         """Cell counting pipeline - Step 9: Watershed segmentation labels with maxima labels and thresholded-filtered mask.
@@ -1033,10 +979,10 @@ class Pipeline:
             wshed_labels_arr = disk_cache(wshed_labels_arr, pfm.wshed_labels)
 
     @classmethod
-    def cellc10(
+    def cellc11(
         cls, proj_dir: Path | str, overwrite: bool = False, tuning: bool = False
     ) -> None:
-        """Cell counting pipeline - Step 10
+        """Cell counting pipeline - Step 10.
 
         Convert watershed labels to watershed segmentation volumes.
         """
@@ -1050,17 +996,15 @@ class Pipeline:
             # Reading input images
             wshed_labels_arr = da.from_zarr(pfm.wshed_labels)
             # Declaring processing instructions
-            wshed_volumes_arr = da.map_blocks(
-                cls.cellc_funcs.label2volume,
-                wshed_labels_arr,
-            )
+            wshed_volumes_arr = cls.spatial_connect_count(wshed_labels_arr)
+            # Saving
             wshed_volumes_arr = disk_cache(wshed_volumes_arr, pfm.wshed_volumes)
 
     @classmethod
-    def cellc11(
+    def cellc12(
         cls, proj_dir: Path | str, overwrite: bool = False, tuning: bool = False
     ) -> None:
-        """Cell counting pipeline - Step 11
+        """Cell counting pipeline - Step 11.
 
         Filter out large watershed objects
         (sets large volume values to 0, effectively filtering from segmentation image).
@@ -1087,10 +1031,10 @@ class Pipeline:
             wshed_filt_arr = disk_cache(wshed_filt_arr, pfm.wshed_filt)
 
     @classmethod
-    def cellc12(
+    def cellc13(
         cls, proj_dir: Path | str, overwrite: bool = False, tuning: bool = False
     ) -> None:
-        """Cell counting pipeline - Step 12
+        """Cell counting pipeline - Step 12.
 
         Saves a table of cells and their measures.
 
@@ -1139,57 +1083,6 @@ class Pipeline:
             write_parquet(cells_df, pfm.cells_raw_df)
             # Removing the intermediate dask parquet
             silent_remove(f"{pfm.cells_raw_df}_dask.parquet")
-
-    @classmethod
-    def cellc12_old(
-        cls, proj_dir: Path | str, overwrite: bool = False, tuning: bool = False
-    ) -> None:
-        """Cell counting pipeline - Step 11
-
-        Calculate the maxima and watershed, save the cells.
-
-        Basically a repeat of cellc8 and cellc9 but needs to be done to
-        get the cell volumes in a table. Hence, don't run cellc8 and cellc9 if
-        you don't want to view the cells visually (good for pipeline, not for tuning).
-        """
-        pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
-        if not overwrite:
-            for fp in (pfm.cells_raw_df,):
-                if fp.exists():
-                    logger.warning(file_exists_msg(fp))
-                    return
-        with cluster_process(cls.heavy_cluster()):
-            # Getting configs
-            configs = ConfigParamsModel.read_fp(pfm.config_params)
-            # Reading input images
-            raw_arr = da.from_zarr(pfm.raw)
-            overlap_arr = da.from_zarr(pfm.overlap)
-            maxima_arr = da.from_zarr(pfm.maxima)
-            threshd_filt_arr = da.from_zarr(pfm.threshd_filt)
-            # Declaring processing instructions
-            # Getting maxima coords and cell measures in table
-            cells_df = block2coords(
-                CpuCellcFuncs.get_cells_old,
-                raw_arr,
-                overlap_arr,
-                maxima_arr,
-                threshd_filt_arr,
-                configs.overlap_depth,
-            )
-            # Converting from dask to pandas
-            cells_df = cells_df.compute()
-            # Filtering out by volume (same filter cellc9_pipeline volume_filter)
-            cells_df = cells_df.query(
-                f"({CellColumns.VOLUME.value} >= {configs.min_wshed_size}) & "
-                f"({CellColumns.VOLUME.value} <= {configs.max_wshed_size})"
-            )
-            # If tuning, then offset by the tuning crop. Allows trfm and subsequent region grouping on tuning image.
-            if tuning:
-                cells_df[Coords.Z.value] += configs.tuning_z_trim[0] or 0
-                cells_df[Coords.Y.value] += configs.tuning_y_trim[0] or 0
-                cells_df[Coords.X.value] += configs.tuning_x_trim[0] or 0
-            # Computing and saving as parquet
-            write_parquet(cells_df, pfm.cells_raw_df + "_b.parquet")
 
     #############################################
     # CELL COUNT REALIGNMENT TO REFERENCE AND AGGREGATION PIPELINE FUNCS

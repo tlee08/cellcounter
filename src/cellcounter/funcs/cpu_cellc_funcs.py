@@ -1,7 +1,8 @@
-import matplotlib.pyplot as plt
+from collections.abc import Callable
+
+import dask.array as da
 import numpy as np
 import pandas as pd
-import seaborn as sns
 from scipy import ndimage as sc_ndimage
 from skimage.segmentation import watershed
 
@@ -16,71 +17,71 @@ class CpuCellcFuncs:
     logger = init_logger_file(__name__)
 
     @classmethod
-    def tophat_filt(cls, arr: np.ndarray, sigma: int = 10) -> np.ndarray:
+    def tophat_filt(cls, block: np.ndarray, sigma: int = 10) -> np.ndarray:
         """Calculate top hat filter.
 
         ```
         res = arr - max_filter(min_filter(arr, sigma), sigma)
         ```
         """
-        arr = cls.xp.asarray(arr).astype(cls.xp.float32)
+        block = cls.xp.asarray(block).astype(cls.xp.float32)
         cls.logger.debug("Perform white top-hat filter")
-        res = cls.xdimage.white_tophat(arr, sigma)
+        res_block = cls.xdimage.white_tophat(block, sigma)
         cls.logger.debug("ReLu")
-        res = cls.xp.maximum(res, 0)
-        return res.astype(cls.xp.uint16)
+        res_block = cls.xp.maximum(res_block, 0)
+        return res_block.astype(cls.xp.uint16)
 
     @classmethod
-    def dog_filt(cls, arr: np.ndarray, sigma1=1, sigma2=2) -> np.ndarray:
-        arr = cls.xp.asarray(arr).astype(cls.xp.float32)
+    def dog_filt(cls, block: np.ndarray, sigma1=1, sigma2=2) -> np.ndarray:
+        block = cls.xp.asarray(block).astype(cls.xp.float32)
         cls.logger.debug("Making gaussian blur 1")
-        gaus1 = cls.xdimage.gaussian_filter(arr, sigma=sigma1)
+        gaus1 = cls.xdimage.gaussian_filter(block, sigma=sigma1)
         cls.logger.debug("Making gaussian blur 2")
-        gaus2 = cls.xdimage.gaussian_filter(arr, sigma=sigma2)
+        gaus2 = cls.xdimage.gaussian_filter(block, sigma=sigma2)
         cls.logger.debug("Subtracting gaussian blurs")
-        res = gaus1 - gaus2
+        res_block = gaus1 - gaus2
         cls.logger.debug("ReLu")
-        res = cls.xp.maximum(res, 0)
-        return res.astype(cls.xp.uint16)
+        res_block = cls.xp.maximum(res_block, 0)
+        return res_block.astype(cls.xp.uint16)
 
     @classmethod
-    def gauss_blur_filt(cls, arr: np.ndarray, sigma=10) -> np.ndarray:
-        arr = cls.xp.asarray(arr).astype(cls.xp.float32)
+    def gauss_blur_filt(cls, block: np.ndarray, sigma=10) -> np.ndarray:
+        block = cls.xp.asarray(block).astype(cls.xp.float32)
         cls.logger.debug("Calculate Gaussian blur")
-        res = cls.xdimage.gaussian_filter(arr, sigma=sigma)
-        return res.astype(cls.xp.uint16)
+        res_block = cls.xdimage.gaussian_filter(block, sigma=sigma)
+        return res_block.astype(cls.xp.uint16)
 
     @classmethod
-    def gauss_subt_filt(cls, arr: np.ndarray, sigma=10) -> np.ndarray:
-        arr = cls.xp.asarray(arr).astype(cls.xp.float32)
+    def gauss_subt_filt(cls, block: np.ndarray, sigma=10) -> np.ndarray:
+        block = cls.xp.asarray(block).astype(cls.xp.float32)
         cls.logger.debug("Calculate local Gaussian blur")
-        gaus = cls.xdimage.gaussian_filter(arr, sigma=sigma)
+        gaus = cls.xdimage.gaussian_filter(block, sigma=sigma)
         cls.logger.debug("Apply the adaptive filter")
-        res = arr - gaus
+        res_block = block - gaus
         cls.logger.debug("ReLu")
-        res = cls.xp.maximum(res, 0)
-        return res.astype(cls.xp.uint16)
+        res_block = cls.xp.maximum(res_block, 0)
+        return res_block.astype(cls.xp.uint16)
 
     @classmethod
     def intensity_cutoff(
-        cls, arr: np.ndarray, min_: None | float = None, max_: None | float = None
+        cls, block: np.ndarray, min_: None | float = None, max_: None | float = None
     ) -> np.ndarray:
         """Performing cutoffs on a 3D tensor."""
-        arr = cls.xp.asarray(arr)
+        block = cls.xp.asarray(block)
         cls.logger.debug("Making cutoffs")
-        res = arr
+        res_block = block
         if min_ is not None:
-            res = cls.xp.maximum(res, min_)
+            res_block = cls.xp.maximum(res_block, min_)
         if max_ is not None:
-            res = cls.xp.minimum(res, max_)
-        return res
+            res_block = cls.xp.minimum(res_block, max_)
+        return res_block
 
     @classmethod
-    def otsu_thresh(cls, arr: np.ndarray) -> np.ndarray:
+    def otsu_thresh(cls, block: np.ndarray) -> np.ndarray:
         """Perform Otsu's thresholding on a 3D tensor."""
-        arr = cls.xp.asarray(arr)
+        block = cls.xp.asarray(block)
         cls.logger.debug("Calculate histogram")
-        hist, bin_edges = cls.xp.histogram(arr, bins=256)
+        hist, bin_edges = cls.xp.histogram(block, bins=256)
         cls.logger.debug("Normalize histogram")
         prob_hist = hist / hist.sum()
         cls.logger.debug("Compute cumulative sum and cumulative mean")
@@ -99,33 +100,33 @@ class CpuCellcFuncs:
         cls.logger.debug("Find the threshold that maximizes the between class variance")
         optimal_threshold = cls.xp.argmax(between_class_variance)
         cls.logger.debug("Apply threshold")
-        res = arr > optimal_threshold
-        return res.astype(cls.xp.uint8)
+        res_block = block > optimal_threshold
+        return res_block.astype(cls.xp.uint8)
 
     @classmethod
-    def mean_thresh(cls, arr: np.ndarray, offset_sd: float = 0.0) -> np.ndarray:
+    def mean_thresh(cls, block: np.ndarray, offset_sd: float = 0.0) -> np.ndarray:
         """Perform adaptive thresholding on a 3D tensor on GPU."""
-        arr = cls.xp.asarray(arr)
+        block = cls.xp.asarray(block)
         cls.logger.debug("Get mean and std of ONLY non-zero values")
-        arr0 = arr[arr > 0]
+        arr0 = block[block > 0]
         mu = arr0.mean()
         sd = arr0.std()
         cls.logger.debug("Apply the threshold")
-        res = arr > mu + offset_sd * sd
-        return res.astype(cls.xp.uint8)
+        res_block = block > mu + offset_sd * sd
+        return res_block.astype(cls.xp.uint8)
 
     @classmethod
-    def manual_thresh(cls, arr: np.ndarray, val: int) -> np.ndarray:
+    def manual_thresh(cls, block: np.ndarray, val: int) -> np.ndarray:
         """Perform manual thresholding on a tensor."""
-        arr = cls.xp.asarray(arr)
+        block = cls.xp.asarray(block)
         cls.logger.debug("Applying the threshold")
-        res = arr >= val
-        return res.astype(cls.xp.uint8)
+        res_block = block >= val
+        return res_block.astype(cls.xp.uint8)
 
     @classmethod
     def mask2label(
         cls,
-        arr: np.ndarray,
+        block: np.ndarray,
         block_info: dict | None = None,
         max_labels_per_chunk: int | None = None,
     ) -> np.ndarray:
@@ -149,9 +150,9 @@ class CpuCellcFuncs:
         np.ndarray
             Labeled array with uint32 dtype (or int64 if using global offsets)
         """
-        arr = cls.xp.asarray(arr).astype(cls.xp.uint8)
+        block = cls.xp.asarray(block).astype(cls.xp.uint8)
         cls.logger.debug("Labelling contiguous objects uniquely")
-        res, _ = cls.xdimage.label(arr).astype(cls.xp.int64)
+        res_block, _ = cls.xdimage.label(block).astype(cls.xp.int64)
 
         # Add globally unique offset if parameters provided
         if block_info is not None and max_labels_per_chunk is not None:
@@ -160,31 +161,67 @@ class CpuCellcFuncs:
                 grid_shape = block_info[0]["num-chunks"]
                 flat_idx = cls.xp.ravel_multi_index(loc, grid_shape)
                 offset = flat_idx * max_labels_per_chunk
-                res[res > 0] += offset
+                res_block[res_block > 0] += offset
                 cls.logger.debug("Applied label offset: %s", offset)
-            return res
+            return res_block
         cls.logger.debug("Returning")
-        return res
+        return res_block
 
     @classmethod
-    def label2volume(cls, arr: np.ndarray) -> np.ndarray:
-        """Convert array of label values to contiguous volume (i.e. count) values."""
-        arr = cls.xp.asarray(arr)
+    def get_label_sizemap(cls, block: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        """Get a dict of label_val : contiguous_size."""
+        block = cls.xp.asarray(block)
         cls.logger.debug("Getting vector of ids and volumes (not incl. 0)")
-        ids, counts = cls.xp.unique(arr[arr > 0], return_counts=True)
-        # NOTE: assumes ids are incrementing from 1
-        counts = cls.xp.concatenate([cls.xp.asarray([0]), counts])
-        cls.logger.debug("Converting arr intensity to volumes")
-        res = counts[arr]
-        cls.logger.debug("Returning")
-        return res.astype(cls.xp.uint16)
+        mask = block > 0
+        labels_fg = block[mask]
+        ids, counts = cls.xp.unique(labels_fg, return_counts=True)
+        # Return ids and corresponding counts
+        return cls.cp2np(ids), cls.cp2np(counts)
 
     @classmethod
-    def mask2volume(cls, arr: np.ndarray) -> np.ndarray:
-        """Convert array of mask (usually binary) to contiguous volume (i.e. count) values."""
-        arr = cls.mask2label(arr)
-        res = cls.label2volume(arr)
-        return res
+    def map_values_to_arr(
+        cls,
+        block: np.ndarray,
+        ids: np.ndarray,
+        values: np.ndarray,
+    ) -> np.ndarray:
+        """Map label values to their component values.
+
+        Parameters:
+        -----------
+        block : np.ndarray
+            Label array chunk
+        ids : np.ndarray
+            Sorted array of label IDs for lookup
+        values : np.ndarray
+            Corresponding component values for each label
+
+        Returns:
+        --------
+        np.ndarray
+            Array where each voxel contains its component size (0 for background)
+        """
+        block = cls.xp.asarray(block)
+        ids = cls.xp.asarray(ids)
+        values = cls.xp.asarray(ids)
+        res_block = cls.xp.zeros(block.shape, dtype=cls.xp.int64)
+        mask = block > 0
+        if not mask.any():
+            return res_block
+        labels_vect = block[mask]
+        # Find each label's position in the sorted lookup table
+        pos = cls.xp.searchsorted(ids, labels_vect)
+        pos = cls.xp.clip(pos, 0, len(ids) - 1)
+        valid = ids[pos] == labels_vect  # guard against missing keys
+        res_block[mask] = cls.xp.where(valid, values[pos], 0)
+        return res_block
+
+    @classmethod
+    def label2volume(cls, block: np.ndarray) -> np.ndarray:
+        """Convert array of label values to contiguous volume (i.e. count) values."""
+        ids, counts = cls.get_label_sizemap(block)
+        res_block = cls.map_values_to_arr(block, ids, counts)
+        return res_block
 
     @classmethod
     def find_boundary_pairs(cls, block: np.ndarray, depth: int = 1) -> np.ndarray:
@@ -194,15 +231,15 @@ class CpuCellcFuncs:
         This is valid because labeling already merged all intra-chunk adjacencies,
         so different labels can only meet at chunk boundaries.
 
-        Parameters
-        ----------
+        Parameters:
+        -----------
         block : np.ndarray
             Overlabeled array chunk with halo of depth=1
         depth : int
             Overlap depth (default 1)
 
-        Returns
-        -------
+        Returns:
+        --------
         np.ndarray
             Array of shape (N, 2) with adjacent label pairs
         """
@@ -221,82 +258,31 @@ class CpuCellcFuncs:
                 if mask.any():
                     lo = cls.xp.minimum(a[mask], b[mask])
                     hi = cls.xp.maximum(a[mask], b[mask])
-                    pairs.update(zip(lo.tolist(), hi.tolist()))
+                    pairs.update(zip(lo.tolist(), hi.tolist(), strict=True))
         if pairs:
             return cls.xp.array(list(pairs), dtype=cls.xp.int64)
         return cls.xp.empty((0, 2), dtype=cls.xp.int64)
 
     @classmethod
-    def map_labels_to_sizes(
-        cls,
-        block: np.ndarray,
-        sorted_keys: np.ndarray,
-        sorted_sizes: np.ndarray,
+    def volume_filter(
+        cls, block: np.ndarray, smin: int | None = None, smax: int | None = None
     ) -> np.ndarray:
-        """Map label values to their connected component sizes.
-
-        Parameters
-        ----------
-        block : np.ndarray
-            Label array chunk
-        sorted_keys : np.ndarray
-            Sorted array of label IDs for lookup
-        sorted_sizes : np.ndarray
-            Corresponding component sizes for each label
-
-        Returns
-        -------
-        np.ndarray
-            Array where each voxel contains its component size (0 for background)
-        """
-        out = cls.xp.zeros(block.shape, dtype=cls.xp.int64)
-        mask = block > 0
-        if not mask.any():
-            return out
-        labels_fg = block[mask]
-        # Find each label's position in the sorted lookup table
-        pos = cls.xp.searchsorted(sorted_keys, labels_fg)
-        pos = cls.xp.clip(pos, 0, len(sorted_keys) - 1)
-        valid = sorted_keys[pos] == labels_fg  # guard against missing keys
-        out[mask] = cls.xp.where(valid, sorted_sizes[pos], 0)
-        return out
-
-    @classmethod
-    def visualise_stats(cls, arr: np.ndarray):
-        """Visualise statistics.
-
-        NOTE: expects arr to be a 3D tensor of a property
-        (e.g. volume).
-        """
-        cls.logger.debug("Converting arr to vector of the ids")
-        ids = arr[arr > 0]
-        cls.logger.debug("Making histogram")
-        fig, ax = plt.subplots()
-        sns.histplot(
-            x=ids,
-            log_scale=True,
-            ax=ax,
-        )
-        return fig
-
-    @classmethod
-    def volume_filter(cls, arr: np.ndarray, smin=None, smax=None) -> np.ndarray:
         """Assumes `arr` is array of objects labelled with their volumes."""
-        arr = cls.xp.asarray(arr)
+        block = cls.xp.asarray(block)
         cls.logger.debug("Getting filter of small and large object to filter out")
-        smin = smin if smin else 0
-        smax = smax if smax else arr.max()
-        filt_objs = (arr < smin) | (arr > smax)
+        smin = smin or 0
+        smax = smax or block.max()
+        filt_objs = (block < smin) | (block > smax)
         cls.logger.debug("Filter out objects (by setting them to 0)")
-        arr[filt_objs] = 0
-        return arr
+        block[filt_objs] = 0
+        return block
 
     @classmethod
     def get_local_maxima(
         cls,
-        arr: np.ndarray,
+        block: np.ndarray,
         sigma: int = 10,
-        mask_arr: None | np.ndarray = None,
+        mask_block: None | np.ndarray = None,
     ) -> np.ndarray:
         """Getting local maxima (no connectivity) in a 3D tensor.
 
@@ -304,29 +290,29 @@ class CpuCellcFuncs:
 
         If `mask_arr` is provided, then only maxima within the mask are kept.
         """
-        arr = cls.xp.asarray(arr)
+        block = cls.xp.asarray(block)
         cls.logger.debug("Making max filter for raw arr (maximum in given area)")
-        max_arr = cls.xdimage.maximum_filter(arr, sigma)
+        max_arr = cls.xdimage.maximum_filter(block, sigma)
         cls.logger.debug("Getting local maxima (where arr == max_arr)")
-        res = arr == max_arr
+        res_block = block == max_arr
         # If a mask is given, then keep only the maxima within the mask
-        if mask_arr is not None:
+        if mask_block is not None:
             cls.logger.debug("Mask provided. Maxima only in mask regions considered.")
-            mask_arr = (cls.xp.asarray(mask_arr) > 0).astype(cls.xp.uint8)
-            res = (res * mask_arr).astype(cls.xp.uint8)
-        return res
+            mask_block = (cls.xp.asarray(mask_block) > 0).astype(cls.xp.uint8)
+            res_block = (res_block * mask_block).astype(cls.xp.uint8)
+        return res_block
 
     @classmethod
-    def mask(cls, arr: np.ndarray, mask_arr: np.ndarray) -> np.ndarray:
-        arr = cls.xp.asarray(arr)
-        mask_arr = cls.xp.asarray(mask_arr).astype(cls.xp.uint8)
+    def mask(cls, block: np.ndarray, mask_block: np.ndarray) -> np.ndarray:
+        block = cls.xp.asarray(block)
+        mask_block = cls.xp.asarray(mask_block).astype(cls.xp.uint8)
         cls.logger.debug("Masking for only maxima within mask")
-        res = arr * (mask_arr > 0)
-        return res
+        res_block = block * (mask_block > 0)
+        return res_block
 
     @classmethod
     def wshed_segm(
-        cls, raw_arr: np.ndarray, maxima_arr: np.ndarray, mask_arr: np.ndarray
+        cls, raw_block: np.ndarray, maxima_block: np.ndarray, mask_block: np.ndarray
     ) -> np.ndarray:
         """Do watershed segmentation.
 
@@ -335,39 +321,39 @@ class CpuCellcFuncs:
         Expects `maxima_arr` to have unique labels for each maxima.
         """
         cls.logger.debug("Watershed segmentation")
-        res = watershed(
-            image=-raw_arr,
-            markers=maxima_arr,
-            mask=mask_arr > 0,
+        res_block = watershed(
+            image=-raw_block,
+            markers=maxima_block,
+            mask=mask_block > 0,
         )
-        return res
+        return res_block
 
     @classmethod
     def wshed_segm_volumes(
-        cls, raw_arr: np.ndarray, maxima_arr: np.ndarray, mask_arr: np.ndarray
+        cls, raw_block: np.ndarray, maxima_block: np.ndarray, mask_block: np.ndarray
     ) -> np.ndarray:
         """Do watershed segmentation with volumes.
 
         NOTE: NOT GPU accelerated
         """
         # Labelling contiguous maxima with unique labels
-        maxima_arr = cls.mask2label(maxima_arr)
+        maxima_block = cls.mask2label(maxima_block)
         # Watershed segmentation
-        wshed_arr = cls.wshed_segm(raw_arr, maxima_arr, mask_arr)
+        wshed_arr = cls.wshed_segm(raw_block, maxima_block, mask_block)
         # Getting volumes of watershed regions
-        res = cls.label2volume(wshed_arr)
-        return res
+        res_block = cls.label2volume(wshed_arr)
+        return res_block
 
     @classmethod
-    def get_coords(cls, arr: np.ndarray) -> pd.DataFrame:
+    def get_coords(cls, block: np.ndarray) -> pd.DataFrame:
         """Get coordinates of regions in 3D tensor.
 
         TODO: Keep only the first row (i.e cell) for each label (groupby).
         """
         cls.logger.debug("Getting coordinates of regions")
-        z, y, x = np.where(arr)
+        z, y, x = np.where(block)
         cls.logger.debug("Getting IDs of regions (from coords)")
-        ids = arr[z, y, x]
+        ids = block[z, y, x]
         cls.logger.debug("Making dataframe")
         df = pd.DataFrame(
             {
@@ -383,87 +369,13 @@ class CpuCellcFuncs:
         return df
 
     @classmethod
-    def get_cells_v_old(
-        cls,
-        raw_arr: np.ndarray,
-        overlap_arr: np.ndarray,
-        maxima_arr: np.ndarray,
-        mask_arr: np.ndarray,
-        depth: int = DEPTH,
-    ) -> pd.DataFrame:
-        """Get the cells from the maxima labels and the watershed segmentation.
-
-        Also get corresponding labels.
-        """
-        # Asserting arr sizes match between arr_raw, arr_overlap, and depth
-        # NOTE: we NEED raw_arr as the first da.Array to get chunking coord offsets correct
-        assert raw_arr.shape == tuple(i - 2 * depth for i in overlap_arr.shape)
-        cls.logger.debug(
-            "Trimming maxima labels array to raw array dimensions using `d`"
-        )
-        slicer = slice(depth, -depth) if depth > 0 else slice(None)
-        maxima_arr = maxima_arr[slicer, slicer, slicer]
-        assert raw_arr.shape == maxima_arr.shape
-        cls.logger.debug("Getting unique labels in maxima_arr")
-        maxima_l_arr = cls.mask2label(maxima_arr)
-        cls.logger.debug("Converting to DataFrame of coordinates and measures")
-        # NOTE: getting first coord of each unique label
-        # NOTE: np.unique auto flattens arr so reshaping it back with np.unravel_index
-        ids_m, ind = cls.xp.unique(maxima_l_arr, return_index=True)
-        z, y, x = cls.xp.unravel_index(ind, maxima_l_arr.shape)
-        df = (
-            pd.DataFrame(
-                {
-                    Coords.Z.value: cls.cp2np(z),
-                    Coords.Y.value: cls.cp2np(y),
-                    Coords.X.value: cls.cp2np(x),
-                },
-                index=pd.Index(cls.cp2np(ids_m).astype(np.uint32), name=CELL_IDX_NAME),
-            )
-            .drop(
-                index=0
-            )  # Not including the 0 valued row (because there's no cell here)
-            .astype(np.uint16)
-        )
-        cls.logger.debug("Watershed of overlap_arr, seeds maxima_arr, mask mask_arr")
-        # NOTE: padding maxima_l_arr because we previously trimmed maxima_arr
-        maxima_l_arr = np.pad(
-            cls.cp2np(maxima_l_arr), depth, mode="constant", constant_values=0
-        )
-        wshed_arr = cls.wshed_segm(overlap_arr, maxima_l_arr, mask_arr)
-        cls.logger.debug("Making vector of watershed region volumes")
-        ids_w, counts = cls.xp.unique(wshed_arr[wshed_arr > 0], return_counts=True)
-        ids_w = cls.cp2np(ids_w).astype(np.uint32)
-        counts = cls.cp2np(counts).astype(np.uint32)
-        cls.logger.debug("Getting sum intensity for each cell (wshed)")
-        # With bincount, positional arg is the label cat and weights sums is raw arr (helpful for intensity)
-        sum_intensity = cls.xp.bincount(
-            cls.xp.asarray(wshed_arr[wshed_arr > 0].ravel()),
-            weights=cls.xp.asarray(overlap_arr[wshed_arr > 0].ravel()),
-            minlength=len(ids_w),
-        )
-        # NOTE: excluding 0 valued elements means sum_intensity matches with ids_w
-        sum_intensity = cls.cp2np(sum_intensity[sum_intensity > 0])
-        cls.logger.debug("Adding cell measures to DataFrame")
-        idx = pd.Index(ids_w, name=CELL_IDX_NAME)
-        df[CellColumns.COUNT.value] = 1
-        df[CellColumns.VOLUME.value] = pd.Series(counts, index=idx)
-        df[CellColumns.SUM_INTENSITY.value] = pd.Series(sum_intensity, index=idx)
-        # df["max_intensity"] = pd.Series(max_intensity, index=idx)
-        # Filtering out rows with NaNs in z, y, or x columns (i.e. no na values)
-        df = df[
-            df[[Coords.Z.value, Coords.Y.value, Coords.X.value]].isna().sum(axis=1) == 0
-        ]
-        return df
-
-    @classmethod
     def get_cells(
         cls,
-        raw_arr: np.ndarray,
-        overlap_arr: np.ndarray,
-        maxima_labels_arr: np.ndarray,
-        wshed_labels_arr: np.ndarray,
-        wshed_filt_arr: np.ndarray,
+        raw_block: np.ndarray,
+        overlap_block: np.ndarray,
+        maxima_labels_block: np.ndarray,
+        wshed_labels_block: np.ndarray,
+        wshed_filt_block: np.ndarray,
         depth: int = DEPTH,
     ) -> pd.DataFrame:
         """Get the cells from the maxima labels and the watershed segmentation.
@@ -472,18 +384,18 @@ class CpuCellcFuncs:
         """
         # NOTE: we NEED raw_arr as the first da.Array to get chunking coord offsets correct
         # Asserting arr sizes match between arr_raw, arr_overlap, and depth
-        assert raw_arr.shape == tuple(i - 2 * depth for i in overlap_arr.shape)
-        assert overlap_arr.shape == maxima_labels_arr.shape
-        assert overlap_arr.shape == wshed_filt_arr.shape
+        assert raw_block.shape == tuple(i - 2 * depth for i in overlap_block.shape)
+        assert overlap_block.shape == maxima_labels_block.shape
+        assert overlap_block.shape == wshed_filt_block.shape
         # Converting to xp arrays
-        overlap_arr = cls.xp.asarray(overlap_arr)
-        maxima_labels_arr = cls.xp.asarray(maxima_labels_arr)
-        wshed_labels_arr = cls.xp.asarray(wshed_labels_arr)
-        wshed_filt_arr = cls.xp.asarray(wshed_filt_arr)
+        overlap_block = cls.xp.asarray(overlap_block)
+        maxima_labels_block = cls.xp.asarray(maxima_labels_block)
+        wshed_labels_block = cls.xp.asarray(wshed_labels_block)
+        wshed_filt_block = cls.xp.asarray(wshed_filt_block)
         # Trimming maxima labels array to raw array dimensions using `depth`
         slicer = slice(depth, -depth) if depth > 0 else slice(None)
-        maxima_labels_trimmed_arr = maxima_labels_arr[slicer, slicer, slicer]
-        assert raw_arr.shape == maxima_labels_trimmed_arr.shape
+        maxima_labels_trimmed_arr = maxima_labels_block[slicer, slicer, slicer]
+        assert raw_block.shape == maxima_labels_trimmed_arr.shape
         # Getting first coord of each unique label in trimmed arr (as some maxima are contiguous)
         # NOTE: np.unique auto flattens arr so reshaping it back with np.unravel_index
         labels_vect, coords_flat = cls.xp.unique(
@@ -509,7 +421,7 @@ class CpuCellcFuncs:
         cells_df[CellColumns.COUNT.value] = 1
         # Getting wshed_filt_arr (volume) values for each cell (z, y, x). Offsetting by depth.
         cells_df[CellColumns.VOLUME.value] = cls.cp2np(
-            wshed_filt_arr[
+            wshed_filt_block[
                 cells_df[Coords.Z.value] + depth,
                 cells_df[Coords.Y.value] + depth,
                 cells_df[Coords.X.value] + depth,
@@ -519,10 +431,10 @@ class CpuCellcFuncs:
         cells_df = cells_df.query(f"{CellColumns.VOLUME.value} > 0")
         # Getting summed intensities for each cell
         # For bincount, positional arg is label cat and weights sums is raw arr (helpful for intensity)
-        if cls.xp.any(wshed_filt_arr > 0) and cells_df.shape[0] > 0:
+        if cls.xp.any(wshed_filt_block > 0) and cells_df.shape[0] > 0:
             sum_intensity = cls.xp.bincount(
-                wshed_labels_arr[wshed_filt_arr > 0].ravel(),
-                weights=overlap_arr[wshed_filt_arr > 0].ravel(),
+                wshed_labels_block[wshed_filt_block > 0].ravel(),
+                weights=overlap_block[wshed_filt_block > 0].ravel(),
                 minlength=label_max + 1,
             )
             cells_df[CellColumns.SUM_INTENSITY.value] = pd.Series(
