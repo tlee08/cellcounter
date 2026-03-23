@@ -93,9 +93,6 @@ if __name__ == "__main__":
                 True,  # Tuning
                 False,  # Final (COMMENT OUT UNTIL YOU'RE HAPPY WITH THE CELL COUNT PARAMETERS)
             ]:
-                Pipeline.img_overlap(
-                    analysis_img_dir, overwrite=overwrite, tuning=is_tuning
-                )
                 Pipeline.cellc1(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
                 Pipeline.cellc2(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
                 Pipeline.cellc3(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
