@@ -221,7 +221,7 @@ class CpuCellcFuncs:
                     pairs.update(zip(lo.tolist(), hi.tolist(), strict=True))
         if pairs:
             return cls.cp2np(list(pairs))
-        return cls.cp2np((0, 2))
+        return cls.cp2np(np.empty((0, 2)))
 
     @classmethod
     def get_label_sizemap(cls, block: npt.NDArray) -> tuple[np.ndarray, np.ndarray]:
