@@ -80,7 +80,7 @@ def read_img(fp: Path | str, trimmer: None | tuple[slice, ...] = None) -> npt.ND
     raise NotImplementedError(err_msg)
 
 
-def view_arrs(fp_ls: list[str], trimmer: tuple[slice, ...], **kwargs) -> None:
+def view_arrs(fp_ls: list[Path | str], trimmer: tuple[slice, ...], **kwargs) -> None:
     """Run Napari viewer."""
     # Asserting all kwargs_ls list lengths are equal to fp_ls length
     for v in kwargs.values():
