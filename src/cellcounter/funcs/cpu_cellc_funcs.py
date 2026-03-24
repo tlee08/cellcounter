@@ -363,7 +363,6 @@ class CpuCellcFuncs:
         block: npt.NDArray,
         sigma: int = 10,
         mask_block: None | npt.NDArray = None,
-        block_info: dict | None = None,
         max_labels_per_chunk: int | None = None,
     ) -> npt.NDArray:
         """Getting local maxima (no connectivity) in a 3D tensor.
@@ -382,10 +381,6 @@ class CpuCellcFuncs:
             logger.debug("Mask provided. Maxima only in mask regions considered.")
             mask_block = (self.xp.asarray(mask_block) > 0).astype(self.xp.uint8)
             res_block = (res_block * mask_block).astype(self.xp.uint8)
-        # Add globally unique offset if parameters provided
-        res_block = self._offset_labels_by_block(
-            res_block, block_info, max_labels_per_chunk
-        )
         return res_block
 
     def mask(self, block: npt.NDArray, mask_block: npt.NDArray) -> npt.NDArray:
