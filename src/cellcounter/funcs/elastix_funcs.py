@@ -8,6 +8,8 @@ Provides:
 Uses ITK-Elastix for deformable registration of microscopy images
 to reference atlas.
 """
+
+import logging
 import os
 import re
 from pathlib import Path
@@ -154,9 +156,7 @@ def transformation_coords(
     transformix_object.UpdateLargestPossibleRegion()
 
     # Converting transformix output to df
-    coords_transformed = _transformix_file2coords(
-        str(out_dir / "outputpoints.txt")
-    )
+    coords_transformed = _transformix_file2coords(str(out_dir / "outputpoints.txt"))
     # # Clean up temporary files
     # silent_remove(out_dir)
     return coords_transformed
