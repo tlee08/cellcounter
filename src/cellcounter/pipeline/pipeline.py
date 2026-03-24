@@ -11,7 +11,6 @@ import pandas as pd
 import tifffile
 from dask.distributed import LocalCluster, SpecCluster
 from natsort import natsorted
-from scipy import ndimage
 
 from cellcounter.constants import (
     ANNOT_COLUMNS_FINAL,
@@ -23,14 +22,11 @@ from cellcounter.constants import (
     AnnotColumns,
     CellColumns,
     Coords,
-    MaskColumns,
 )
 from cellcounter.funcs.arr_io_funcs import ArrIOFuncs
 from cellcounter.funcs.cpu_cellc_funcs import CpuCellcFuncs
 from cellcounter.funcs.map_funcs import MapFuncs
-from cellcounter.funcs.mask_funcs import MaskFuncs
 from cellcounter.funcs.reg_funcs import RegFuncs
-from cellcounter.funcs.visual_check_funcs_tiff import VisualCheckFuncsTiff
 from cellcounter.models.fp_models import check_overwrite, get_proj_fm
 from cellcounter.models.fp_models.ref_fp import RefFp
 from cellcounter.models.proj_config import ProjConfig
@@ -358,109 +354,6 @@ class Pipeline:
             affine_fp=pfm.affine,
             bspline_fp=pfm.bspline,
         )
-
-    #############################################
-    # MASK PIPELINE FUNCS
-    #############################################
-
-    @classmethod
-    @check_overwrite("mask_fill", "mask_outline", "mask_reg", "mask_df")
-    def make_mask(cls, proj_dir: Path | str, *, overwrite: bool = False) -> None:
-        """Makes mask of actual image in reference space.
-
-        Also stores # and proportion of existent voxels
-        for each region.
-        """
-        pfm = get_proj_fm(proj_dir, tuning=False)
-        # Getting configs
-        configs = ProjConfig.read_file(pfm.config_params)
-        # Reading annot img (proj oriented and trimmed) and bounded img
-        annot_arr = tifffile.imread(pfm.annot)
-        bounded_arr = tifffile.imread(pfm.bounded)
-        # Storing annot_arr shape
-        s = annot_arr.shape
-        # Making mask
-        blur_arr = cls.cellc_funcs.gauss_blur_filt(bounded_arr, configs.mask_gaus_blur)
-        ArrIOFuncs.write_tiff(blur_arr, pfm.premask_blur)
-        mask_arr = cls.cellc_funcs.manual_thresh(blur_arr, configs.mask_thresh)
-        ArrIOFuncs.write_tiff(mask_arr, pfm.mask_fill)
-
-        # Make outline
-        outline_df = MaskFuncs.make_outline(mask_arr)
-        # Transformix on coords
-        outline_df[[Coords.Z.value, Coords.Y.value, Coords.X.value]] = (
-            ElastixFuncs.transformation_coords(
-                outline_df,
-                str(pfm.ref),
-                str(pfm.regresult),
-            )[[Coords.Z.value, Coords.Y.value, Coords.X.value]]
-            .round(0)
-            .astype(np.uint32)
-        )
-        # Filtering out of bounds coords
-        outline_df = outline_df.query(
-            f"({Coords.Z.value} >= 0) & ({Coords.Z.value} < {s[0]}) & "
-            f"({Coords.Y.value} >= 0) & ({Coords.Y.value} < {s[1]}) & "
-            f"({Coords.X.value} >= 0) & ({Coords.X.value} < {s[2]})"
-        )
-
-        # Make outline img (1 for in, 2 for out)
-        VisualCheckFuncsTiff.coords2points(
-            pd.DataFrame(outline_df[outline_df.is_in == 1]), s, pfm.mask_outline
-        )
-        in_arr = tifffile.imread(pfm.mask_outline)
-        VisualCheckFuncsTiff.coords2points(
-            pd.DataFrame(outline_df[outline_df.is_in == 0]), s, pfm.mask_outline
-        )
-        out_arr = tifffile.imread(pfm.mask_outline)
-        ArrIOFuncs.write_tiff(in_arr + out_arr * 2, pfm.mask_outline)
-
-        # Fill in outline to recreate mask (not perfect)
-        mask_reg_arr = MaskFuncs.fill_outline(outline_df, s)
-        # Opening (removes FP) and closing (fills FN)
-        mask_reg_arr = ndimage.binary_closing(mask_reg_arr, iterations=2).astype(
-            np.uint8
-        )
-        mask_reg_arr = ndimage.binary_opening(mask_reg_arr, iterations=2).astype(
-            np.uint8
-        )
-        # Saving
-        ArrIOFuncs.write_tiff(mask_reg_arr, pfm.mask_reg)
-
-        # Counting mask voxels in each region
-        # Getting original annot fp by making ref_fp_model
-        rfm = RefFpModel(
-            configs.atlas_dir,
-            configs.ref_version,
-            configs.annot_version,
-            configs.map_version,
-        )
-        # Reading original annot
-        annot_orig_arr = tifffile.imread(rfm.annot)
-        # Getting the annotation name for every cell (zyx coord)
-        mask_df = pd.merge(
-            left=MaskFuncs.mask2region_counts(
-                np.full(annot_orig_arr.shape, 1), annot_orig_arr
-            ),
-            right=MaskFuncs.mask2region_counts(mask_reg_arr, annot_arr),
-            how="left",
-            left_index=True,
-            right_index=True,
-            suffixes=("_annot", "_mask"),
-        ).fillna(0)
-        # Reading annotation mappings json
-        annot_df = MapFuncs.annot_dict2df(read_json(pfm.map))
-        # Combining (summing) the mask_df volumes for parent regions using the annot_df
-        mask_df = MapFuncs.combine_nested_regions(mask_df, annot_df)
-        # Calculating proportion of mask volume in each region
-        mask_df[MaskColumns.VOLUME_PROP.value] = (
-            mask_df[MaskColumns.VOLUME_MASK.value]
-            / mask_df[MaskColumns.VOLUME_ANNOT.value]
-        )
-        # Selecting and ordering relevant columns
-        mask_df = pd.DataFrame(mask_df[[*ANNOT_COLUMNS_FINAL, *enum2list(MaskColumns)]])
-        # Saving
-        write_parquet(mask_df, pfm.mask_df)
 
     #############################################
     # CROP RAW ZARR TO MAKE TUNING ZARR

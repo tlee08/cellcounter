@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import dask.array as da
 import numpy as np
 import numpy.typing as npt
@@ -102,7 +104,7 @@ class VisualCheckFuncsDask:
         cls,
         coords: pd.DataFrame,
         shape: tuple[int, ...],
-        out_fp: str,
+        out_fp: Path | str,
     ) -> da.Array:
         """Converts list of coordinates to spatial array single points.
 

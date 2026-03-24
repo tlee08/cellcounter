@@ -2,8 +2,7 @@ import functools
 import logging
 from collections.abc import Callable
 from pathlib import Path
-
-from ty_extensions import Unknown
+from typing import Any
 
 from cellcounter.models.fp_models.proj_fp import ProjFp
 from cellcounter.models.fp_models.proj_tuning_fp import ProjTuningFp
@@ -37,7 +36,7 @@ def check_overwrite(*fp_attrs: str) -> Callable:
             overwrite: bool = False,
             tuning: bool = False,
             **kwargs,
-        ) -> Unknown:
+        ) -> Any:
             # Check if file exists
             if not overwrite:
                 pfm = get_proj_fm(proj_dir, tuning=tuning)

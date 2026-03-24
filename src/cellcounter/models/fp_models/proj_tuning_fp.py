@@ -16,8 +16,3 @@ class ProjTuningFp(ProjFp):
         self.cellcount_sdir = f"{self.cellcount_sdir}_tuning"
         self.analysis_sdir = f"{self.analysis_sdir}_tuning"
         self.visual_sdir = f"{self.visual_sdir}_tuning"
-
-
-#############################################
-# Helper Funcs for handling project filepaths
-#############################################

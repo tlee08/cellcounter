@@ -1,5 +1,4 @@
 import logging
-import os
 
 import dask.array as da
 import pandas as pd
@@ -9,15 +8,16 @@ from dask.distributed import LocalCluster
 from cellcounter.funcs.viewer_funcs import ViewerFuncs
 from cellcounter.funcs.visual_check_funcs_dask import VisualCheckFuncsDask
 from cellcounter.funcs.visual_check_funcs_tiff import VisualCheckFuncsTiff
+from cellcounter.models.fp_models import check_overwrite, get_proj_fm
 from cellcounter.models.proj_config import ProjConfig
 from cellcounter.utils.dask_utils import cluster_process
-from cellcounter.utils.diagnostics_utils import file_exists_msg
-from cellcounter.models.proj_fp import ProjFp, ProjTuningFp
 
 logger = logging.getLogger(__name__)
 
 
 class VisualCheck:
+    """Visual Check Functions."""
+
     # Clusters
     # busy (many workers - carrying low RAM computations)
     n_workers = 6
@@ -34,15 +34,11 @@ class VisualCheck:
     ###################################################################################################
 
     @classmethod
+    @check_overwrite("points_raw")
     def coords2points_raw(
-        cls, proj_dir: str, overwrite: bool = False, tuning: bool = False
+        cls, proj_dir: str, *, overwrite: bool = False, tuning: bool = False
     ) -> None:
-        pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
-        if not overwrite:
-            for fp in (pfm.points_raw,):
-                if os.path.exists(fp):
-                    logger.warning(file_exists_msg(fp))
-                    return
+        pfm = get_proj_fm(proj_dir, tuning=tuning)
         with cluster_process(cls.cluster()):
             VisualCheckFuncsDask.coords2points(
                 coords=pd.read_parquet(pfm.cells_raw_df),
@@ -51,15 +47,11 @@ class VisualCheck:
             )
 
     @classmethod
+    @check_overwrite("heatmap_raw")
     def coords2heatmap_raw(
-        cls, proj_dir: str, overwrite: bool = False, tuning: bool = False
+        cls, proj_dir: str, *, overwrite: bool = False, tuning: bool = False
     ) -> None:
-        pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
-        if not overwrite:
-            for fp in (pfm.heatmap_raw,):
-                if os.path.exists(fp):
-                    logger.warning(file_exists_msg(fp))
-                    return
+        pfm = get_proj_fm(proj_dir, tuning=tuning)
         with cluster_process(cls.cluster()):
             configs = ProjConfig.read_file(pfm.config_params)
             VisualCheckFuncsDask.coords2heatmap(
@@ -70,15 +62,11 @@ class VisualCheck:
             )
 
     @classmethod
+    @check_overwrite("points_trfm")
     def coords2points_trfm(
-        cls, proj_dir: str, overwrite: bool = False, tuning: bool = False
+        cls, proj_dir: str, *, overwrite: bool = False, tuning: bool = False
     ) -> None:
-        pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
-        if not overwrite:
-            for fp in (pfm.points_trfm,):
-                if os.path.exists(fp):
-                    logger.warning(file_exists_msg(fp))
-                    return
+        pfm = get_proj_fm(proj_dir, tuning=tuning)
         VisualCheckFuncsTiff.coords2points(
             coords=pd.read_parquet(pfm.cells_trfm_df),
             shape=tifffile.imread(pfm.ref).shape,
@@ -86,15 +74,11 @@ class VisualCheck:
         )
 
     @classmethod
+    @check_overwrite("heatmap_trfm")
     def coords2heatmap_trfm(
-        cls, proj_dir: str, overwrite: bool = False, tuning: bool = False
+        cls, proj_dir: str, *, overwrite: bool = False, tuning: bool = False
     ) -> None:
-        pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
-        if not overwrite:
-            for fp in (pfm.heatmap_trfm,):
-                if os.path.exists(fp):
-                    logger.warning(file_exists_msg(fp))
-                    return
+        pfm = get_proj_fm(proj_dir, tuning=tuning)
         configs = ProjConfig.read_file(pfm.config_params)
         VisualCheckFuncsTiff.coords2heatmap(
             coords=pd.read_parquet(pfm.cells_trfm_df),
@@ -108,28 +92,20 @@ class VisualCheck:
     ###################################################################################################
 
     @classmethod
-    def combine_reg(cls, proj_dir: str, overwrite: bool = False) -> None:
-        pfm = ProjFpModel(proj_dir)
-        if not overwrite:
-            for fp in (pfm.comb_reg,):
-                if os.path.exists(fp):
-                    logger.warning(file_exists_msg(fp))
-                    return
+    @check_overwrite("comb_reg")
+    def combine_reg(cls, proj_dir: str, *, overwrite: bool = False) -> None:
+        pfm = get_proj_fm(proj_dir, tuning=False)
         ViewerFuncs.combine_arrs(
             fp_in_ls=(pfm.trimmed, pfm.bounded, pfm.regresult),
             fp_out=pfm.comb_reg,
         )
 
     @classmethod
+    @check_overwrite("comb_cellc")
     def combine_cellc(
-        cls, proj_dir: str, overwrite: bool = False, tuning: bool = False
+        cls, proj_dir: str, *, overwrite: bool = False, tuning: bool = False
     ) -> None:
-        pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
-        if not overwrite:
-            for fp in (pfm.comb_cellc,):
-                if os.path.exists(fp):
-                    logger.warning(file_exists_msg(fp))
-                    return
+        pfm = get_proj_fm(proj_dir, tuning=tuning)
         configs = ProjConfig.read_file(pfm.config_params)
         z_trim = slice(None)
         y_trim = slice(None)
@@ -145,15 +121,11 @@ class VisualCheck:
         )
 
     @classmethod
+    @check_overwrite("comb_heatmap")
     def combine_heatmap_trfm(
-        cls, proj_dir: str, overwrite: bool = False, tuning: bool = False
+        cls, proj_dir: str, *, overwrite: bool = False, tuning: bool = False
     ) -> None:
-        pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
-        if not overwrite:
-            for fp in (pfm.comb_heatmap,):
-                if os.path.exists(fp):
-                    logger.warning(file_exists_msg(fp))
-                    return
+        pfm = get_proj_fm(proj_dir, tuning=tuning)
         ViewerFuncs.combine_arrs(
             fp_in_ls=(pfm.ref, pfm.annot, pfm.heatmap_trfm),
             # 2nd regresult means the combining works in ImageJ
