@@ -21,8 +21,7 @@ from cellcounter.constants import (
     CellColumns,
     Coords,
 )
-from cellcounter.funcs.arr_io_funcs import ArrIOFuncs
-from cellcounter.funcs.io_funcs import silent_remove, write_parquet
+from cellcounter.funcs.io_funcs import silent_remove, write_parquet, tiffs2zarr, btiff2zarr, write_tiff, 
 from cellcounter.funcs.map_funcs import MapFuncs
 from cellcounter.funcs.reg_funcs import RegFuncs
 from cellcounter.models.fp_models import check_overwrite, get_proj_fm
@@ -152,7 +151,7 @@ class Pipeline(AbstractPipeline):
         with cluster_process(LocalCluster(n_workers=1, threads_per_worker=6)):
             if in_fp.is_dir():
                 logger.debug("in_fp (%s) is a directory", in_fp)
-                ArrIOFuncs.tiffs2zarr(
+                tiffs2zarr(
                     src_fp_ls=tuple(
                         natsorted(
                             in_fp / i
@@ -165,7 +164,7 @@ class Pipeline(AbstractPipeline):
                 )
             elif in_fp.is_file():
                 logger.debug("in_fp (%s) is a file", in_fp)
-                ArrIOFuncs.btiff2zarr(
+                btiff2zarr(
                     src_fp=in_fp,
                     dst_fp=self.pfm.raw,
                     chunks=self.config.zarr_chunksize,
@@ -194,7 +193,7 @@ class Pipeline(AbstractPipeline):
                 slice(*self.config.ref_y_trim),
                 slice(*self.config.ref_x_trim),
             ]
-            ArrIOFuncs.write_tiff(arr, fp_o)
+            write_tiff(arr, fp_o)
         shutil.copyfile(rfm.map, self.pfm.map)
         shutil.copyfile(rfm.affine, self.pfm.affine)
         shutil.copyfile(rfm.bspline, self.pfm.bspline)
@@ -207,7 +206,7 @@ class Pipeline(AbstractPipeline):
                 raw_arr, self.config.z_rough, self.config.y_rough, self.config.x_rough
             )
             downsmpl1_arr = downsmpl1_arr.compute()
-            ArrIOFuncs.write_tiff(downsmpl1_arr, self.pfm.downsmpl1)
+            write_tiff(downsmpl1_arr, self.pfm.downsmpl1)
 
     @check_overwrite("downsmpl2")
     def reg_img_fine(self, *, overwrite: bool = False) -> None:
@@ -215,7 +214,7 @@ class Pipeline(AbstractPipeline):
         downsmpl2_arr = RegFuncs.downsmpl_fine(
             downsmpl1_arr, self.config.z_fine, self.config.y_fine, self.config.x_fine
         )
-        ArrIOFuncs.write_tiff(downsmpl2_arr, self.pfm.downsmpl2)
+        write_tiff(downsmpl2_arr, self.pfm.downsmpl2)
 
     @check_overwrite("trimmed")
     def reg_img_trim(self, *, overwrite: bool = False) -> None:
@@ -225,7 +224,7 @@ class Pipeline(AbstractPipeline):
             slice(*self.config.y_trim),
             slice(*self.config.x_trim),
         ]
-        ArrIOFuncs.write_tiff(trimmed_arr, self.pfm.trimmed)
+        write_tiff(trimmed_arr, self.pfm.trimmed)
 
     @check_overwrite("bounded")
     def reg_img_bound(self, *, overwrite: bool = False) -> None:
@@ -240,7 +239,7 @@ class Pipeline(AbstractPipeline):
         bounded_arr[bounded_arr > self.config.upper_bound[0]] = self.config.upper_bound[
             1
         ]
-        ArrIOFuncs.write_tiff(bounded_arr, self.pfm.bounded)
+        write_tiff(bounded_arr, self.pfm.bounded)
 
     @check_overwrite("regresult")
     def reg_elastix(self, *, overwrite: bool = False) -> None:

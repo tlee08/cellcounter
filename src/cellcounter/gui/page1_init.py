@@ -39,7 +39,9 @@ def input_m_func():
     # Setting selectbox options
     st.session_state[SELECT_M_OPTIONS] = []
     # If input string is not None and is a directory
-    if (st.session_state[INPUT_M] is not None) and (os.path.isdir(st.session_state[INPUT_M])):
+    if (st.session_state[INPUT_M] is not None) and (
+        os.path.isdir(st.session_state[INPUT_M])
+    ):
         # Getting list of directories in the root string
         st.session_state[SELECT_M_OPTIONS] = natsorted(
             [
@@ -59,10 +61,14 @@ def select_m_func():
     # Updating own input variable
     st.session_state[SELECT_M] = st.session_state[f"{SELECT_M}_w"]
     # Updatating selectbox index
-    st.session_state[SELECT_M_INDEX] = st.session_state[SELECT_M_OPTIONS].index(st.session_state[SELECT_M])
+    st.session_state[SELECT_M_INDEX] = st.session_state[SELECT_M_OPTIONS].index(
+        st.session_state[SELECT_M]
+    )
     # Updating input and disabled variables
     if st.session_state[INPUT_M] and st.session_state[SELECT_M]:
-        st.session_state[INPUT] = os.path.join(st.session_state[INPUT_M], st.session_state[SELECT_M])
+        st.session_state[INPUT] = os.path.join(
+            st.session_state[INPUT_M], st.session_state[SELECT_M]
+        )
         st.session_state[DISABLED] = False
     else:
         st.session_state[INPUT] = None
@@ -70,8 +76,7 @@ def select_m_func():
 
 
 def set_func():
-    """
-    Changes the project directory in session state.
+    """Changes the project directory in session state.
     Runs relevant checks.
     """
     pdir_input = st.session_state[INPUT]
@@ -94,8 +99,7 @@ def set_func():
 
 
 def create_func():
-    """
-    Function to make new project.
+    """Function to make new project.
 
     Makes project folders and configs file.
     """
@@ -109,8 +113,7 @@ def create_func():
 
 @page_decorator(check_proj_dir=False)
 def page1_init():
-    """
-    Initializes the project page in the GUI.
+    """Initializes the project page in the GUI.
     This function sets up the user interface for initializing a project directory.
     It includes input fields for the root directory and buttons to confirm the
     project directory or create a new project if the directory is not initialized.
@@ -126,12 +129,12 @@ def page1_init():
          - If configurations are not found, displays a warning and provides an
            option to create a new project in the specified directory.
 
-    Note
+    Note:
     ----
     - The function uses Streamlit (`st`) for the GUI components.
     - The project directory and its state are managed using `st.session_state`.
 
-    Raises
+    Raises:
     -----
     - FileNotFoundError: If the project directory does not contain the required
       configuration files.

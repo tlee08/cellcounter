@@ -172,7 +172,7 @@ class CpuCellcFuncs:
 
         Returns:
         --------
-        np.ndarray
+        npt.NDArray
             Labeled array with uint32 dtype (or int64 if using global offsets)
         """
         block = cls.xp.asarray(block).astype(cls.xp.uint8)
@@ -202,7 +202,7 @@ class CpuCellcFuncs:
 
         Returns:
         --------
-        np.ndarray
+        npt.NDArray
             Array of shape (N, 2) with adjacent label pairs
         """
         block = cls.xp.asarray(block)
@@ -227,7 +227,7 @@ class CpuCellcFuncs:
         return cls.cp2np(np.empty((0, 2)))
 
     @classmethod
-    def get_label_sizemap(cls, block: npt.NDArray) -> tuple[np.ndarray, np.ndarray]:
+    def get_label_sizemap(cls, block: npt.NDArray) -> tuple[npt.NDArray, npt.NDArray]:
         """Get a dict of label_val : contiguous_size."""
         block = cls.xp.asarray(block)
         logger.debug("Getting vector of ids and volumes (not incl. 0)")
@@ -257,7 +257,7 @@ class CpuCellcFuncs:
 
         Returns:
         --------
-        np.ndarray
+        npt.NDArray
             Array where each voxel contains its component size (0 for background)
         """
         block = cls.xp.asarray(block)

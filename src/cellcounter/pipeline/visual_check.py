@@ -83,7 +83,7 @@ class VisualCheck(AbstractPipeline):
         )
 
     @classmethod
-    def run_make_visual_checks(cls, proj_dir: str, overwrite: bool = False) -> None:
+    def run_make_visual_checks(cls, proj_dir: str, *, overwrite: bool = False) -> None:
         """Running all visual check pipelines in order."""
         vc = cls(proj_dir, tuning=False)
         vc.combine_reg(overwrite=overwrite)

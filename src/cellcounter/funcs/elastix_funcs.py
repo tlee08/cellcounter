@@ -8,13 +8,12 @@ import numpy.typing as npt
 import pandas as pd
 
 from cellcounter.constants import CACHE_DIR, ELASTIX_ENABLED, Coords
-from cellcounter.funcs.arr_io_funcs import ArrIOFuncs
-from cellcounter.funcs.io_funcs import silent_remove
+from cellcounter.funcs.io_funcs import silent_remove, write_tiff
 from cellcounter.utils.misc_utils import import_extra_error_func
 
 logger = logging.getLogger(__name__)
 
-# Optional dependency: elastix (ITKElastix)
+# Optional dependency: elastix (itk-elastix)
 if ELASTIX_ENABLED:
     import itk
 else:
@@ -24,9 +23,11 @@ else:
 class ElastixFuncs:
     """Elastix Functions using ITKElastix."""
 
-    @classmethod
+    def __init__(self, cache_dir: Path | str = CACHE_DIR):
+        self.cache_dir = Path(cache_dir)
+
     def registration(
-        cls,
+        self,
         fixed_img_fp: Path | str,
         moving_img_fp: Path | str,
         output_img_fp: Path | str,
@@ -91,7 +92,7 @@ class ElastixFuncs:
 
         # Save output image
         arr = np.asarray(result_image)
-        ArrIOFuncs.write_tiff(arr, output_img_fp)
+        write_tiff(arr, output_img_fp)
 
         # Removing temporary and unnecessary elastix files
         for i in output_img_dir.iterdir():
@@ -100,9 +101,8 @@ class ElastixFuncs:
 
         return arr
 
-    @classmethod
     def transformation_coords(
-        cls,
+        self,
         coords: pd.DataFrame,
         moving_img_fp: Path | str,
         output_img_fp: Path | str,
@@ -124,8 +124,8 @@ class ElastixFuncs:
         output_img_fp = Path(output_img_fp)
         # Getting the output image directory (i.e. where registration results are stored)
         reg_dir = output_img_fp.parent
-        # Using CACHE_DIR to store temporary transformix outputs
-        out_dir = CACHE_DIR / f"transformed_coords_{os.getpid()}"
+        # Store temporary transformix outputs
+        out_dir = self.cache_dir / f"transformed_coords_{os.getpid()}"
         out_dir.mkdir(exist_ok=True)
 
         # Load moving image
@@ -133,7 +133,7 @@ class ElastixFuncs:
 
         # Create fixed points file
         # NOTE: xyz, NOT zyx
-        cls._make_fixed_points_file(
+        self._make_fixed_points_file(
             coords[[Coords.X.value, Coords.Y.value, Coords.Z.value]].values,
             out_dir / "temp.dat",
         )
@@ -158,11 +158,10 @@ class ElastixFuncs:
         transformix_object.UpdateLargestPossibleRegion()
 
         # Converting transformix output to df
-        coords_transformed = cls._transformix_file2coords(
+        coords_transformed = self._transformix_file2coords(
             str(out_dir / "outputpoints.txt")
         )
-
-        # Clean up temporary files
+        # # Clean up temporary files
         # silent_remove(out_dir)
         return coords_transformed
 
@@ -213,9 +212,8 @@ class ElastixFuncs:
             df.values.tolist(), columns=[Coords.X.value, Coords.Y.value, Coords.Z.value]
         )[[Coords.Z.value, Coords.Y.value, Coords.X.value]]
 
-    @classmethod
     def transformation_img(
-        cls,
+        self,
         moving_img_fp: Path | str,
         output_img_fp: Path | str,
     ) -> npt.NDArray:
@@ -237,8 +235,8 @@ class ElastixFuncs:
         # Getting the output image directory (i.e. where registration results are stored)
         reg_dir = output_img_fp.parent
 
-        # Using CACHE_DIR to store temporary transformix outputs
-        out_dir = CACHE_DIR / f"transformed_img_{os.getpid()}"
+        # Store temporary transformix outputs
+        out_dir = self.cache_dir / f"transformed_img_{os.getpid()}"
         out_dir.mkdir(exist_ok=True)
 
         # Load moving image
