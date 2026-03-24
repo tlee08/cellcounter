@@ -226,12 +226,24 @@ def zarr2tiff(src_fp: str, dst_fp: str) -> None:
 
 
 def btiff2niftygz(src_fp: str, dst_fp: str) -> None:
-    """Convert bigtiff to nifty-gz."""
+    """Convert big TIFF to NIfTI-GZ format.
+
+    Args:
+        src_fp: Input TIFF file path.
+        dst_fp: Output NIfTI-GZ file path.
+    """
     arr = tifffile.imread(src_fp)
     nib.Nifti1Image(arr, None).to_filename(dst_fp)
 
 
 def read_niftygz(fp: str) -> np.typing.NDArray:
-    """Read nifty-gz."""
+    """Read NIfTI-GZ file into numpy array.
+
+    Args:
+        fp: Input NIfTI-GZ file path.
+
+    Returns:
+        Numpy array of image data.
+    """
     img = nib.load(fp)
     return np.array(img.dataobj)
