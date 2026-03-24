@@ -10,9 +10,6 @@ DASK_CUDA_ENABLED = importlib.util.find_spec("dask_cuda") is not None
 # Checking whether gpu extra dependency (CuPy) is installed
 GPU_ENABLED = importlib.util.find_spec("cupy") is not None
 
-# Checking whether elastix (ITKElastix) is installed
-ELASTIX_ENABLED = importlib.util.find_spec("itk") is not None
-
 # Setting Dask configuration
 dask.config.set(
     {
