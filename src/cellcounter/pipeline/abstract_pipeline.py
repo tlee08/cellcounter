@@ -35,8 +35,8 @@ def _get_cellc_funcs() -> CpuCellcFuncs:
 class AbstractPipeline(ABC):
     """Base class for pipeline operations."""
 
-    cellc_funcs: CpuCellcFuncs = _get_cellc_funcs()
-    _gpu_cluster: Callable[..., SpecCluster] = _get_gpu_cluster_factory()
+    cellc_funcs: CpuCellcFuncs
+    _gpu_cluster: Callable[..., SpecCluster]
     _pfm: ProjFp
     _tuning: bool
 
@@ -44,6 +44,7 @@ class AbstractPipeline(ABC):
         """Init."""
         self._pfm = get_proj_fm(proj_dir, tuning=tuning)
         self._tuning = tuning
+        self.set_gpu(enabled=True)
 
     @property
     def pfm(self) -> ProjFp:
@@ -77,12 +78,11 @@ class AbstractPipeline(ABC):
         """Make GPU cluster."""
         return self._gpu_cluster()
 
-    @classmethod
-    def set_gpu(cls, *, enabled: bool = True) -> None:
+    def set_gpu(self, *, enabled: bool = True) -> None:
         """Force GPU or CPU mode at runtime."""
         if enabled:
-            cls._gpu_cluster = _get_gpu_cluster_factory()
-            cls.cellc_funcs = _get_cellc_funcs()
+            self._gpu_cluster = _get_gpu_cluster_factory()
+            self.cellc_funcs = _get_cellc_funcs()
         else:
-            cls._gpu_cluster = lambda: LocalCluster(n_workers=2, threads_per_worker=1)
-            cls.cellc_funcs = CpuCellcFuncs
+            self._gpu_cluster = lambda: LocalCluster(n_workers=2, threads_per_worker=1)
+            self.cellc_funcs = CpuCellcFuncs()

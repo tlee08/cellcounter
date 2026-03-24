@@ -130,7 +130,7 @@ class CpuCellcFuncs:
         res_block = block >= val
         return res_block.astype(self.xp.uint8)
 
-    def offset_labels_by_block(
+    def _offset_labels_by_block(
         self,
         block: npt.NDArray,
         block_info: dict | None = None,
@@ -182,7 +182,7 @@ class CpuCellcFuncs:
         res_block, _ = self.xdimage.label(block)
         res_block = res_block.astype(self.xp.uint64)
         # Add globally unique offset if parameters provided
-        res_block = self.offset_labels_by_block(
+        res_block = self._offset_labels_by_block(
             res_block, block_info, max_labels_per_chunk
         )
         return res_block
@@ -318,7 +318,7 @@ class CpuCellcFuncs:
             mask_block = (self.xp.asarray(mask_block) > 0).astype(self.xp.uint8)
             res_block = (res_block * mask_block).astype(self.xp.uint8)
         # Add globally unique offset if parameters provided
-        res_block = self.offset_labels_by_block(
+        res_block = self._offset_labels_by_block(
             res_block, block_info, max_labels_per_chunk
         )
         return res_block
