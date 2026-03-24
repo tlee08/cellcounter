@@ -3,152 +3,95 @@ import logging
 import dask.array as da
 import pandas as pd
 import tifffile
-from dask.distributed import LocalCluster
 
 from cellcounter.funcs.viewer_funcs import ViewerFuncs
 from cellcounter.funcs.visual_check_funcs_dask import VisualCheckFuncsDask
 from cellcounter.funcs.visual_check_funcs_tiff import VisualCheckFuncsTiff
-from cellcounter.models.fp_models import check_overwrite, get_proj_fm
-from cellcounter.models.proj_config import ProjConfig
+from cellcounter.models.fp_models import check_overwrite
+from cellcounter.pipeline.abstract_pipeline import AbstractPipeline
 from cellcounter.utils.dask_utils import cluster_process
 
 logger = logging.getLogger(__name__)
 
 
-class VisualCheck:
+class VisualCheck(AbstractPipeline):
     """Visual Check Functions."""
 
-    # Clusters
-    # busy (many workers - carrying low RAM computations)
-    n_workers = 6
-    threads_per_worker = 2
-
-    @classmethod
-    def cluster(cls):
-        return LocalCluster(
-            n_workers=cls.n_workers, threads_per_worker=cls.threads_per_worker
-        )
-
-    ###################################################################################################
-    # VISUAL CHECKS FROM DF POINTS
-    ###################################################################################################
-
-    @classmethod
     @check_overwrite("points_raw")
-    def coords2points_raw(
-        cls, proj_dir: str, *, overwrite: bool = False, tuning: bool = False
-    ) -> None:
-        pfm = get_proj_fm(proj_dir, tuning=tuning)
-        with cluster_process(cls.cluster()):
+    def coords2points_raw(self, *, overwrite: bool = False) -> None:
+        with cluster_process(self.busy_cluster()):
             VisualCheckFuncsDask.coords2points(
-                coords=pd.read_parquet(pfm.cells_raw_df),
-                shape=da.from_zarr(pfm.raw).shape,
-                out_fp=pfm.points_raw,
+                coords=pd.read_parquet(self.pfm.cells_raw_df),
+                shape=da.from_zarr(self.pfm.raw).shape,
+                out_fp=self.pfm.points_raw,
             )
 
-    @classmethod
     @check_overwrite("heatmap_raw")
-    def coords2heatmap_raw(
-        cls, proj_dir: str, *, overwrite: bool = False, tuning: bool = False
-    ) -> None:
-        pfm = get_proj_fm(proj_dir, tuning=tuning)
-        with cluster_process(cls.cluster()):
-            configs = ProjConfig.read_file(pfm.config_params)
+    def coords2heatmap_raw(self, *, overwrite: bool = False) -> None:
+        with cluster_process(self.busy_cluster()):
             VisualCheckFuncsDask.coords2heatmap(
-                coords=pd.read_parquet(pfm.cells_raw_df),
-                shape=da.from_zarr(pfm.raw).shape,
-                out_fp=pfm.heatmap_raw,
-                radius=configs.heatmap_raw_radius,
+                coords=pd.read_parquet(self.pfm.cells_raw_df),
+                shape=da.from_zarr(self.pfm.raw).shape,
+                out_fp=self.pfm.heatmap_raw,
+                radius=self.config.heatmap_raw_radius,
             )
 
-    @classmethod
     @check_overwrite("points_trfm")
-    def coords2points_trfm(
-        cls, proj_dir: str, *, overwrite: bool = False, tuning: bool = False
-    ) -> None:
-        pfm = get_proj_fm(proj_dir, tuning=tuning)
+    def coords2points_trfm(self, *, overwrite: bool = False) -> None:
         VisualCheckFuncsTiff.coords2points(
-            coords=pd.read_parquet(pfm.cells_trfm_df),
-            shape=tifffile.imread(pfm.ref).shape,
-            out_fp=pfm.points_trfm,
+            coords=pd.read_parquet(self.pfm.cells_trfm_df),
+            shape=tifffile.imread(self.pfm.ref).shape,
+            out_fp=self.pfm.points_trfm,
         )
 
-    @classmethod
     @check_overwrite("heatmap_trfm")
-    def coords2heatmap_trfm(
-        cls, proj_dir: str, *, overwrite: bool = False, tuning: bool = False
-    ) -> None:
-        pfm = get_proj_fm(proj_dir, tuning=tuning)
-        configs = ProjConfig.read_file(pfm.config_params)
+    def coords2heatmap_trfm(self, *, overwrite: bool = False) -> None:
         VisualCheckFuncsTiff.coords2heatmap(
-            coords=pd.read_parquet(pfm.cells_trfm_df),
-            shape=tifffile.imread(pfm.ref).shape,
-            out_fp=pfm.heatmap_trfm,
-            radius=configs.heatmap_trfm_radius,
+            coords=pd.read_parquet(self.pfm.cells_trfm_df),
+            shape=tifffile.imread(self.pfm.ref).shape,
+            out_fp=self.pfm.heatmap_trfm,
+            radius=self.config.heatmap_trfm_radius,
         )
 
-    ###################################################################################################
-    # COMBINING/MERGING ARRAYS IN RGB LAYERS
-    ###################################################################################################
-
-    @classmethod
     @check_overwrite("comb_reg")
-    def combine_reg(cls, proj_dir: str, *, overwrite: bool = False) -> None:
-        pfm = get_proj_fm(proj_dir, tuning=False)
+    def combine_reg(self, *, overwrite: bool = False) -> None:
         ViewerFuncs.combine_arrs(
-            fp_in_ls=(pfm.trimmed, pfm.bounded, pfm.regresult),
-            fp_out=pfm.comb_reg,
+            fp_in_ls=(self.pfm.trimmed, self.pfm.bounded, self.pfm.regresult),
+            fp_out=self.pfm.comb_reg,
         )
 
-    @classmethod
     @check_overwrite("comb_cellc")
-    def combine_cellc(
-        cls, proj_dir: str, *, overwrite: bool = False, tuning: bool = False
-    ) -> None:
-        pfm = get_proj_fm(proj_dir, tuning=tuning)
-        configs = ProjConfig.read_file(pfm.config_params)
+    def combine_cellc(self, *, overwrite: bool = False) -> None:
         z_trim = slice(None)
         y_trim = slice(None)
         x_trim = slice(None)
-        if not tuning:
-            z_trim = slice(*configs.combine_cellc_z_trim)
-            y_trim = slice(*configs.combine_cellc_y_trim)
-            x_trim = slice(*configs.combine_cellc_x_trim)
+        if not self._tuning:
+            z_trim = slice(*self.config.combine_cellc_z_trim)
+            y_trim = slice(*self.config.combine_cellc_y_trim)
+            x_trim = slice(*self.config.combine_cellc_x_trim)
         ViewerFuncs.combine_arrs(
-            fp_in_ls=(pfm.raw, pfm.threshd_final, pfm.wshed_final),
-            fp_out=pfm.comb_cellc,
+            fp_in_ls=(self.pfm.raw, self.pfm.threshd_final, self.pfm.wshed_final),
+            fp_out=self.pfm.comb_cellc,
             trimmer=(z_trim, y_trim, x_trim),
         )
 
-    @classmethod
     @check_overwrite("comb_heatmap")
-    def combine_heatmap_trfm(
-        cls, proj_dir: str, *, overwrite: bool = False, tuning: bool = False
-    ) -> None:
-        pfm = get_proj_fm(proj_dir, tuning=tuning)
+    def combine_heatmap_trfm(self, *, overwrite: bool = False) -> None:
         ViewerFuncs.combine_arrs(
-            fp_in_ls=(pfm.ref, pfm.annot, pfm.heatmap_trfm),
-            # 2nd regresult means the combining works in ImageJ
-            fp_out=pfm.comb_heatmap,
+            fp_in_ls=(self.pfm.ref, self.pfm.annot, self.pfm.heatmap_trfm),
+            fp_out=self.pfm.comb_heatmap,
         )
-
-    ###################################################################################################
-    # ALL PIPELINE FUNCTION
-    ###################################################################################################
 
     @classmethod
     def run_make_visual_checks(cls, proj_dir: str, overwrite: bool = False) -> None:
         """Running all visual check pipelines in order."""
-        # Registration visual check
-        cls.combine_reg(proj_dir, overwrite=overwrite)
-        for is_tuning in [
-            True,  # Tuning
-            False,  # Final
-        ]:
-            # Cell counting visual checks
-            cls.coords2points_raw(proj_dir, overwrite=overwrite, tuning=is_tuning)
-            cls.combine_cellc(proj_dir, overwrite=overwrite, tuning=is_tuning)
-            # Transformed space visual checks
-            cls.coords2points_trfm(proj_dir, overwrite=overwrite, tuning=is_tuning)
-            cls.coords2heatmap_trfm(proj_dir, overwrite=overwrite, tuning=is_tuning)
-            cls.combine_heatmap_trfm(proj_dir, overwrite=overwrite, tuning=is_tuning)
+        vc = cls(proj_dir, tuning=False)
+        vc.combine_reg(overwrite=overwrite)
+
+        for is_tuning in [True, False]:
+            vc = cls(proj_dir, tuning=is_tuning)
+            vc.coords2points_raw(overwrite=overwrite)
+            vc.combine_cellc(overwrite=overwrite)
+            vc.coords2points_trfm(overwrite=overwrite)
+            vc.coords2heatmap_trfm(overwrite=overwrite)
+            vc.combine_heatmap_trfm(overwrite=overwrite)

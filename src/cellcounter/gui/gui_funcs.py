@@ -4,8 +4,8 @@ from typing import Any
 
 import streamlit as st
 
+from cellcounter.models.fp_models import get_proj_fm
 from cellcounter.models.proj_config import ProjConfig
-from cellcounter.pipeline.pipeline import Pipeline
 from cellcounter.utils.io_utils import read_json
 
 PROJ_DIR = "proj_dir"
@@ -43,8 +43,8 @@ def load_configs():
     NOTE: does not catch errors
     """
     proj_dir = st.session_state[PROJ_DIR]
-    pfm = Pipeline.get_pfm(proj_dir)
-    fp = pfm.config_params
+    pfm = get_proj_fm(proj_dir)
+    fp = pfm.config_fp
     st.session_state[CONFIGS] = ProjConfig.model_validate(read_json(fp))
 
 

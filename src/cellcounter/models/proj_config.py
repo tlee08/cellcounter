@@ -41,6 +41,11 @@ class ProjConfig(BaseModel):
         use_enum_values=True,
     )
 
+    # CLUSTER SETTINGS
+    heavy_n_workers: int = 2
+    heavy_threads_per_worker: int = 1
+    busy_n_workers: int = 6
+    busy_threads_per_worker: int = 2
     # REFERENCE
     atlas_dir: Path = ATLAS_DIR
     ref_version: str = RefVersions.AVERAGE_TEMPLATE_25.value

@@ -68,82 +68,69 @@ if __name__ == "__main__":
                 combine_cellc_x_trim=(None, None, None),
             )
 
+            # Create pipeline instance for this project
+            pipeline = Pipeline(analysis_img_dir)
+
             # Making zarr from tiff file(s)
             # COMMENT OUT AFTER FIRST RUN (ONLY NEEDED INITIALLY AND VERY SLOW)
-            Pipeline.tiff2zarr(analysis_img_dir, in_fp, overwrite=overwrite)
+            pipeline.tiff2zarr(in_fp, overwrite=overwrite)
             # Preparing reference images
             # COMMENT OUT AFTER FIRST RUN (ONLY NEEDED INITIALLY)
-            Pipeline.reg_ref_prepare(analysis_img_dir, overwrite=overwrite)
+            pipeline.reg_ref_prepare(overwrite=overwrite)
             # COMMENT OUT AFTER FIRST RUN (ONLY NEEDED INITIALLY AND VERY SLOW)
-            Pipeline.reg_img_rough(analysis_img_dir, overwrite=overwrite)
+            pipeline.reg_img_rough(overwrite=overwrite)
             # COMMENT OUT ONCE YOU'RE HAPPY WITH THE REGISTRATION PARAMETERS
-            Pipeline.reg_img_fine(analysis_img_dir, overwrite=overwrite)
+            pipeline.reg_img_fine(overwrite=overwrite)
             # COMMENT OUT ONCE YOU'RE HAPPY WITH THE REGISTRATION PARAMETERS
-            Pipeline.reg_img_trim(analysis_img_dir, overwrite=overwrite)
+            pipeline.reg_img_trim(overwrite=overwrite)
             # COMMENT OUT ONCE YOU'RE HAPPY WITH THE REGISTRATION PARAMETERS
-            Pipeline.reg_img_bound(analysis_img_dir, overwrite=overwrite)
+            pipeline.reg_img_bound(overwrite=overwrite)
             # COMMENT OUT ONCE YOU'RE HAPPY WITH THE REGISTRATION PARAMETERS
-            Pipeline.reg_elastix(analysis_img_dir, overwrite=overwrite)
+            pipeline.reg_elastix(overwrite=overwrite)
             # Making trimmed image for cell count tuning
             # COMMENT OUT AFTER FIRST RUN (ONLY NEEDED INITIALLY)
-            Pipeline.make_tuning_arr(analysis_img_dir, overwrite=overwrite)
+            pipeline.make_tuning_arr(overwrite=overwrite)
             # Cell counting (tuning and final)
             for is_tuning in [
                 True,  # Tuning
                 False,  # Final (COMMENT OUT UNTIL YOU'RE HAPPY WITH THE CELL COUNT PARAMETERS)
             ]:
-                Pipeline.cellc1(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
-                Pipeline.cellc2(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
-                Pipeline.cellc3(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
-                Pipeline.cellc4(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
-                Pipeline.cellc5(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
-                Pipeline.cellc6(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
-                Pipeline.cellc7(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
-                Pipeline.cellc8(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
-                Pipeline.cellc9(analysis_img_dir, overwrite=overwrite, tuning=is_tuning)
-                Pipeline.cellc10(
-                    analysis_img_dir, overwrite=overwrite, tuning=is_tuning
-                )
-                Pipeline.cellc11(
-                    analysis_img_dir, overwrite=overwrite, tuning=is_tuning
-                )
-                Pipeline.cellc12(
-                    analysis_img_dir, overwrite=overwrite, tuning=is_tuning
-                )
+                pipeline_tuning = Pipeline(analysis_img_dir, tuning=is_tuning)
+                pipeline_tuning.tophat_filter(overwrite=overwrite)
+                pipeline_tuning.dog_filter(overwrite=overwrite)
+                pipeline_tuning.adaptive_threshold_prep(overwrite=overwrite)
+                pipeline_tuning.threshold(overwrite=overwrite)
+                pipeline_tuning.label_thresholded(overwrite=overwrite)
+                pipeline_tuning.compute_thresholded_volumes(overwrite=overwrite)
+                pipeline_tuning.filter_thresholded(overwrite=overwrite)
+                pipeline_tuning.detect_maxima(overwrite=overwrite)
+                pipeline_tuning.label_maxima(overwrite=overwrite)
+                pipeline_tuning.watershed(overwrite=overwrite)
+                pipeline_tuning.compute_watershed_volumes(overwrite=overwrite)
+                pipeline_tuning.filter_watershed(overwrite=overwrite)
+                pipeline_tuning.save_cells_table(overwrite=overwrite)
                 # Cell mapping
                 # COMMENT OUT UNTIL YOU'RE HAPPY WITH THE CELL COUNT PARAMETERS
-                Pipeline.transform_coords(
-                    analysis_img_dir, overwrite=overwrite, tuning=is_tuning
-                )
+                pipeline_tuning.transform_coords(overwrite=overwrite)
                 # COMMENT OUT UNTIL YOU'RE HAPPY WITH THE CELL COUNT PARAMETERS
-                Pipeline.cell_mapping(
-                    analysis_img_dir, overwrite=overwrite, tuning=is_tuning
-                )
+                pipeline_tuning.cell_mapping(overwrite=overwrite)
                 # COMMENT OUT UNTIL YOU'RE HAPPY WITH THE CELL COUNT PARAMETERS
-                Pipeline.group_cells(
-                    analysis_img_dir, overwrite=overwrite, tuning=is_tuning
-                )
+                pipeline_tuning.group_cells(overwrite=overwrite)
                 # COMMENT OUT UNTIL YOU'RE HAPPY WITH THE CELL COUNT PARAMETERS
-                Pipeline.cells2csv(
-                    analysis_img_dir, overwrite=overwrite, tuning=is_tuning
-                )
+                pipeline_tuning.cells2csv(overwrite=overwrite)
 
             # Registration visual check
-            VisualCheck.combine_reg(analysis_img_dir, overwrite=overwrite)
+            vc = VisualCheck(analysis_img_dir, tuning=False)
+            vc.combine_reg(overwrite=overwrite)
             # Transformed space visual checks
             for is_tuning in [
                 True,  # Tuning
                 False,  # Final (COMMENT OUT UNTIL YOU'RE HAPPY WITH THE CELL COUNT PARAMETERS)
             ]:
-                VisualCheck.combine_cellc(
-                    analysis_img_dir, overwrite=overwrite, tuning=is_tuning
-                )
-                VisualCheck.coords2heatmap_trfm(
-                    analysis_img_dir, overwrite=overwrite, tuning=is_tuning
-                )
-                VisualCheck.combine_heatmap_trfm(
-                    analysis_img_dir, overwrite=overwrite, tuning=is_tuning
-                )
+                vc = VisualCheck(analysis_img_dir, tuning=is_tuning)
+                vc.combine_cellc(overwrite=overwrite)
+                vc.coords2heatmap_trfm(overwrite=overwrite)
+                vc.combine_heatmap_trfm(overwrite=overwrite)
         except Exception as e:
             print(f"Error in {img_name}: {e}")
     # Combining all experiment dataframes

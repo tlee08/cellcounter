@@ -10,6 +10,33 @@ OVERWRITE = f"{PIPELINE}_overwrite"
 RUN = f"{PIPELINE}_run"
 IS_TUNING = f"{PIPELINE}_is_tuning"
 
+# Pipeline step names for checkboxes
+STEP_NAMES = [
+    "reg_ref_prepare",
+    "reg_img_rough",
+    "reg_img_fine",
+    "reg_img_trim",
+    "reg_img_bound",
+    "reg_elastix",
+    "tophat_filter",
+    "dog_filter",
+    "adaptive_threshold_prep",
+    "threshold",
+    "label_thresholded",
+    "compute_thresholded_volumes",
+    "filter_thresholded",
+    "detect_maxima",
+    "label_maxima",
+    "watershed",
+    "compute_watershed_volumes",
+    "filter_watershed",
+    "save_cells_table",
+    "transform_coords",
+    "cell_mapping",
+    "group_cells",
+    "cells2csv",
+]
+
 
 def is_tuning_func():
     # Set tuning mode
@@ -20,54 +47,15 @@ def is_tuning_func():
 def page4_pipeline():
     """
     Displays the pipeline page in the GUI, allowing users to select and run various pipeline functions.
-
-    This function performs the following tasks:
-    1. Retrieves the project directory and project file model from the session state.
-    2. Displays a toggle for overwriting existing data.
-    3. Creates checkboxes for each pipeline function, allowing users to select which functions to run.
-    4. Provides a button to run the selected pipeline functions.
-    5. Executes the selected pipeline functions when the button is pressed, respecting the overwrite setting.
-
-    Session State Variables:
-    - proj_dir: The directory of the current project.
-    - pipeline_overwrite: Boolean indicating whether to overwrite existing data.
-    - pipeline_checkboxes: Dictionary mapping pipeline functions to their checkbox states.
-    - pipeline_run_btn: Boolean indicating whether the "Run pipeline" button has been pressed.
     """
-    # Initialising session state variables (if necessary)
-    init_var(
-        CHECKBOXES,
-        # TODO: dynamically generate this dictionary
-        {
-            Pipeline.reg_ref_prepare: False,
-            Pipeline.reg_img_rough: False,
-            Pipeline.reg_img_fine: False,
-            Pipeline.reg_img_trim: False,
-            Pipeline.reg_elastix: False,
-            Pipeline.make_mask: False,
-            Pipeline.cellc1: False,
-            Pipeline.cellc2: False,
-            Pipeline.cellc3: False,
-            Pipeline.cellc4: False,
-            Pipeline.cellc5: False,
-            Pipeline.cellc6: False,
-            Pipeline.cellc7: False,
-            Pipeline.cellc8: False,
-            Pipeline.cellc9: False,
-            Pipeline.cellc10: False,
-            Pipeline.cellc11: False,
-            Pipeline.transform_coords: False,
-            Pipeline.cell_mapping: False,
-            Pipeline.group_cells: False,
-            Pipeline.cells2csv: False,
-        },
-    )
+    # Initialising session state variables
+    init_var(CHECKBOXES, {name: False for name in STEP_NAMES})
     init_var(OVERWRITE, False)
     init_var(IS_TUNING, False)
 
     # Recalling session state variables
     proj_dir = st.session_state[PROJ_DIR]
-    pfm = Pipeline.get_pfm(proj_dir)
+    is_tuning = st.session_state[IS_TUNING]
 
     st.write("## Pipeline")
     # Making overwrite box
@@ -79,36 +67,38 @@ def page4_pipeline():
     # Making is_tuning box
     st.toggle(
         label="Switch to tuning mode",
-        value=st.session_state[IS_TUNING],
+        value=is_tuning,
         on_change=is_tuning_func,
         key=IS_TUNING,
     )
-    if st.session_state[IS_TUNING]:
+    if is_tuning:
         st.write("Tuning mode ON")
-        pfm = pfm.copy().convert_to_tuning()
+
     # Making pipeline checkboxes
     pipeline_checkboxes = st.session_state[CHECKBOXES]
-    for func in pipeline_checkboxes:
+    for step_name in STEP_NAMES:
         st.checkbox(
-            label=func.__name__,
-            value=pipeline_checkboxes[func],
-            key=f"{PIPELINE}_{func.__name__}",
+            label=step_name,
+            value=pipeline_checkboxes.get(step_name, False),
+            key=f"{PIPELINE}_{step_name}",
         )
+
     # Button: run pipeline
     st.button(
         label="Run pipeline",
         key=RUN,
     )
     if st.session_state[RUN]:
+        # Create pipeline instance
+        pipeline = Pipeline(proj_dir, tuning=is_tuning)
+
         # Showing selected pipeline
         st.write("Running:")
-        for func in pipeline_checkboxes:
-            if pipeline_checkboxes[func]:
-                st.write(f"- {func.__name__}")
-        # TODO: ensure this is blocking
-        for func in pipeline_checkboxes:
-            if pipeline_checkboxes[func]:
-                func(
-                    pfm=pfm,
-                    overwrite=st.session_state[OVERWRITE],
-                )
+        for step_name in STEP_NAMES:
+            if pipeline_checkboxes.get(step_name, False):
+                st.write(f"- {step_name}")
+
+        # Run selected steps
+        for step_name in STEP_NAMES:
+            if pipeline_checkboxes.get(step_name, False):
+                getattr(pipeline, step_name)(overwrite=st.session_state[OVERWRITE])

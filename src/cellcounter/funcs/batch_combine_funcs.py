@@ -17,7 +17,7 @@ from cellcounter.funcs.map_funcs import (
 )
 from cellcounter.models.proj_config import ProjConfig
 from cellcounter.pipeline.pipeline import Pipeline
-from cellcounter.utils.io_utils import read_json, sanitise_smb_df
+from cellcounter.utils.io_utils import read_json
 from cellcounter.utils.misc_utils import enum2list
 
 # TODO: move to pipeline and refactor
@@ -122,8 +122,6 @@ class BatchCombineFuncs:
             # CELL_AGG_DF
             # Reading experiment's cells_agg dataframe
             cells_agg_df = pd.read_parquet(pfm.cells_agg_df)
-            # Sanitising (removing smb columns)
-            cells_agg_df = sanitise_smb_df(cells_agg_df)
             # Keeping only the required columns (not annot columns)
             cells_agg_df = cells_agg_df[enum2list(CellColumns)]
             # MASK_DF

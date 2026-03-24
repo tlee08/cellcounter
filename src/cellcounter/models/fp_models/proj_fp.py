@@ -1,7 +1,9 @@
+import functools
 import logging
 from pathlib import Path
 
 from cellcounter.models.fp_models.abstract_fp import AbstractFp
+from cellcounter.models.proj_config import ProjConfig
 
 logger = logging.getLogger(__name__)
 
@@ -32,9 +34,14 @@ class ProjFp(AbstractFp):
         ]
 
     @property
-    def config_params(self) -> Path:
+    def config_fp(self) -> Path:
         """config_params."""
         return self.root_dir / "config_params.json"
+
+    @functools.cached_property
+    def config(self) -> ProjConfig:
+        """Cached project configuration."""
+        return ProjConfig.read_file(self.config_fp)
 
     @property
     def diagnostics(self) -> Path:

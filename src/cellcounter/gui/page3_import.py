@@ -71,8 +71,8 @@ def page3_import():
         st.write("Running")
         st.write(f"Importing image from {st.session_state[INPUT_SRC]} to {proj_dir}")
         # Running tiff2zarr
-        Pipeline.tiff2zarr(
-            pfm=pfm,
+        pipeline = Pipeline(proj_dir)
+        pipeline.tiff2zarr(
             in_fp=st.session_state[INPUT_SRC],
             overwrite=st.session_state[OVERWRITE],
         )

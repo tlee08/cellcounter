@@ -13,8 +13,6 @@ from cellcounter.utils.dask_utils import cluster_process
 from cellcounter.utils.io_utils import async_read_files_run
 from cellcounter.utils.misc_utils import dictlists2listdicts
 
-from cellcounter.models.proj_fp import ProjFp, ProjTuningFp
-
 logger = logging.getLogger(__name__)
 
 VRANGE = "vrange"
@@ -67,21 +65,18 @@ VIEW_IMGS_PARAMS = {
 class ViewerFuncs:
     @classmethod
     def read_img(cls, fp, trimmer: None | tuple[slice, ...] = None):
-        """
-        Reading, trimming (if possible), and returning the array in memory.
-        """
+        """Reading, trimming (if possible), and returning the array in memory."""
         if os.path.splitext(fp)[1] == ".zarr":
             arr = da.from_zarr(fp)
             if trimmer is not None:
                 arr = arr[*trimmer]
             return arr.compute()
-        elif os.path.splitext(fp)[1] == ".tif":
+        if os.path.splitext(fp)[1] == ".tif":
             arr = tifffile.imread(fp)
             if trimmer is not None:
                 arr = arr[*trimmer]
             return arr
-        else:
-            raise NotImplementedError("Only .zarr and .tif files are supported.")
+        raise NotImplementedError("Only .zarr and .tif files are supported.")
 
     @classmethod
     def view_arrs(cls, fp_ls: list[str], trimmer: tuple[slice, ...], **kwargs):
@@ -132,9 +127,7 @@ class ViewerFuncs:
         trimmer: tuple[slice, ...] | None = None,
         **kwargs,
     ) -> np.ndarray:
-        """
-        NOTE: exports as tiff only.
-        """
+        """NOTE: exports as tiff only."""
         with cluster_process(LocalCluster()):
             # Reading
             arr = cls.read_img(fp_in, trimmer)
