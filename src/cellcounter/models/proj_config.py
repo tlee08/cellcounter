@@ -77,14 +77,14 @@ class ProjConfig(BaseModel):
     tuning_y_trim: tuple[int | None, int | None, int | None] = (0, 2000, None)
     tuning_x_trim: tuple[int | None, int | None, int | None] = (0, 2000, None)
     # CELL COUNTING
-    tophat_sigma: int = 10
+    tophat_radius: int = 10
     dog_sigma1: int = 1
     dog_sigma2: int = 4
     large_gauss_sigma: int = 101
     threshd_value: int = 60
     min_threshd_size: int = 100
     max_threshd_size: int = 10000
-    maxima_sigma: int = 10
+    maxima_radius: int = 10
     min_wshed_size: int = 1
     max_wshed_size: int = 1000
     # VISUAL CHECK

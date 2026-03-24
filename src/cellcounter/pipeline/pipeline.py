@@ -19,7 +19,7 @@ import dask.dataframe as dd
 import numpy as np
 import pandas as pd
 import tifffile
-from dask.distributed import LocalCluster, SpecCluster
+from dask.distributed import LocalCluster
 from natsort import natsorted
 
 from cellcounter.constants import (
@@ -97,9 +97,7 @@ class Pipeline(AbstractPipeline):
     # HELPER: GENERIC ZARR PROCESSING STEP
     #############################################
 
-    def _spatial_connect_count(
-        self, label_arr: da.array, cluster: SpecCluster
-    ) -> da.array:
+    def _spatial_connect_count(self, label_arr: da.array) -> None:
         """Connect contiguous foreground components across chunk boundaries.
 
         Uses Union-Find to merge labels that span chunk boundaries,
@@ -107,48 +105,46 @@ class Pipeline(AbstractPipeline):
 
         Args:
             label_arr: Dask array of labels.
-            cluster: Dask cluster for computation.
 
         Returns:
             Dask array where each voxel contains its component's total volume.
         """
-        with cluster_process(cluster):
-            label_overlap = da.overlap.overlap(label_arr, depth=1, boundary=0)
-            logger.debug("Finding cross-boundary pairs...")
-            # NOTE: for now, computing each delayed chunk sequentially, not in parallel
-            # So it works for memory
-            delayed_ls = [
-                dask.delayed(self.cellc_funcs.get_boundary_pairs)(i)
-                for i in label_overlap.to_delayed().ravel()
-            ]
-            pair_arr_ls = [dask.compute(i) for i in delayed_ls]
-            pairs_arr = (
-                np.concatenate([p for p in pair_arr_ls if len(p) > 0], axis=0)
-                if pair_arr_ls
-                else np.empty((0, 2), dtype=np.uint64)
-            )
-            logger.debug("Cross-boundary pairs found: %d", len(pairs_arr))
-            uf = UnionFind()
-            for a, b in pairs_arr:
-                uf.union(int(a), int(b))
-            logger.debug("Aggregating voxels per label...")
-            delayed_ls = [
-                dask.delayed(self.cellc_funcs.get_label_sizemap)(i)
-                for i in label_arr.to_delayed().ravel()
-            ]
-            label_counts_ls = [dask.compute(i) for i in delayed_ls]
-            labels = np.concatenate([i[0] for i in label_counts_ls])
-            counts = np.concatenate([i[1] for i in label_counts_ls])
-            logger.debug("Unique labels (foreground): %d", len(labels))
-            uf.build_lookup_table(labels, counts)
-            logger.debug("Writing output array...")
-            return da.map_blocks(
-                self.cellc_funcs.map_values_to_arr,
-                label_arr,
-                ids=uf.sorted_keys,
-                values=uf.sorted_sizes,
-                dtype=np.uint64,
-            )
+        label_overlap = da.overlap.overlap(label_arr, depth=1, boundary=0)
+        logger.debug("Finding cross-boundary pairs...")
+        # NOTE: for now, computing each delayed chunk sequentially, not in parallel
+        # So it works for memory
+        delayed_ls = [
+            dask.delayed(self.cellc_funcs.get_boundary_pairs)(i)
+            for i in label_overlap.to_delayed().ravel()
+        ]
+        pair_arr_ls = [dask.compute(i) for i in delayed_ls]
+        pairs_arr = (
+            np.concatenate([p for p in pair_arr_ls if len(p) > 0], axis=0)
+            if pair_arr_ls
+            else np.empty((0, 2), dtype=np.uint64)
+        )
+        logger.debug("Cross-boundary pairs found: %d", len(pairs_arr))
+        uf = UnionFind()
+        for a, b in pairs_arr:
+            uf.union(int(a), int(b))
+        logger.debug("Aggregating voxels per label...")
+        delayed_ls = [
+            dask.delayed(self.cellc_funcs.get_label_sizemap)(i)
+            for i in label_arr.to_delayed().ravel()
+        ]
+        label_counts_ls = [dask.compute(i) for i in delayed_ls]
+        labels = np.concatenate([i[0] for i in label_counts_ls])
+        counts = np.concatenate([i[1] for i in label_counts_ls])
+        logger.debug("Unique labels (foreground): %d", len(labels))
+        uf.build_lookup_table(labels, counts)
+        logger.debug("Writing output array...")
+        return da.map_blocks(
+            self.cellc_funcs.map_values_to_arr,
+            label_arr,
+            ids=uf.sorted_keys,
+            values=uf.sorted_sizes,
+            dtype=np.uint64,
+        )
 
     #############################################
     # STATIC UTILITIES
@@ -351,7 +347,7 @@ class Pipeline(AbstractPipeline):
             result = da.map_blocks(
                 self.cellc_funcs.tophat_filt,
                 da.from_zarr(self.pfm.raw),
-                sigma=self.pfm.config.tophat_sigma,
+                radius=self.pfm.config.tophat_radius,
             )
             disk_cache(result, self.pfm.bgrm)
 
@@ -404,9 +400,11 @@ class Pipeline(AbstractPipeline):
     @check_overwrite("threshd_volumes")
     def compute_thresholded_volumes(self, *, overwrite: bool = False) -> None:
         """Step 6: Compute contiguous sizes using union-find."""
-        labels_arr = da.from_zarr(self.pfm.threshd_labels)
-        sizes_arr = self._spatial_connect_count(labels_arr, self.gpu_cluster())
-        disk_cache(sizes_arr, self.pfm.threshd_volumes)
+        with cluster_process(self.gpu_cluster()):
+            sizes_arr = self._spatial_connect_count(
+                da.from_zarr(self.pfm.threshd_labels),
+            )
+            disk_cache(sizes_arr, self.pfm.threshd_volumes)
 
     @check_overwrite("threshd_filt")
     def filter_thresholded(self, *, overwrite: bool = False) -> None:
@@ -427,7 +425,7 @@ class Pipeline(AbstractPipeline):
             result = da.map_blocks(
                 self.cellc_funcs.get_local_maxima,
                 da.from_zarr(self.pfm.raw),
-                sigma=self.pfm.config.maxima_sigma,
+                radius=self.pfm.config.maxima_radius,
                 mask_block=da.from_zarr(self.pfm.threshd_filt),
             )
             disk_cache(result, self.pfm.maxima)

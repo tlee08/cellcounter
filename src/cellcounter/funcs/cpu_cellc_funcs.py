@@ -93,16 +93,37 @@ class CpuCellcFuncs:
     # Intended to be used with dask.array.map_blocks
     #############################################
 
-    def tophat_filt(self, block: npt.NDArray, sigma: int = 10) -> npt.NDArray:
-        """Calculate top hat filter.
+    def _spherical_footprint(self, radius: int) -> npt.NDArray:
+        """Create spherical structuring element.
 
-        ```
-        res = arr - max_filter(min_filter(arr, sigma), sigma)
-        ```
+        Args:
+            radius: Radius of sphere.
+
+        Returns:
+            Boolean array True within sphere of given radius.
+        """
+        coords = self.xp.ogrid[
+            -radius : radius + 1, -radius : radius + 1, -radius : radius + 1
+        ]
+        return coords[0] ** 2 + coords[1] ** 2 + coords[2] ** 2 <= radius**2
+
+    def tophat_filt(self, block: npt.NDArray, radius: int = 10) -> npt.NDArray:
+        """Calculate white top-hat filter with spherical structuring element.
+
+        White top-hat removes background by subtracting the morphological
+        opening (erosion followed by dilation) from the original image.
+
+        Args:
+            block: Input array.
+            radius: Radius of spherical structuring element.
+
+        Returns:
+            Background-subtracted array (original - opening).
         """
         block = self.xp.asarray(block).astype(self.xp.float32)
-        logger.debug("Perform white top-hat filter")
-        res_block = self.xdimage.white_tophat(block, sigma)
+        logger.debug("Perform white top-hat filter with spherical element")
+        footprint = self._spherical_footprint(radius)
+        res_block = self.xdimage.white_tophat(block, footprint=footprint)
         logger.debug("ReLu")
         res_block = self.xp.maximum(res_block, 0)
         return res_block.astype(self.xp.uint16)
@@ -379,15 +400,11 @@ class CpuCellcFuncs:
             Binary array where True indicates local maxima.
         """
         block = self.xp.asarray(block)
-        logger.debug("Creating spherical footprint with radius %d", radius)
-        # Create spherical footprint using distance from center
-        coords = self.xp.ogrid[-radius : radius + 1, -radius : radius + 1, -radius : radius + 1]
-        footprint = self.xp.sum(coords[0] ** 2 + coords[1] ** 2 + coords[2] ** 2) <= radius**2
-        logger.debug("Applying maximum filter with spherical footprint")
-        max_arr = self.xdimage.maximum_filter(block, footprint=footprint)
-        logger.debug("Finding local maxima (where arr == max_arr)")
+        logger.debug("Finding local maxima with spherical radius %d", radius)
+        footprint = self._spherical_footprint(radius)
+        max_arr = self.xdimage.minimum_filter(block, footprint=footprint)
+        logger.debug("Identifying points where arr == max_arr")
         res_block = block == max_arr
-        # If a mask is given, then keep only the maxima within the mask
         if mask_block is not None:
             logger.debug("Mask provided. Maxima only in mask regions considered.")
             mask_block = (self.xp.asarray(mask_block) > 0).astype(self.xp.uint8)
