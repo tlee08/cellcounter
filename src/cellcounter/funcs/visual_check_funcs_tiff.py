@@ -7,7 +7,7 @@ import pandas as pd
 
 from cellcounter.constants import CACHE_DIR, AnnotColumns, Coords
 from cellcounter.funcs.arr_io_funcs import ArrIOFuncs
-from cellcounter.utils.io_utils import silent_remove
+from cellcounter.funcs.io_funcs import silent_remove
 
 #####################################################################
 #             Converting coordinates to spatial

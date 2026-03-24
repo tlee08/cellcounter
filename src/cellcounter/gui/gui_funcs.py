@@ -6,7 +6,6 @@ import streamlit as st
 
 from cellcounter.models.fp_models import get_proj_fm
 from cellcounter.models.proj_config import ProjConfig
-from cellcounter.utils.io_utils import read_json
 
 PROJ_DIR = "proj_dir"
 PROJ_DIR_STATUS = "proj_dir_status"
@@ -45,7 +44,7 @@ def load_configs():
     proj_dir = st.session_state[PROJ_DIR]
     pfm = get_proj_fm(proj_dir)
     fp = pfm.config_fp
-    st.session_state[CONFIGS] = ProjConfig.model_validate(read_json(fp))
+    st.session_state[CONFIGS] = ProjConfig.read_file(fp)
 
 
 #####################################################################

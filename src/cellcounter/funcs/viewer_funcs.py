@@ -9,8 +9,8 @@ import tifffile
 from dask.distributed import LocalCluster
 
 from cellcounter.funcs.arr_io_funcs import ArrIOFuncs
+from cellcounter.funcs.io_funcs import async_read_files_run
 from cellcounter.utils.dask_utils import cluster_process
-from cellcounter.utils.io_utils import async_read_files_run
 from cellcounter.utils.misc_utils import dictlists2listdicts
 
 logger = logging.getLogger(__name__)

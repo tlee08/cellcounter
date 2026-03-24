@@ -1,3 +1,4 @@
+import json
 from enum import Enum
 from pathlib import Path
 from typing import Self
@@ -6,7 +7,6 @@ import numpy as np
 from pydantic import BaseModel, ConfigDict, model_validator
 
 from cellcounter.constants import ATLAS_DIR, PROC_CHUNKS
-from cellcounter.utils.io_utils import read_json
 
 
 class RefVersions(Enum):
@@ -113,7 +113,10 @@ class ProjConfig(BaseModel):
     @classmethod
     def read_file(cls, fp: Path | str) -> Self:
         """Read configs from file."""
-        model = cls.model_validate(read_json(fp))
+        fp = Path(fp)
+        with fp.open(mode="r") as f:
+            content = json.load(f)
+        model = cls.model_validate(content)
         return model
 
     def write_file(self, fp: Path | str) -> None:

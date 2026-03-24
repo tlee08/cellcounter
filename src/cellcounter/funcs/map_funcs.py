@@ -1,4 +1,6 @@
+import json
 import logging
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -15,9 +17,17 @@ logger = logging.getLogger(__name__)
 
 class MapFuncs:
     @classmethod
+    def annot_fp2df(cls, fp: Path | str) -> pd.DataFrame:
+        """Read and load from filepath."""
+        fp = Path(fp)
+        with fp.open(mode="r") as f:
+            content = json.load(f)
+        annot_df = cls.annot_dict2df(content)
+        return annot_df
+
+    @classmethod
     def annot_dict2df(cls, data_dict: dict) -> pd.DataFrame:
-        """
-        Recursively find the region information for all nested objects.
+        """Recursively find the region information for all nested objects.
 
         Returns a new dataframe with index as the region ID
         and the columns:
@@ -60,8 +70,7 @@ class MapFuncs:
 
     @classmethod
     def annot_df_get_parents(cls, annot_df: pd.DataFrame) -> pd.DataFrame:
-        """
-        Get the parent region information for all regions
+        """Get the parent region information for all regions
         in the annotation mappings dataframe.
 
         Returns a new dataframe with index as region ID,
@@ -89,8 +98,7 @@ class MapFuncs:
 
     @classmethod
     def annot_df_get_children(cls, annot_df: pd.DataFrame) -> pd.DataFrame:
-        """
-        Get the children region information for all regions
+        """Get the children region information for all regions
         in the annotation mappings dataframe.
 
         Returns a new dataframe with index as region ID
@@ -118,8 +126,7 @@ class MapFuncs:
 
     @classmethod
     def combine_nested_regions(cls, cells_agg_df: pd.DataFrame, annot_df: pd.DataFrame):
-        """
-        Combine (sum) children regions in their parent regions
+        """Combine (sum) children regions in their parent regions
         in the cells_agg dataframe.
 
         Done recursively.
@@ -128,7 +135,7 @@ class MapFuncs:
         the annotation columns, and the
         same columns as the input `cells_agg_df` dataframe.
 
-        Notes
+        Notes:
         -----
         - The `annot_df` is the annotation mappings dataframe.
         - The `cells_agg` is the cells dataframe grouped by region ID (so ID is the index).
@@ -183,8 +190,7 @@ class MapFuncs:
 
     @classmethod
     def annot_df2dict(cls, annot_df: pd.DataFrame) -> list:
-        """
-        Converts an annotation DataFrame into a nested dictionary structure.
+        """Converts an annotation DataFrame into a nested dictionary structure.
         This function takes an annotation DataFrame, adds a list of children to each region,
         and then recursively converts the DataFrame into a nested dictionary format. Each
         dictionary represents a region and contains its information along with its children.

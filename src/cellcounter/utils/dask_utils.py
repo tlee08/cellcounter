@@ -7,7 +7,7 @@ import pandas as pd
 from dask.distributed import Client, SpecCluster
 
 from cellcounter.constants import Coords
-from cellcounter.utils.io_utils import silent_remove
+from cellcounter.funcs.io_funcs import silent_remove
 
 
 def coords2block(df: pd.DataFrame, block_info: dict) -> pd.DataFrame:

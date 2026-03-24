@@ -9,7 +9,7 @@ import pandas as pd
 
 from cellcounter.constants import CACHE_DIR, ELASTIX_ENABLED, Coords
 from cellcounter.funcs.arr_io_funcs import ArrIOFuncs
-from cellcounter.utils.io_utils import silent_remove
+from cellcounter.funcs.io_funcs import silent_remove
 from cellcounter.utils.misc_utils import import_extra_error_func
 
 logger = logging.getLogger(__name__)
@@ -140,8 +140,12 @@ class ElastixFuncs:
 
         # Load transform parameters from registration
         transform_parameter_object = itk.ParameterObject.New()
-        transform_parameter_object.AddParameterFile(str(reg_dir / "TransformParameters.0.txt"))
-        transform_parameter_object.AddParameterFile(str(reg_dir / "TransformParameters.1.txt"))
+        transform_parameter_object.AddParameterFile(
+            str(reg_dir / "TransformParameters.0.txt")
+        )
+        transform_parameter_object.AddParameterFile(
+            str(reg_dir / "TransformParameters.1.txt")
+        )
 
         # Set up Transformix object
         transformix_object = itk.TransformixFilter.New(moving_image)
@@ -242,8 +246,12 @@ class ElastixFuncs:
 
         # Load transform parameters from registration
         transform_parameter_object = itk.ParameterObject.New()
-        transform_parameter_object.AddParameterFile(str(reg_dir / "TransformParameters.0.txt"))
-        transform_parameter_object.AddParameterFile(str(reg_dir / "TransformParameters.1.txt"))
+        transform_parameter_object.AddParameterFile(
+            str(reg_dir / "TransformParameters.0.txt")
+        )
+        transform_parameter_object.AddParameterFile(
+            str(reg_dir / "TransformParameters.1.txt")
+        )
 
         # Set up Transformix object
         transformix_object = itk.TransformixFilter.New(moving_image)

@@ -22,17 +22,16 @@ from cellcounter.constants import (
     Coords,
 )
 from cellcounter.funcs.arr_io_funcs import ArrIOFuncs
+from cellcounter.funcs.io_funcs import silent_remove, write_parquet
 from cellcounter.funcs.map_funcs import MapFuncs
 from cellcounter.funcs.reg_funcs import RegFuncs
 from cellcounter.models.fp_models import check_overwrite, get_proj_fm
 from cellcounter.models.fp_models.ref_fp import RefFp
-from cellcounter.models.proj_config import ProjConfig
 from cellcounter.pipeline.abstract_pipeline import AbstractPipeline
 from cellcounter.utils.dask_utils import (
     cluster_process,
     disk_cache,
 )
-from cellcounter.utils.io_utils import read_json, silent_remove, write_parquet
 from cellcounter.utils.misc_utils import enum2list
 from cellcounter.utils.union_find import UnionFind
 
@@ -548,7 +547,7 @@ class Pipeline(AbstractPipeline):
                 index=trfm_loc.index,
             ).fillna(-1)
 
-            annot_df = MapFuncs.annot_dict2df(read_json(self.pfm.map))
+            annot_df = MapFuncs.annot_fp2df(self.pfm.map)
             cells_df = MapFuncs.df_map_ids(cells_df, annot_df)
             write_parquet(cells_df, self.pfm.cells_df)
 
@@ -562,7 +561,7 @@ class Pipeline(AbstractPipeline):
             )
             cells_agg_df.columns = list(CELL_AGG_MAPPINGS.keys())
 
-            annot_df = MapFuncs.annot_dict2df(read_json(self.pfm.map))
+            annot_df = MapFuncs.annot_fp2df(self.pfm.map)
             cells_agg_df = MapFuncs.combine_nested_regions(cells_agg_df, annot_df)
             cells_agg_df[CellColumns.IOV.value] = (
                 cells_agg_df[CellColumns.SUM_INTENSITY.value]
