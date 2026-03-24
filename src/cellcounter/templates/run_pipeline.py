@@ -5,10 +5,14 @@ from cellcounter import BatchCombineFuncs, Pipeline, VisualCheck
 if __name__ == "__main__":
     # =========================================
     # CHANGE FOLDER PATHS HERE
-    stitched_imgs_dir = Path("/path/to/tiff_imgs_folder")
-    analysis_root_dir = Path("/path/to/analysis_outputs_folder")
+    stitched_imgs_dir = "/path/to/tiff_imgs_folder"
+    analysis_root_dir = "/path/to/analysis_outputs_folder"
     # CHANGE WHETHER TO OVERWRITE EXISTING FILES
     overwrite = True
+
+    # Convert to PosixPath
+    stitched_imgs_dir = Path(stitched_imgs_dir)
+    analysis_root_dir = Path(analysis_root_dir)
 
     # THIS NEXT LINE RUNS ALL IMAGES IN THE INPUT FOLDER
     imgs_ls = Pipeline.get_imgs_ls(stitched_imgs_dir)
