@@ -33,6 +33,8 @@ if __name__ == "__main__":
 
             # BULK UPDATE CONFIGS HERE
             pipeline.update_config(
+                # RAW
+                zarr_chunksize=(500, 500, 500),
                 # REGISTRATION
                 ref_orient_ls=(-2, 3, 1),
                 ref_z_trim=(None, None, None),
@@ -49,7 +51,7 @@ if __name__ == "__main__":
                 x_trim=(None, None, None),
                 lower_bound=(100, 0),
                 upper_bound=(5000, 5000),
-                # # CELL COUNT TUNING CROP
+                # CELL COUNT TUNING CROP
                 tuning_z_trim=(700, 800, None),
                 tuning_y_trim=(1000, 3000, None),
                 tuning_x_trim=(1000, 3000, None),
