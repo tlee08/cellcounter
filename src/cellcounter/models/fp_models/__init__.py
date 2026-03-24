@@ -24,18 +24,19 @@ def check_overwrite(*fp_attrs: str) -> Callable:
 
     def decorator(func: Callable) -> Callable:
         @functools.wraps(func)
-        def wrapper(self, *, overwrite: bool = False, **kwargs) -> Any:
+        def wrapper(self, *args, overwrite: bool = False, **kwargs) -> Any:
             if not overwrite:
                 for attr in fp_attrs:
                     fp = getattr(self.pfm, attr)
                     if fp.exists():
                         logger.warning(
-                            f"WARNING: Output file, {fp}, already exists - "
+                            "WARNING: Output file, %s, already exists - "
                             "not overwriting file.\n"
-                            "To overwrite, specify overwrite=True.\n"
+                            "To overwrite, specify overwrite=True.\n",
+                            fp,
                         )
                         return None
-            return func(self, overwrite=overwrite, **kwargs)
+            return func(self, *args, overwrite=overwrite, **kwargs)
 
         return wrapper
 
