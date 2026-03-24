@@ -103,20 +103,45 @@ def write_tiff(arr: npt.NDArray, dst_fp: Path | str) -> None:
 async def async_read(
     fp: Path | str, executor: ThreadPoolExecutor, read_func: Callable
 ) -> list:
-    """Asynchronously read a single file."""
+    """Asynchronously read a single file in thread pool.
+
+    Args:
+        fp: File path to read.
+        executor: Thread pool executor.
+        read_func: Function to read the file.
+
+    Returns:
+        Result of read_func.
+    """
     loop = asyncio.get_running_loop()
     return await loop.run_in_executor(executor, read_func, fp)
 
 
 async def async_read_files(fp_ls: list[Path | str], read_func: Callable) -> list:
-    """Asynchronously read a list of files and return a list of numpy arrays."""
+    """Asynchronously read multiple files in parallel.
+
+    Args:
+        fp_ls: List of file paths.
+        read_func: Function to read each file.
+
+    Returns:
+        List of results from read_func.
+    """
     with ThreadPoolExecutor() as executor:
         tasks = [async_read(fp, executor, read_func) for fp in fp_ls]
         return await asyncio.gather(*tasks)
 
 
 def async_read_files_run(fp_ls: list[Path | str], read_func: Callable) -> list:
-    """Asynchronously read a list of files and return a list of numpy arrays."""
+    """Synchronously run async file reading.
+
+    Args:
+        fp_ls: List of file paths.
+        read_func: Function to read each file.
+
+    Returns:
+        List of results from read_func.
+    """
     return asyncio.run(async_read_files(fp_ls, read_func))
 
 
