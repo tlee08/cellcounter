@@ -14,7 +14,6 @@ from natsort import natsorted
 
 from cellcounter.constants import (
     ANNOT_COLUMNS_FINAL,
-    CACHE_DIR,
     CELL_AGG_MAPPINGS,
     TRFM,
     AnnotColumns,
@@ -177,7 +176,7 @@ class Pipeline(AbstractPipeline):
         """Rechunk the raw zarr."""
         with cluster_process(self.busy_cluster()):
             zarr_arr = da.from_zarr(self.pfm.raw)
-            temp_fp = CACHE_DIR / "rechunk_temp.zarr"
+            temp_fp = self.pfm.raw.with_suffix(".rechunk_temp.zarr")
             zarr_rechunked = zarr_arr.rechunk(self.config.zarr_chunksize)
             disk_cache(zarr_rechunked, temp_fp)
             silent_remove(self.pfm.raw)
