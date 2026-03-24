@@ -33,6 +33,10 @@ And follow the "CUDA Toolkit Installer" instructions.
 nvcc --version
 ```
 
+## Download Atlas
+
+Download from [here](https://download.alleninstitute.org/informatics-archive/current-release/mouse_ccf/).
+
 ## Install
 
 ```bash
