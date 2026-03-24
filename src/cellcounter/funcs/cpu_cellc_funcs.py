@@ -423,7 +423,7 @@ class CpuCellcFuncs:
             index=pd.Index(cls.cp2np(labels).astype(np.uint32), name=CELL_IDX_NAME),
         ).astype(np.uint16)
         logger.info(cells_df)
-        if cells_df.length > 0:
+        if cells_df.shape[0] > 0:
             # Without if statement, throws error if no cells
             # Remove background
             cells_df.drop(index=0)
