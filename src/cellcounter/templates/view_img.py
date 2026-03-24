@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from cellcounter import ViewerFuncs
+from cellcounter.funcs.viewer_funcs import view_arrs_from_pfm
 
 if __name__ == "__main__":
     # =========================================
@@ -52,7 +52,7 @@ if __name__ == "__main__":
     ]
     # Viewing the images
 
-    ViewerFuncs.view_arrs_from_pfm(
+    view_arrs_from_pfm(
         analysis_img_dir,
         arrs_to_run,
         trimmer,

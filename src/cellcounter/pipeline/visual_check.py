@@ -4,9 +4,8 @@ import dask.array as da
 import pandas as pd
 import tifffile
 
-from cellcounter.funcs.viewer_funcs import ViewerFuncs
-from cellcounter.funcs.visual_check_funcs_dask import VisualCheckFuncsDask
-from cellcounter.funcs.visual_check_funcs_tiff import VisualCheckFuncsTiff
+from cellcounter.funcs import visual_check_funcs_dask, visual_check_funcs_tiff
+from cellcounter.funcs.viewer_funcs import combine_arrs
 from cellcounter.models.fp_models import check_overwrite
 from cellcounter.pipeline.abstract_pipeline import AbstractPipeline
 from cellcounter.utils.dask_utils import cluster_process
@@ -20,7 +19,7 @@ class VisualCheck(AbstractPipeline):
     @check_overwrite("points_raw")
     def coords2points_raw(self, *, overwrite: bool = False) -> None:
         with cluster_process(self.busy_cluster()):
-            VisualCheckFuncsDask.coords2points(
+            visual_check_funcs_dask.coords2points(
                 coords=pd.read_parquet(self.pfm.cells_raw_df),
                 shape=da.from_zarr(self.pfm.raw).shape,
                 out_fp=self.pfm.points_raw,
@@ -29,7 +28,7 @@ class VisualCheck(AbstractPipeline):
     @check_overwrite("heatmap_raw")
     def coords2heatmap_raw(self, *, overwrite: bool = False) -> None:
         with cluster_process(self.busy_cluster()):
-            VisualCheckFuncsDask.coords2heatmap(
+            visual_check_funcs_dask.coords2heatmap(
                 coords=pd.read_parquet(self.pfm.cells_raw_df),
                 shape=da.from_zarr(self.pfm.raw).shape,
                 out_fp=self.pfm.heatmap_raw,
@@ -38,7 +37,7 @@ class VisualCheck(AbstractPipeline):
 
     @check_overwrite("points_trfm")
     def coords2points_trfm(self, *, overwrite: bool = False) -> None:
-        VisualCheckFuncsTiff.coords2points(
+        visual_check_funcs_tiff.coords2points(
             coords=pd.read_parquet(self.pfm.cells_trfm_df),
             shape=tifffile.imread(self.pfm.ref).shape,
             out_fp=self.pfm.points_trfm,
@@ -46,7 +45,7 @@ class VisualCheck(AbstractPipeline):
 
     @check_overwrite("heatmap_trfm")
     def coords2heatmap_trfm(self, *, overwrite: bool = False) -> None:
-        VisualCheckFuncsTiff.coords2heatmap(
+        visual_check_funcs_tiff.coords2heatmap(
             coords=pd.read_parquet(self.pfm.cells_trfm_df),
             shape=tifffile.imread(self.pfm.ref).shape,
             out_fp=self.pfm.heatmap_trfm,
@@ -55,7 +54,7 @@ class VisualCheck(AbstractPipeline):
 
     @check_overwrite("comb_reg")
     def combine_reg(self, *, overwrite: bool = False) -> None:
-        ViewerFuncs.combine_arrs(
+        combine_arrs(
             fp_in_ls=(self.pfm.trimmed, self.pfm.bounded, self.pfm.regresult),
             fp_out=self.pfm.comb_reg,
         )
@@ -69,7 +68,7 @@ class VisualCheck(AbstractPipeline):
             z_trim = slice(*self.config.combine_cellc_z_trim)
             y_trim = slice(*self.config.combine_cellc_y_trim)
             x_trim = slice(*self.config.combine_cellc_x_trim)
-        ViewerFuncs.combine_arrs(
+        combine_arrs(
             fp_in_ls=(self.pfm.raw, self.pfm.threshd_final, self.pfm.wshed_final),
             fp_out=self.pfm.comb_cellc,
             trimmer=(z_trim, y_trim, x_trim),
@@ -77,7 +76,7 @@ class VisualCheck(AbstractPipeline):
 
     @check_overwrite("comb_heatmap")
     def combine_heatmap_trfm(self, *, overwrite: bool = False) -> None:
-        ViewerFuncs.combine_arrs(
+        combine_arrs(
             fp_in_ls=(self.pfm.ref, self.pfm.annot, self.pfm.heatmap_trfm),
             fp_out=self.pfm.comb_heatmap,
         )

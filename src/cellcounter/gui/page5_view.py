@@ -10,7 +10,7 @@ from cellcounter.constants import Coords
 from cellcounter.funcs.viewer_funcs import CMAP as CMAP_D
 from cellcounter.funcs.viewer_funcs import VIEW_IMGS_PARAMS as IMGS_D
 from cellcounter.funcs.viewer_funcs import VRANGE as VRANGE_D
-from cellcounter.funcs.viewer_funcs import ViewerFuncs
+from cellcounter.funcs.viewer_funcs import view_arrs
 from cellcounter.gui.gui_funcs import PROJ_DIR, init_var, page_decorator
 from cellcounter.pipeline.pipeline import Pipeline
 from cellcounter.utils.misc_utils import enum2list
@@ -178,7 +178,7 @@ def page5_view():
                 f"    - colourmap: {img_v[CMAP]}\n"
             )
         # Running visualiser
-        ViewerFuncs.view_arrs_mp(
+        view_arrs(
             fp_ls=tuple(getattr(pfm, i[NAME]) for i in imgs_to_run_ls),
             trimmer=tuple(st.session_state[TRIMMER][coord] for coord in Coords),
             name=tuple(i[NAME] for i in imgs_to_run_ls),
