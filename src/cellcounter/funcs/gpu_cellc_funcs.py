@@ -22,7 +22,7 @@ _GPU_METHODS = {
     "otsu_thresh",
     "mean_thresh",
     "manual_thresh",
-    "offset_labels_by_block",
+    "_offset_labels_by_block",
     "map_values_to_arr",
     "volume_filter",
     "mask",
