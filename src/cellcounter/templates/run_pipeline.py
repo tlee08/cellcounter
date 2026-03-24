@@ -97,7 +97,7 @@ if __name__ == "__main__":
             # Cell counting (tuning and final)
             for is_tuning in [
                 True,  # Tuning
-                False,  # Final (COMMENT OUT UNTIL YOU'RE HAPPY WITH THE CELL COUNT PARAMETERS)
+                False,  # Final (COMMENT OUT UNTIL HAPPY WITH THE CELL COUNT PARAMETERS)
             ]:
                 pipeline_tuning = Pipeline(analysis_img_dir, tuning=is_tuning)
                 pipeline_tuning.tophat_filter(overwrite=overwrite)
@@ -129,7 +129,7 @@ if __name__ == "__main__":
             # Transformed space visual checks
             for is_tuning in [
                 True,  # Tuning
-                False,  # Final (COMMENT OUT UNTIL YOU'RE HAPPY WITH THE CELL COUNT PARAMETERS)
+                False,  # Final (COMMENT OUT UNTIL HAPPY WITH THE CELL COUNT PARAMETERS)
             ]:
                 vc = VisualCheck(analysis_img_dir, tuning=is_tuning)
                 vc.combine_cellc(overwrite=overwrite)

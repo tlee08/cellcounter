@@ -115,7 +115,8 @@ def coords2points(
 
     Params:
         coords: A pd.DataFrame of points, with the columns, `x`, `y`, and `z`.
-        shape: The dimensions of the output array. Assumes that shape is in format `(z, y, x)` (regular for npy and tif file).
+        shape: The dimensions of the output array. Assumes that shape is in format
+            `(z, y, x)` (regular for npy and tif file).
         out_fp: The output filename.
 
     Returns:
@@ -145,7 +146,8 @@ def coords2heatmap(
     Params:
         coords: A pd.DataFrame of points, with the columns, `x`, `y`, and `z`.
         r: radius of the voxels.
-        shape: The dimensions of the output array. Assumes that shape is in format `(z, y, x)` (regular for npy and tif file).
+        shape: The dimensions of the output array. Assumes that shape is in format
+            `(z, y, x)` (regular for npy and tif file).
         out_fp: The output filename.
 
     Returns:
@@ -170,7 +172,8 @@ def coords2regions(
 
     Params:
         coords: A pd.DataFrame of points, with the columns, `x`, `y`, `z`, and `id`.
-        shape: The dimensions of the output array. Assumes that shape is in format `(z, y, x)` (regular for npy and tif file).
+        shape: The dimensions of the output array. Assumes that shape is in format
+            `(z, y, x)` (regular for npy and tif file).
         out_fp: The output filename.
 
     Returns:

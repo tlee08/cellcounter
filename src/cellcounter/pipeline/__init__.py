@@ -5,3 +5,7 @@ and mapping workflows, plus visual quality control tools.
 """
 
 from cellcounter.pipeline.pipeline import Pipeline
+
+__all__ = [
+    "Pipeline",
+]

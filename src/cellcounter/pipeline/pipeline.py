@@ -302,7 +302,8 @@ class Pipeline(AbstractPipeline):
         Clips intensities to configured range for better registration.
         """
         assert self.config.lower_bound[0] < self.config.upper_bound[0], (
-            "Error in config parameters: lower bound condition must be less than upper bound condition."
+            "Error in config parameters: "
+            "lower bound condition must be less than upper bound condition."
         )
         trimmed_arr = tifffile.imread(self.pfm.trimmed)
         bounded_arr = trimmed_arr.copy()
@@ -595,9 +596,12 @@ class Pipeline(AbstractPipeline):
                 .round(0)
                 .astype(np.uint32)
                 .query(
-                    f"({Coords.Z.value}_{TRFM} >= 0) & ({Coords.Z.value}_{TRFM} < {s[0]}) & "
-                    f"({Coords.Y.value}_{TRFM} >= 0) & ({Coords.Y.value}_{TRFM} < {s[1]}) & "
-                    f"({Coords.X.value}_{TRFM} >= 0) & ({Coords.X.value}_{TRFM} < {s[2]})"
+                    f"({Coords.Z.value}_{TRFM} >= 0) & "
+                    f"({Coords.Z.value}_{TRFM} < {s[0]}) & "
+                    f"({Coords.Y.value}_{TRFM} >= 0) & "
+                    f"({Coords.Y.value}_{TRFM} < {s[1]}) & "
+                    f"({Coords.X.value}_{TRFM} >= 0) & "
+                    f"({Coords.X.value}_{TRFM} < {s[2]})"
                 )
             )
             cells_df[AnnotColumns.ID.value] = pd.Series(

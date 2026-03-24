@@ -76,7 +76,8 @@ def page_decorator(check_proj_dir=True):
             # then don't render rest of page
             if check_proj_dir and proj_dir_status != ProjDirStatus.VALID:
                 st.error(
-                    "Project is not initialised.\n\nPlease set or create a project directory."
+                    "Project is not initialised.\n\n"
+                    "Please set or create a project directory."
                 )
                 return None
             return func(*args, **kwargs)

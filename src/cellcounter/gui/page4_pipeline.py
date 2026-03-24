@@ -45,7 +45,10 @@ def is_tuning_func() -> None:
 
 @page_decorator()
 def page4_pipeline() -> None:
-    """Displays the pipeline page in the GUI, allowing users to select and run various pipeline functions."""
+    """Displays the pipeline page in the GUI.
+
+    Allows users to select and run various pipeline functions.
+    """
     # Initialising session state variables
     init_var(CHECKBOXES, dict.fromkeys(STEP_NAMES, False))
     init_var(OVERWRITE, False)

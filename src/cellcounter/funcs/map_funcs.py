@@ -7,6 +7,7 @@ Handles:
 - Mapping cell coordinates to region IDs
 """
 
+import json
 import logging
 from pathlib import Path
 
@@ -251,6 +252,7 @@ def df_include_special_ids(cells_df: pd.DataFrame) -> pd.DataFrame:
     cells_df.loc[cells_df[id_col] == -1, name_col] = SpecialRegions.INVALID.value
     # Setting points with ID == 0 as "universe" label
     cells_df.loc[cells_df[id_col] == 0, name_col] = SpecialRegions.UNIVERSE.value
-    # Setting points with no region map name (but have a positive ID value) as "no label" label
+    # Setting points with no region map name
+    # but have a positive ID value as "no label" label
     cells_df.loc[cells_df[name_col].isna(), name_col] = SpecialRegions.NO_LABEL.value
     return cells_df

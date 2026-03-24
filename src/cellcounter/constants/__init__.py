@@ -27,6 +27,7 @@ __all__ = [
     "CACHE_DIR",
     "CELL_AGG_MAPPINGS",
     "CELL_IDX_NAME",
+    "CUPY_ENABLED",
     "DASK_CUDA_ENABLED",
     "GPU_ENABLED",
     "MASK_VOLUME",

@@ -70,7 +70,8 @@ def coords2points(
 
     Params:
         coords: A pd.DataFrame of points, with the columns, `x`, `y`, and `z`.
-        shape: The dimensions of the output array. Assumes that shape is in format `(z, y, x)` (regular for npy and tif file).
+        shape: The dimensions of the output array. Assumes that shape is in format
+            `(z, y, x)` (regular for npy and tif file).
         out_fp: The output filename.
 
     Returns:
@@ -100,7 +101,8 @@ def coords2heatmap(
     Params:
         coords: A pd.DataFrame of points, with the columns, `x`, `y`, and `z`.
         r: radius of the voxels.
-        shape: The dimensions of the output array. Assumes that shape is in format `(z, y, x)` (regular for npy and tif file).
+        shape: The dimensions of the output array. Assumes that shape is in format
+            `(z, y, x)` (regular for npy and tif file).
         out_fp: The output filename.
 
     Returns:
@@ -119,7 +121,9 @@ def coords2heatmap(
     i = np.arange(-radius + 1, radius)
     z_ind, y_ind, x_ind = np.meshgrid(i, i, i, indexing="ij")
     # Adding coords to image
-    for z, y, x, t in zip(z_ind.ravel(), y_ind.ravel(), x_ind.ravel(), circ.ravel(), strict=False):
+    for z, y, x, t in zip(
+        z_ind.ravel(), y_ind.ravel(), x_ind.ravel(), circ.ravel(), strict=False
+    ):
         if t:
             coords_i = coords.copy()
             coords_i[Coords.Z.value] += z
@@ -138,7 +142,8 @@ def coords2regions(coords, shape: tuple[int, ...], out_fp: Path | str) -> None:
 
     Params:
         coords: A pd.DataFrame of points, with the columns, `x`, `y`, `z`, and `id`.
-        shape: The dimensions of the output array. Assumes that shape is in format `(z, y, x)` (regular for npy and tif file).
+        shape: The dimensions of the output array. Assumes that shape is in format
+            `(z, y, x)` (regular for npy and tif file).
         out_fp: The output filename.
 
     Returns:

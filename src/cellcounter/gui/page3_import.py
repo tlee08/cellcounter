@@ -29,7 +29,9 @@ def input_src_func() -> None:
     else:
         st.session_state[INPUT_SRC_STATUS] = ProjDirStatus.VALID
     # Updating session state: DISABLED
-    st.session_state[DISABLED] = st.session_state[INPUT_SRC_STATUS] != ProjDirStatus.VALID
+    st.session_state[DISABLED] = (
+        st.session_state[INPUT_SRC_STATUS] != ProjDirStatus.VALID
+    )
 
 
 @page_decorator()

@@ -1,6 +1,7 @@
 import os
 from copy import deepcopy
 from enum import Enum
+from pathlib import Path
 
 import dask.array as da
 import numpy as np
@@ -82,7 +83,7 @@ def page5_view() -> None:
     try:
         arr = da.from_zarr(pfm.raw)
     except Exception:
-        st.warning(f"No {i} file found")
+        st.warning("No raw file found")
     # Making trimmer sliders if array exists
     if arr is not None:
         for i, coord in enumerate(Coords):
@@ -108,7 +109,8 @@ def page5_view() -> None:
         # Warning
         st.error(
             "No raw array files found.\n\n"
-            "No trimming is available (if image too big, this may crash the application)."
+            "No trimming is available "
+            "(if image too big, this may crash the application)."
         )
         # trimmers are set to None
         st.write("No Z trimming")
@@ -168,7 +170,9 @@ def page5_view() -> None:
         st.write("With trim of:\n")
         for coord in Coords:
             st.write(
-                f" - {coord.value} trim: {st.session_state[TRIMMER][coord].start} - {st.session_state[TRIMMER][coord].stop}"
+                f" - {coord.value} "
+                f"trim: {st.session_state[TRIMMER][coord].start} - "
+                f"{st.session_state[TRIMMER][coord].stop}"
             )
         # Writing description of current image
         for img_v in imgs_to_run_ls:
@@ -179,14 +183,15 @@ def page5_view() -> None:
             )
         # Running visualiser
         view_arrs(
-            fp_ls=tuple(getattr(pfm, i[NAME]) for i in imgs_to_run_ls),
+            fp_ls=tuple(Path(getattr(pfm, i[NAME])) for i in imgs_to_run_ls),
             trimmer=tuple(st.session_state[TRIMMER][coord] for coord in Coords),
             name=tuple(i[NAME] for i in imgs_to_run_ls),
             contrast_limits=tuple(i[VRANGE] for i in imgs_to_run_ls),
             colormap=tuple(i[CMAP] for i in imgs_to_run_ls),
         )
 
-    # TODO: have an image saving function (from viewer_funcs) that can be called from here
+    # TODO: have an image saving function (from viewer_funcs)
+    # that can be called from here
 
     # Image size estimate
     # First checking if there are trimming dimensions

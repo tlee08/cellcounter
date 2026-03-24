@@ -7,6 +7,7 @@ Inherits from CpuCellcFuncs and wraps all methods with:
 Use GpuCellcFuncs() for GPU mode, CpuCellcFuncs() for CPU fallback.
 """
 
+import functools
 from collections.abc import Callable
 from typing import ParamSpec, TypeVar
 

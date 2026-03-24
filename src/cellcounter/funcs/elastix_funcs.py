@@ -112,11 +112,15 @@ def transformation_coords(
 
     Params:
         coords: A pd.DataFrame of points, with the columns `x`, `y`, and `z`.
-        moving_img_fp: Filepath of the moved image from registration (typically the reference image).
-        output_img_fp: Filepath of the outputted image from registration (the fixed image after warping). Important that the TransformParameters files are in this folder.
+        moving_img_fp: Filepath of the moved image from registration
+            (typically the reference image).
+        output_img_fp: Filepath of the outputted image from registration
+            (the fixed image after warping).
+            Important that the TransformParameters files are in this folder.
 
     Returns:
-        A pd.DataFrame of the transformed coordinates from the fixed image space to the moving image space.
+        A pd.DataFrame of the transformed coordinates
+        from the fixed image space to the moving image space.
     """
     moving_img_fp = Path(moving_img_fp)
     output_img_fp = Path(output_img_fp)
@@ -216,7 +220,8 @@ def transformation_img(
 
     Params:
         moving_img_fp: Filepath of the moving image to transform.
-        output_img_fp: Filepath of the output image from registration. Important that the TransformParameters files are in the parent folder.
+        output_img_fp: Filepath of the output image from registration.
+            Important that the TransformParameters files are in the parent folder.
 
     Returns:
         A numpy array of the transformed image.

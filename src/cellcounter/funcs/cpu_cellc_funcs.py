@@ -64,11 +64,13 @@ class CpuCellcFuncs:
     ) -> npt.NDArray:
         """Reorder and flip axes.
 
-        Order of orient_ls is the axis order. Negative element means that axis is flipped.
+        Order of orient_ls is the axis order.
+        Negative element means that axis is flipped.
         Axis order starts from 1, 2, 3, ...
 
         Example:
-            `orient_ls=(-2, 1, 3)` flips the second axis and swaps the first and second axes.
+            `orient_ls=(-2, 1, 3)` flips the second axis
+            and swaps the first and second axes.
 
         Args:
             arr: Input array (numpy or cupy).
@@ -161,7 +163,8 @@ class CpuCellcFuncs:
         logger.debug("Compute global mean")
         global_mean = cum_mean[-1]
         logger.debug(
-            "Compute between class variance for all thresholds and find the threshold that maximizes it"
+            "Compute between class variance for all thresholds "
+            "and find the threshold that maximizes it"
         )
         numerator = (global_mean * cum_sum - cum_mean) ** 2
         denominator = cum_sum * (1.0 - cum_sum)
@@ -475,7 +478,8 @@ class CpuCellcFuncs:
         Returns:
         --------
         pd.DataFrame
-            DataFrame with cell coordinates (offset to global space), volumes, and intensities
+            DataFrame with cell coordinates (offset to global space),
+            volumes, and intensities
         """
         assert raw_block.shape == maxima_labels_block.shape
         assert raw_block.shape == wshed_filt_block.shape
