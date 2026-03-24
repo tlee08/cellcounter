@@ -1,5 +1,4 @@
 import logging
-import os
 from enum import Enum
 from pathlib import Path
 
@@ -17,7 +16,6 @@ from cellcounter.funcs.map_funcs import (
     MapFuncs,
 )
 from cellcounter.models.fp_models.proj_fp import ProjFp
-from cellcounter.models.proj_config import ProjConfig
 from cellcounter.pipeline.pipeline import Pipeline
 from cellcounter.utils.io_utils import read_json
 from cellcounter.utils.misc_utils import enum2list
@@ -37,57 +35,60 @@ class BatchCombineFuncs:
     @classmethod
     def combine_ls_pipeline(
         cls,
-        proj_dir_ls: list,
-        out_dir: str,
+        proj_dir_ls: list[Path | str],
+        out_dir: Path | str,
+        *,
         overwrite: bool = False,
-    ):
+    ) -> None:
         # Checking should overwrite
         # If overwrite is False and out_fp_parquet exists, then skip
-        out_fp_parquet = os.path.join(out_dir, f"{COMBINED_FP}.parquet")
-        out_fp_csv = os.path.join(out_dir, f"{COMBINED_FP}.csv")
-        if not overwrite and os.path.exists(out_fp_parquet):
-            logger.info(f"Skipping as {out_fp_parquet} already exists.")
+        out_dir = Path(out_dir)
+        out_fp_parquet = out_dir / f"{COMBINED_FP}.parquet"
+        out_fp_csv = out_dir / f"{COMBINED_FP}.csv"
+        if not overwrite and out_fp_parquet.exists():
+            logger.info("Skipping as %s already exists.", out_fp_parquet)
             return
 
         # Asserting that proj_dir_ls is not empty
         assert len(proj_dir_ls) > 0, "proj_dir_ls is empty"
         # Assertions for each project directory
-        configs0 = Pipeline.update_configs(proj_dir_ls[0])
+        pfm0 = ProjFp(proj_dir_ls[0])
+        configs0 = pfm0.config
         atlas_dir0 = configs0.atlas_dir
         ref_v0 = configs0.ref_version
         annot_v0 = configs0.annot_version
         map_v0 = configs0.map_version
-        for proj_dir in proj_dir_ls:
+        for _proj_dir in proj_dir_ls:
+            proj_dir = Path(_proj_dir)
+            pipeline = Pipeline(proj_dir)
             # Getting project info
-            name = os.path.basename(proj_dir)
-            pfm = ProjFpModel(proj_dir)
-            configs = Pipeline.update_configs(proj_dir)
+            pfm = pipeline.pfm
+            configs = pfm.config
             atlas_dir = configs.atlas_dir
             ref_v = configs.ref_version
             annot_v = configs.annot_version
             map_v = configs.map_version
             # Asserting that all projects have cells_agg and mask_df files
-            assert os.path.exists(pfm.cells_agg_df), f"Missing cells_agg_df for {name}"
-            assert os.path.exists(pfm.mask_df), f"Missing mask_df for {name}"
+            assert pfm.cells_agg_df.exists(), f"Missing cells_agg_df for {proj_dir}"
+            assert pfm.mask_df.exists(), f"Missing mask_df for {proj_dir}"
             # Asserting that all projects are using the same origin for reference atlas
             # to verify the same regions are being used
             assert atlas_dir0 == atlas_dir, (
-                f"In configs file, there mismatch for {name} and {name}.\n"
+                f"In configs file, there mismatch for {proj_dir} and {proj_dir}.\n"
                 f'atlas_dir values "{atlas_dir0}" and "{atlas_dir}" are not equal'
             )
             assert ref_v0 == ref_v, (
-                f"In configs file, there mismatch for {name} and {name}.\n"
+                f"In configs file, there mismatch for {proj_dir} and {proj_dir}.\n"
                 f'ref_v values "{ref_v0}" and "{ref_v}" are not equal'
             )
             assert annot_v0 == annot_v, (
-                f"In configs file, there mismatch for {name} and {name}.\n"
+                f"In configs file, there mismatch for {proj_dir} and {proj_dir}.\n"
                 f'annot_v values "{annot_v0}" and "{annot_v}" are not equal'
             )
             assert map_v0 == map_v, (
-                f"In configs file, there mismatch for {name} and {name}.\n"
+                f"In configs file, there mismatch for {proj_dir} and {proj_dir}.\n"
                 f'map_v values "{map_v0}" and "{map_v}" are not equal'
             )
-        pfm0 = ProjFpModel(proj_dir_ls[0])
         # Making combined_agg_df
         # Starting with annot_df (asserted all the same so using first)
         total_df = MapFuncs.annot_dict2df(read_json(pfm0.map))
@@ -115,12 +116,12 @@ class BatchCombineFuncs:
             axis=1,
         )
         # Get all experiments
-        for proj_dir in proj_dir_ls:
+        for _proj_dir in proj_dir_ls:
+            proj_dir = Path(_proj_dir)
             # Logging which file is being processed
-            name = os.path.basename(proj_dir)
-            logger.info(f"Running: {name}")
+            logger.info("Running: %s", proj_dir)
             # Filenames
-            pfm = ProjFpModel(proj_dir)
+            pfm = ProjFp(proj_dir)
             # CELL_AGG_DF
             # Reading experiment's cells_agg dataframe
             cells_agg_df = pd.read_parquet(pfm.cells_agg_df)
@@ -132,8 +133,7 @@ class BatchCombineFuncs:
             # Keeping only the required columns
             mask_df = mask_df[enum2list(MaskColumns)]
             # Merging cells_agg_df with mask_df to combine columns
-            exp_df = pd.merge(
-                left=cells_agg_df,
+            exp_df = cells_agg_df.merge(
                 right=mask_df,
                 left_index=True,
                 right_index=True,
@@ -142,13 +142,12 @@ class BatchCombineFuncs:
             # Making columns a multindex with levels (specimen name, cell agg columns)
             exp_df = pd.concat(
                 [exp_df],
-                keys=[name],
+                keys=[proj_dir],
                 names=[CombinedColumns.SPECIMEN.value],
                 axis=1,
             )
             # Merging with comb_agg_df (ID is index for both dfs)
-            total_df = pd.merge(
-                left=total_df,
+            total_df = total_df.merge(
                 right=exp_df,
                 left_index=True,
                 right_index=True,
@@ -165,20 +164,23 @@ class BatchCombineFuncs:
         cls,
         root_dir: Path | str,
         out_dir: Path | str,
+        *,
         overwrite: bool = False,
     ):
         # Get all experiments in root_dir (any dir with a configs file)
         # NOTE: not using the cells_agg and mask file to check for valid projects
         # so we can catch any projects that are missing these files
+        root_dir = Path(root_dir)
+        out_dir = Path(root_dir)
         proj_dir_ls = []
-        for exp in natsorted(os.listdir(root_dir)):
-            proj_dir = os.path.join(root_dir, exp)
+        for exp in natsorted(root_dir.iterdir()):
+            proj_dir = root_dir / exp
             pfm = ProjFp(proj_dir)
             try:
                 # If proj has config_params file, then add to list of projs to combine
-                ProjConfig.model_validate(read_json(pfm.config_params))
+                assert pfm.config
                 proj_dir_ls.append(proj_dir)
             except FileNotFoundError:
                 pass
         # Running combine pipeline
-        cls.combine_ls_pipeline(proj_dir_ls, out_dir, overwrite)
+        cls.combine_ls_pipeline(proj_dir_ls, out_dir, overwrite=overwrite)
