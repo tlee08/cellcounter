@@ -1,4 +1,11 @@
-import logging
+"""Napari visualization utilities for pipeline outputs.
+
+Provides:
+- read_img(): Load TIFF or Zarr arrays with optional trimming
+- view_arrs(): Display multiple arrays in Napari with custom colormaps
+- view_arrs_from_pfm(): Convenience wrapper using project filepath model
+- combine_arrs(): Stack arrays into multi-channel TIFF for viewing
+"""
 from enum import Enum
 from pathlib import Path
 

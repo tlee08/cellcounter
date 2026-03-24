@@ -1,4 +1,13 @@
-import logging
+"""Main cell counting pipeline orchestrator.
+
+Coordinates the full workflow:
+1. Registration: TIFF→Zarr, downsampling, elastix registration
+2. Cell Counting: filtering, thresholding, watershed segmentation
+3. Mapping: coordinate transformation, region assignment, aggregation
+
+All pipeline methods use @check_overwrite decorator for file safety.
+"""
+
 import re
 import shutil
 from pathlib import Path
@@ -29,7 +38,6 @@ from cellcounter.funcs.io_funcs import (
     write_tiff,
 )
 from cellcounter.funcs.map_funcs import annot_fp2df, combine_nested_regions, df_map_ids
-from cellcounter.funcs.reg_funcs import downsmpl_fine, downsmpl_rough, reorient
 from cellcounter.models.fp_models import check_overwrite, get_proj_fm
 from cellcounter.models.fp_models.ref_fp import RefFp
 from cellcounter.pipeline.abstract_pipeline import AbstractPipeline
@@ -197,7 +205,7 @@ class Pipeline(AbstractPipeline):
         )
         for fp_i, fp_o in [(rfm.ref, self.pfm.ref), (rfm.annot, self.pfm.annot)]:
             arr = tifffile.imread(fp_i)
-            arr = reorient(arr, self.config.ref_orient_ls)
+            arr = self.cellc_funcs.reorient(arr, self.config.ref_orient_ls)
             arr = arr[
                 slice(*self.config.ref_z_trim),
                 slice(*self.config.ref_y_trim),
@@ -212,16 +220,18 @@ class Pipeline(AbstractPipeline):
     def reg_img_rough(self, *, overwrite: bool = False) -> None:
         with cluster_process(self.busy_cluster()):
             raw_arr = da.from_zarr(self.pfm.raw)
-            downsmpl1_arr = downsmpl_rough(
-                raw_arr, self.config.z_rough, self.config.y_rough, self.config.x_rough
-            )
+            downsmpl1_arr = raw_arr[
+                :: self.config.z_rough,
+                :: self.config.y_rough,
+                :: self.config.x_rough,
+            ]
             downsmpl1_arr = downsmpl1_arr.compute()
             write_tiff(downsmpl1_arr, self.pfm.downsmpl1)
 
     @check_overwrite("downsmpl2")
     def reg_img_fine(self, *, overwrite: bool = False) -> None:
         downsmpl1_arr = tifffile.imread(self.pfm.downsmpl1)
-        downsmpl2_arr = downsmpl_fine(
+        downsmpl2_arr = self.cellc_funcs.downsample(
             downsmpl1_arr, self.config.z_fine, self.config.y_fine, self.config.x_fine
         )
         write_tiff(downsmpl2_arr, self.pfm.downsmpl2)
@@ -289,7 +299,7 @@ class Pipeline(AbstractPipeline):
         with cluster_process(self.gpu_cluster()):
             result = da.map_blocks(
                 self.cellc_funcs.tophat_filt,
-                block=da.from_zarr(self.pfm.raw),
+                da.from_zarr(self.pfm.raw),
                 sigma=self.pfm.config.tophat_sigma,
             )
             disk_cache(result, self.pfm.bgrm)
@@ -300,7 +310,7 @@ class Pipeline(AbstractPipeline):
         with cluster_process(self.gpu_cluster()):
             result = da.map_blocks(
                 self.cellc_funcs.dog_filt,
-                block=da.from_zarr(self.pfm.bgrm),
+                da.from_zarr(self.pfm.bgrm),
                 sigma1=self.pfm.config.dog_sigma1,
                 sigma2=self.pfm.config.dog_sigma2,
             )
@@ -312,7 +322,7 @@ class Pipeline(AbstractPipeline):
         with cluster_process(self.gpu_cluster()):
             result = da.map_blocks(
                 self.cellc_funcs.gauss_subt_filt,
-                block=da.from_zarr(self.pfm.dog),
+                da.from_zarr(self.pfm.dog),
                 sigma=self.pfm.config.large_gauss_sigma,
             )
             disk_cache(result, self.pfm.adaptv)
@@ -323,7 +333,7 @@ class Pipeline(AbstractPipeline):
         with cluster_process(self.gpu_cluster()):
             result = da.map_blocks(
                 self.cellc_funcs.manual_thresh,
-                block=da.from_zarr(self.pfm.adaptv),
+                da.from_zarr(self.pfm.adaptv),
                 val=self.pfm.config.threshd_value,
             )
             disk_cache(result, self.pfm.threshd)
@@ -335,7 +345,7 @@ class Pipeline(AbstractPipeline):
         with cluster_process(self.gpu_cluster()):
             result = da.map_blocks(
                 self.cellc_funcs.mask2label,
-                block=da.from_zarr(self.pfm.threshd),
+                da.from_zarr(self.pfm.threshd),
                 max_labels_per_chunk=max_labels,
             )
             disk_cache(result, self.pfm.threshd_labels)
@@ -353,7 +363,7 @@ class Pipeline(AbstractPipeline):
         with cluster_process(self.gpu_cluster()):
             result = da.map_blocks(
                 self.cellc_funcs.volume_filter,
-                block=da.from_zarr(self.pfm.threshd_volumes),
+                da.from_zarr(self.pfm.threshd_volumes),
                 smin=self.pfm.config.min_threshd_size,
                 smax=self.pfm.config.max_threshd_size,
             )
@@ -365,7 +375,7 @@ class Pipeline(AbstractPipeline):
         with cluster_process(self.gpu_cluster()):
             result = da.map_blocks(
                 self.cellc_funcs.get_local_maxima,
-                block=da.from_zarr(self.pfm.raw),
+                da.from_zarr(self.pfm.raw),
                 sigma=self.pfm.config.maxima_sigma,
                 mask_block=da.from_zarr(self.pfm.threshd_filt),
             )
@@ -378,7 +388,7 @@ class Pipeline(AbstractPipeline):
         with cluster_process(self.gpu_cluster()):
             result = da.map_blocks(
                 self.cellc_funcs.mask2label,
-                block=da.from_zarr(self.pfm.maxima),
+                da.from_zarr(self.pfm.maxima),
                 max_labels_per_chunk=max_labels,
             )
             disk_cache(result, self.pfm.maxima_labels)
@@ -389,7 +399,7 @@ class Pipeline(AbstractPipeline):
         with cluster_process(self.heavy_cluster()):
             result = da.map_blocks(
                 self.cellc_funcs.wshed_segm,
-                block=da.from_zarr(self.pfm.raw),
+                da.from_zarr(self.pfm.raw),
                 maxima_block=da.from_zarr(self.pfm.maxima_labels),
                 mask_block=da.from_zarr(self.pfm.threshd_filt),
             )
@@ -411,7 +421,7 @@ class Pipeline(AbstractPipeline):
         with cluster_process(self.heavy_cluster()):
             result = da.map_blocks(
                 self.cellc_funcs.volume_filter,
-                block=da.from_zarr(self.pfm.wshed_volumes),
+                da.from_zarr(self.pfm.wshed_volumes),
                 smin=self.pfm.config.min_wshed_size,
                 smax=self.pfm.config.max_wshed_size,
             )

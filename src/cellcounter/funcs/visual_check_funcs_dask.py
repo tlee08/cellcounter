@@ -1,4 +1,11 @@
-from pathlib import Path
+"""Dask-based coordinate-to-image conversion for large arrays.
+
+Converts cell coordinates to visualization arrays using Dask for
+out-of-core processing of images too large for memory:
+- coords2points: Single-voxel markers at each coordinate
+- coords2heatmap: Spherical markers with radius for density visualization
+- coords2regions: Region ID labels at each coordinate
+"""
 
 import dask.array as da
 import numpy as np

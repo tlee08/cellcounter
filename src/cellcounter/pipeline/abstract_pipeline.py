@@ -1,4 +1,10 @@
-import logging
+"""Base pipeline class with GPU/CPU switching and Dask cluster management.
+
+Provides the AbstractPipeline base class that handles:
+- GPU/CPU mode switching via set_gpu()
+- Dask cluster creation (heavy, busy, GPU clusters)
+- Config and filepath model access
+"""
 from abc import ABC
 from collections.abc import Callable
 from pathlib import Path

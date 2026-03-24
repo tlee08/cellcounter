@@ -1,4 +1,12 @@
-import os
+"""Memory-mapped coordinate-to-image conversion for TIFF files.
+
+Converts cell coordinates to visualization arrays using numpy memmap
+for memory-efficient processing. Use for outputs that fit in disk
+but not RAM:
+- coords2points: Single-voxel markers at each coordinate
+- coords2heatmap: Spherical markers with radius for density visualization
+- coords2regions: Region ID labels at each coordinate
+"""
 from pathlib import Path
 
 import numpy as np

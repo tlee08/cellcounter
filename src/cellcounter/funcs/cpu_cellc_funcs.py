@@ -1,4 +1,9 @@
-import logging
+"""CPU-based cell counting operations with injectable backend.
+
+Provides filtering, thresholding, labeling, and watershed operations
+for 3D microscopy images. Backend (numpy/cupy) is injected at runtime,
+enabling GPU acceleration without code duplication.
+"""
 
 import numpy as np
 import numpy.typing as npt
@@ -28,6 +33,61 @@ class CpuCellcFuncs:
         """
         self.xp = xp
         self.xdimage = xdimage
+
+    #############################################
+    # Intended to be used as entire np array
+    #############################################
+
+    def downsample(
+        self, arr: npt.NDArray, z_scale: float, y_scale: float, x_scale: float
+    ) -> npt.NDArray:
+        """Downsample with float scale factors using zoom.
+
+        GPU-accelerated via cupyx.scipy.ndimage.zoom when in GPU mode.
+
+        Args:
+            arr: Input array (numpy or cupy).
+            z_scale: Float scale factors.
+            y_scale: Float scale factors.
+            x_scale: Float scale factors.
+
+        Returns:
+            Downsampled array.
+        """
+        arr = self.xp.asarray(arr)
+        return self.xdimage.zoom(arr, (z_scale, y_scale, x_scale))
+
+    def reorient(
+        self, arr: npt.NDArray, orient_ls: list[int] | tuple[int, ...]
+    ) -> npt.NDArray:
+        """Reorder and flip axes.
+
+        Order of orient_ls is the axis order. Negative element means that axis is flipped.
+        Axis order starts from 1, 2, 3, ...
+
+        Example:
+            `orient_ls=(-2, 1, 3)` flips the second axis and swaps the first and second axes.
+
+        Args:
+            arr: Input array (numpy or cupy).
+            orient_ls: Axis ordering with optional flips (negative values).
+
+        Returns:
+            Reoriented array.
+        """
+        arr = self.xp.asarray(arr)
+        orient_ls = list(orient_ls)
+        for i in range(len(orient_ls)):
+            ax = orient_ls[i]
+            ax_new = abs(ax) - 1
+            orient_ls[i] = ax_new
+            if ax < 0:
+                arr = self.xp.flip(arr, ax_new)
+        return arr.transpose(orient_ls)
+
+    #############################################
+    # Intended to be used with dask.array.map_blocks
+    #############################################
 
     def tophat_filt(self, block: npt.NDArray, sigma: int = 10) -> npt.NDArray:
         """Calculate top hat filter.

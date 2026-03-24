@@ -1,4 +1,12 @@
-from __future__ import annotations
+"""File I/O utilities for microscopy images and data tables.
+
+Supports:
+- TIFF reading/writing (including bigtiff)
+- Zarr conversion for chunked array storage
+- Parquet for DataFrame persistence
+- Async file reading for parallel I/O
+- Format conversions (TIFF↔Zarr↔NIfTI)
+"""
 
 import asyncio
 import contextlib

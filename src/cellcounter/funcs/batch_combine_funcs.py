@@ -1,4 +1,9 @@
-import logging
+"""Multi-experiment aggregation utilities.
+
+Combines cell counting results from multiple specimens into a single
+DataFrame with MultiIndex columns (specimen, measure). Validates that
+all experiments use the same atlas reference for consistency.
+"""
 from enum import Enum
 from pathlib import Path
 

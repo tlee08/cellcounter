@@ -1,4 +1,8 @@
-import logging
+"""Visual quality control for pipeline outputs.
+
+Generates visualization arrays (points, heatmaps, combined images)
+for verifying registration and cell counting results in Napari.
+"""
 
 import dask.array as da
 import pandas as pd

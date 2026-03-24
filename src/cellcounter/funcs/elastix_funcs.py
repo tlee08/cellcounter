@@ -1,4 +1,13 @@
-import logging
+"""ITK-Elastix registration and transformation wrappers.
+
+Provides:
+- registration(): Image-to-image registration with affine + bspline
+- transformation_coords(): Transform point coordinates between image spaces
+- transformation_img(): Apply transform to a new image
+
+Uses ITK-Elastix for deformable registration of microscopy images
+to reference atlas.
+"""
 import os
 import re
 from pathlib import Path

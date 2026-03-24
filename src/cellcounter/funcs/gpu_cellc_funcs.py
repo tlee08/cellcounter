@@ -1,4 +1,12 @@
-import functools
+"""GPU-accelerated cell counting with automatic memory management.
+
+Inherits from CpuCellcFuncs and wraps all methods with:
+- GPU memory cleanup before/after execution
+- Automatic cupy→numpy conversion for outputs
+
+Use GpuCellcFuncs() for GPU mode, CpuCellcFuncs() for CPU fallback.
+"""
+
 from collections.abc import Callable
 from typing import ParamSpec, TypeVar
 
@@ -26,6 +34,8 @@ _GPU_METHODS = {
     "map_values_to_arr",
     "volume_filter",
     "mask",
+    "downsample",
+    "reorient",
 }
 
 # Methods that need GPU memory clearing only (already convert to numpy internally)

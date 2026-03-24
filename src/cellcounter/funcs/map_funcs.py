@@ -1,4 +1,11 @@
-import json
+"""Atlas region mapping and annotation utilities.
+
+Handles:
+- Parsing Allen Brain Atlas annotation JSON to DataFrame
+- Building parent/child region hierarchies
+- Recursive region aggregation for nested structures
+- Mapping cell coordinates to region IDs
+"""
 import logging
 from pathlib import Path
 
