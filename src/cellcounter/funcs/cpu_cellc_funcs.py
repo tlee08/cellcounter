@@ -361,20 +361,31 @@ class CpuCellcFuncs:
     def get_local_maxima(
         self,
         block: npt.NDArray,
-        sigma: int = 10,
+        radius: int = 5,
         mask_block: None | npt.NDArray = None,
-        max_labels_per_chunk: int | None = None,
     ) -> npt.NDArray:
-        """Getting local maxima (no connectivity) in a 3D tensor.
+        """Find local maxima using spherical neighborhood.
 
-        If there is a connected region of maxima, then only the centre point is kept.
+        A point is a local maximum if it equals the maximum within a sphere
+        of given radius. Note: plateau regions (flat maxima) return all points
+        in the plateau, not just the center.
 
-        If `mask_arr` is provided, then only maxima within the mask are kept.
+        Args:
+            block: Input 3D array.
+            radius: Radius of spherical structuring element.
+            mask_block: Optional mask; maxima only kept where mask > 0.
+
+        Returns:
+            Binary array where True indicates local maxima.
         """
         block = self.xp.asarray(block)
-        logger.debug("Making max filter for raw arr (maximum in given area)")
-        max_arr = self.xdimage.maximum_filter(block, sigma)
-        logger.debug("Getting local maxima (where arr == max_arr)")
+        logger.debug("Creating spherical footprint with radius %d", radius)
+        # Create spherical footprint using distance from center
+        coords = self.xp.ogrid[-radius : radius + 1, -radius : radius + 1, -radius : radius + 1]
+        footprint = self.xp.sum(coords[0] ** 2 + coords[1] ** 2 + coords[2] ** 2) <= radius**2
+        logger.debug("Applying maximum filter with spherical footprint")
+        max_arr = self.xdimage.maximum_filter(block, footprint=footprint)
+        logger.debug("Finding local maxima (where arr == max_arr)")
         res_block = block == max_arr
         # If a mask is given, then keep only the maxima within the mask
         if mask_block is not None:

@@ -115,34 +115,31 @@ class Pipeline(AbstractPipeline):
         with cluster_process(cluster):
             label_overlap = da.overlap.overlap(label_arr, depth=1, boundary=0)
             logger.debug("Finding cross-boundary pairs...")
-            pair_arrays = dask.compute(
-                *[
-                    dask.delayed(self.cellc_funcs.get_boundary_pairs)(b)
-                    for b in label_overlap.to_delayed().ravel()
-                ]
-            )
-            all_pairs = (
-                np.concatenate([p for p in pair_arrays if len(p) > 0], axis=0)
-                if pair_arrays
+            # NOTE: for now, computing each delayed chunk sequentially, not in parallel
+            # So it works for memory
+            delayed_ls = [
+                dask.delayed(self.cellc_funcs.get_boundary_pairs)(i)
+                for i in label_overlap.to_delayed().ravel()
+            ]
+            pair_arr_ls = [dask.compute(i) for i in delayed_ls]
+            pairs_arr = (
+                np.concatenate([p for p in pair_arr_ls if len(p) > 0], axis=0)
+                if pair_arr_ls
                 else np.empty((0, 2), dtype=np.uint64)
             )
-            logger.debug("Cross-boundary pairs found: %d", len(all_pairs))
-
+            logger.debug("Cross-boundary pairs found: %d", len(pairs_arr))
             uf = UnionFind()
-            for a, b in all_pairs:
+            for a, b in pairs_arr:
                 uf.union(int(a), int(b))
-
             logger.debug("Aggregating voxels per label...")
-            label_voxel_counts_ls = dask.compute(
-                *[
-                    dask.delayed(self.cellc_funcs.get_label_sizemap)(b)
-                    for b in label_arr.to_delayed().ravel()
-                ]
-            )
-            labels = np.concatenate([i[0] for i in label_voxel_counts_ls])
-            counts = np.concatenate([i[1] for i in label_voxel_counts_ls])
+            delayed_ls = [
+                dask.delayed(self.cellc_funcs.get_label_sizemap)(i)
+                for i in label_arr.to_delayed().ravel()
+            ]
+            label_counts_ls = [dask.compute(i) for i in delayed_ls]
+            labels = np.concatenate([i[0] for i in label_counts_ls])
+            counts = np.concatenate([i[1] for i in label_counts_ls])
             logger.debug("Unique labels (foreground): %d", len(labels))
-
             uf.build_lookup_table(labels, counts)
             logger.debug("Writing output array...")
             return da.map_blocks(
@@ -498,31 +495,21 @@ class Pipeline(AbstractPipeline):
             wshed_blocks = wshed_labels_arr.to_delayed().ravel()
             filt_blocks = wshed_filt_arr.to_delayed().ravel()
 
-            @dask.delayed
-            def process_block(raw, maxima, wshed, filt, z_off, y_off, x_off):
-                return self.cellc_funcs.get_cells(
-                    raw,
-                    maxima,
-                    wshed,
-                    filt,
-                    z_offset=z_off,
-                    y_offset=y_off,
-                    x_offset=x_off,
-                )
-
             delayed_results = []
             for idx in range(n_blocks):
                 block_coords = np.unravel_index(idx, raw_arr.numblocks)
-                z_off, y_off, x_off = (offsets[i][block_coords[i]] for i in range(3))
+                z_offset, y_offset, x_offset = (
+                    offsets[i][block_coords[i]] for i in range(3)
+                )
                 delayed_results.append(
-                    process_block(
+                    dask.delayed(self.cellc_funcs.get_cells)(
                         raw_blocks[idx],
                         maxima_blocks[idx],
                         wshed_blocks[idx],
                         filt_blocks[idx],
-                        z_off,
-                        y_off,
-                        x_off,
+                        z_offset,
+                        y_offset,
+                        x_offset,
                     )
                 )
 
