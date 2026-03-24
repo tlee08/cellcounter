@@ -3,21 +3,15 @@ import os
 import re
 from pathlib import Path
 
+import itk
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
-from cellcounter.constants import CACHE_DIR, ELASTIX_ENABLED, Coords
+from cellcounter.constants import CACHE_DIR, Coords
 from cellcounter.funcs.io_funcs import silent_remove, write_tiff
-from cellcounter.utils.misc_utils import import_extra_error_func
 
 logger = logging.getLogger(__name__)
-
-# Optional dependency: elastix (itk-elastix)
-if ELASTIX_ENABLED:
-    import itk
-else:
-    import_extra_error_func("elastix")()
 
 
 def registration(
@@ -126,7 +120,7 @@ def transformation_coords(
 
     # Create fixed points file
     # NOTE: xyz, NOT zyx
-    self._make_fixed_points_file(
+    _make_fixed_points_file(
         coords[[Coords.X.value, Coords.Y.value, Coords.Z.value]].values,
         out_dir / "temp.dat",
     )
@@ -151,7 +145,7 @@ def transformation_coords(
     transformix_object.UpdateLargestPossibleRegion()
 
     # Converting transformix output to df
-    coords_transformed = self._transformix_file2coords(
+    coords_transformed = _transformix_file2coords(
         str(out_dir / "outputpoints.txt")
     )
     # # Clean up temporary files

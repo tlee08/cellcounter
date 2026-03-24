@@ -1,13 +1,11 @@
 import logging
 from abc import ABC
+from collections.abc import Callable
 from pathlib import Path
 
 from dask.distributed import LocalCluster, SpecCluster
 
-from cellcounter.constants import (
-    DASK_CUDA_ENABLED,
-    GPU_ENABLED,
-)
+from cellcounter.constants import CUPY_ENABLED, DASK_CUDA_ENABLED
 from cellcounter.funcs.cpu_cellc_funcs import CpuCellcFuncs
 from cellcounter.models.fp_models import get_proj_fm
 from cellcounter.models.fp_models.proj_fp import ProjFp
@@ -16,36 +14,29 @@ from cellcounter.models.proj_config import ProjConfig
 logger = logging.getLogger(__name__)
 
 
-# Optional dependency: gpu (with dask-cuda)
-if DASK_CUDA_ENABLED:
-    from dask_cuda import LocalCUDACluster
-else:
-    LocalCUDACluster = lambda: LocalCluster(n_workers=1, threads_per_worker=1)  # noqa: E731
-    logger.warning(
-        "Warning Dask-Cuda functionality not installed.\n"
-        "Using single GPU functionality instead (1 worker)\n"
-        "Dask-Cuda currently only available on Linux"
-    )
-# Optional dependency: gpu
-if GPU_ENABLED:
-    from cellcounter.funcs.gpu_cellc_funcs import GpuCellcFuncs
-else:
-    LocalCUDACluster = lambda: LocalCluster(n_workers=2, threads_per_worker=1)  # noqa: E731
-    GpuCellcFuncs = CpuCellcFuncs
-    logger.warning(
-        "Warning GPU functionality not installed.\n"
-        "Using CPU functionality instead (much slower).\n"
-        'Can install with `pip install "cellcounter[gpu]"`'
-    )
+def _get_gpu_cluster_factory() -> Callable[..., SpecCluster]:
+    """Get GPU cluster factory if available, else CPU fallback."""
+    if DASK_CUDA_ENABLED:
+        from dask_cuda import LocalCUDACluster  # noqa: PLC0415
+
+        return LocalCUDACluster
+    return lambda: LocalCluster(n_workers=1, threads_per_worker=1)
+
+
+def _get_cellc_funcs() -> CpuCellcFuncs:
+    """Get GPU cellc funcs if available, else CPU fallback."""
+    if CUPY_ENABLED:
+        from cellcounter.funcs.gpu_cellc_funcs import GpuCellcFuncs  # noqa: PLC0415
+
+        return GpuCellcFuncs()
+    return CpuCellcFuncs()
 
 
 class AbstractPipeline(ABC):
     """Base class for pipeline operations."""
 
-    # GPU enabled cell funcs
-    cellc_funcs: type[CpuCellcFuncs] = GpuCellcFuncs
-    # GPU cluster factory
-    _gpu_cluster = LocalCUDACluster
+    cellc_funcs: CpuCellcFuncs = _get_cellc_funcs()
+    _gpu_cluster: Callable[..., SpecCluster] = _get_gpu_cluster_factory()
     _pfm: ProjFp
     _tuning: bool
 
@@ -88,10 +79,10 @@ class AbstractPipeline(ABC):
 
     @classmethod
     def set_gpu(cls, *, enabled: bool = True) -> None:
-        """Set GPU cluster mode globally."""
+        """Force GPU or CPU mode at runtime."""
         if enabled:
-            cls._gpu_cluster = LocalCUDACluster
-            cls.cellc_funcs = GpuCellcFuncs
+            cls._gpu_cluster = _get_gpu_cluster_factory()
+            cls.cellc_funcs = _get_cellc_funcs()
         else:
             cls._gpu_cluster = lambda: LocalCluster(n_workers=2, threads_per_worker=1)
             cls.cellc_funcs = CpuCellcFuncs

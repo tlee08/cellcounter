@@ -1,25 +1,7 @@
-import functools
-import importlib.util
-import inspect
-from collections.abc import Callable, Iterable
+from collections.abc import Iterable
 from enum import EnumType
 from importlib.util import find_spec
-from pathlib import Path
 from typing import Any
-
-
-# Checking if CPU or GPU version
-def package_is_exists(package_name: str) -> bool:
-    spec = importlib.util.find_spec(package_name)
-    return spec is not None
-
-
-def package_is_importable(pacakage_name: str) -> bool:
-    try:
-        importlib.import_module(pacakage_name)
-        return True
-    except ImportError:
-        return False
 
 
 def get_module_dir(module_name: str) -> str:

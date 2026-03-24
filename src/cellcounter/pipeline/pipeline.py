@@ -2,7 +2,6 @@ import logging
 import re
 import shutil
 from pathlib import Path
-from typing import Literal
 
 import dask
 import dask.array as da
@@ -10,13 +9,12 @@ import dask.dataframe as dd
 import numpy as np
 import pandas as pd
 import tifffile
-from dask.distributed import LocalCluster
+from dask.distributed import LocalCluster, SpecCluster
 from natsort import natsorted
 
 from cellcounter.constants import (
     ANNOT_COLUMNS_FINAL,
     CELL_AGG_MAPPINGS,
-    ELASTIX_ENABLED,
     TRFM,
     AnnotColumns,
     CellColumns,
@@ -35,24 +33,11 @@ from cellcounter.funcs.reg_funcs import downsmpl_fine, downsmpl_rough, reorient
 from cellcounter.models.fp_models import check_overwrite, get_proj_fm
 from cellcounter.models.fp_models.ref_fp import RefFp
 from cellcounter.pipeline.abstract_pipeline import AbstractPipeline
-from cellcounter.utils.dask_utils import (
-    cluster_process,
-    disk_cache,
-)
-from cellcounter.utils.misc_utils import enum2list, import_extra_error_func
+from cellcounter.utils.dask_utils import cluster_process, disk_cache
+from cellcounter.utils.misc_utils import enum2list
 from cellcounter.utils.union_find import UnionFind
 
 logger = logging.getLogger(__name__)
-
-# Optional dependency: elastix
-if ELASTIX_ENABLED:
-    from cellcounter.funcs.elastix_funcs import ElastixFuncs
-else:
-    ElastixFuncs = import_extra_error_func("elastix")
-    logger.warning(
-        "Warning Elastix functionality not installed and unavailable.\n"
-        'Can install with `pip install "cellcounter[elastix]"`'
-    )
 
 
 class Pipeline(AbstractPipeline):
@@ -94,58 +79,50 @@ class Pipeline(AbstractPipeline):
     # HELPER: GENERIC ZARR PROCESSING STEP
     #############################################
 
-    def _process_zarr_step(
-        self,
-        input_attr: str,
-        output_attr: str,
-        func_name: str,
-        config_params: list[str] | None = None,
-        *,
-        cluster: Literal["gpu", "heavy", "busy"] = "gpu",
-        extra_inputs: list[str] | None = None,
-        extra_kwargs: dict | None = None,
-    ) -> None:
-        """Generic helper for zarr processing steps.
-
-        Args:
-            input_attr: Name of pfm attribute for input zarr.
-            output_attr: Name of pfm attribute for output zarr.
-            func_name: Name of cellc_funcs method to apply.
-            config_params: List of config attribute names to pass as args.
-            cluster: Which cluster type to use.
-            extra_inputs: Additional input zarr attributes.
-            extra_kwargs: Additional kwargs to pass to map_blocks.
-        """
-        cluster_factory = {
-            "gpu": self.gpu_cluster,
-            "heavy": self.heavy_cluster,
-            "busy": self.busy_cluster,
-        }[cluster]
-
-        with cluster_process(cluster_factory()):
-            # Read input arrays
-            input_arr = da.from_zarr(getattr(self.pfm, input_attr))
-            extra_arrs = (
-                [da.from_zarr(getattr(self.pfm, attr)) for attr in extra_inputs]
-                if extra_inputs
-                else []
+    def _spatial_connect_count(
+        self, label_arr: da.array, cluster: SpecCluster
+    ) -> da.array:
+        """Connect contiguous foreground components using Union-Find."""
+        with cluster_process(cluster):
+            label_overlap = da.overlap.overlap(label_arr, depth=1, boundary=0)
+            logger.debug("Finding cross-boundary pairs...")
+            pair_arrays = dask.compute(
+                *[
+                    dask.delayed(self.cellc_funcs.get_boundary_pairs)(b)
+                    for b in label_overlap.to_delayed().ravel()
+                ]
             )
-
-            # Build function args from config
-            func = getattr(self.cellc_funcs, func_name)
-            args = (
-                [getattr(self.config, p) for p in config_params]
-                if config_params
-                else []
+            all_pairs = (
+                np.concatenate([p for p in pair_arrays if len(p) > 0], axis=0)
+                if pair_arrays
+                else np.empty((0, 2), dtype=np.uint64)
             )
+            logger.debug("Cross-boundary pairs found: %d", len(all_pairs))
 
-            # Apply processing
-            result = da.map_blocks(
-                func, input_arr, *extra_arrs, *args, **(extra_kwargs or {})
+            uf = UnionFind()
+            for a, b in all_pairs:
+                uf.union(int(a), int(b))
+
+            logger.debug("Aggregating voxels per label...")
+            label_voxel_counts_ls = dask.compute(
+                *[
+                    dask.delayed(self.cellc_funcs.get_label_sizemap)(b)
+                    for b in label_arr.to_delayed().ravel()
+                ]
             )
+            labels = np.concatenate([i[0] for i in label_voxel_counts_ls])
+            counts = np.concatenate([i[1] for i in label_voxel_counts_ls])
+            logger.debug("Unique labels (foreground): %d", len(labels))
 
-            # Save output
-            disk_cache(result, getattr(self.pfm, output_attr))
+            uf.build_lookup_table(labels, counts)
+            logger.debug("Writing output array...")
+            return da.map_blocks(
+                self.cellc_funcs.map_values_to_arr,
+                label_arr,
+                ids=uf.sorted_keys,
+                values=uf.sorted_sizes,
+                dtype=np.uint64,
+            )
 
     #############################################
     # STATIC UTILITIES
@@ -292,153 +269,139 @@ class Pipeline(AbstractPipeline):
     # CELL COUNTING PIPELINE FUNCS
     #############################################
 
-    def spatial_connect_count(self, label_arr: da.array) -> da.array:
-        """Connect contiguous foreground components using Union-Find."""
-        with cluster_process(self.gpu_cluster()):
-            label_overlap = da.overlap.overlap(label_arr, depth=1, boundary=0)
-            logger.debug("Finding cross-boundary pairs...")
-            pair_arrays = dask.compute(
-                *[
-                    dask.delayed(self.cellc_funcs.get_boundary_pairs)(b)
-                    for b in label_overlap.to_delayed().ravel()
-                ]
-            )
-            all_pairs = (
-                np.concatenate([p for p in pair_arrays if len(p) > 0], axis=0)
-                if pair_arrays
-                else np.empty((0, 2), dtype=np.uint64)
-            )
-            logger.debug("Cross-boundary pairs found: %d", len(all_pairs))
-
-            uf = UnionFind()
-            for a, b in all_pairs:
-                uf.union(int(a), int(b))
-
-            logger.debug("Aggregating voxels per label...")
-            label_voxel_counts_ls = dask.compute(
-                *[
-                    dask.delayed(self.cellc_funcs.get_label_sizemap)(b)
-                    for b in label_arr.to_delayed().ravel()
-                ]
-            )
-            labels = np.concatenate([i[0] for i in label_voxel_counts_ls])
-            counts = np.concatenate([i[1] for i in label_voxel_counts_ls])
-            logger.debug("Unique labels (foreground): %d", len(labels))
-
-            uf.build_lookup_table(labels, counts)
-            logger.debug("Writing output array...")
-            return da.map_blocks(
-                self.cellc_funcs.map_values_to_arr,
-                label_arr,
-                ids=uf.sorted_keys,
-                values=uf.sorted_sizes,
-                dtype=np.uint64,
-            )
-
     @check_overwrite("bgrm")
     def tophat_filter(self, *, overwrite: bool = False) -> None:
         """Step 1: Top-hat filter (background subtraction)."""
-        self._process_zarr_step("raw", "bgrm", "tophat_filt", ["tophat_sigma"])
+        with cluster_process(self.gpu_cluster()):
+            result = da.map_blocks(
+                self.cellc_funcs.tophat_filt,
+                block=da.from_zarr(self.pfm.raw),
+                sigma=self.pfm.config.tophat_sigma,
+            )
+            disk_cache(result, self.pfm.bgrm)
 
     @check_overwrite("dog")
     def dog_filter(self, *, overwrite: bool = False) -> None:
         """Step 2: Difference of Gaussians (edge detection)."""
-        self._process_zarr_step("bgrm", "dog", "dog_filt", ["dog_sigma1", "dog_sigma2"])
+        with cluster_process(self.gpu_cluster()):
+            result = da.map_blocks(
+                self.cellc_funcs.dog_filt,
+                block=da.from_zarr(self.pfm.bgrm),
+                sigma1=self.pfm.config.dog_sigma1,
+                sigma2=self.pfm.config.dog_sigma2,
+            )
+            disk_cache(result, self.pfm.dog)
 
     @check_overwrite("adaptv")
     def adaptive_threshold_prep(self, *, overwrite: bool = False) -> None:
         """Step 3: Gaussian subtraction for adaptive thresholding."""
-        self._process_zarr_step(
-            "dog", "adaptv", "gauss_subt_filt", ["large_gauss_sigma"]
-        )
+        with cluster_process(self.gpu_cluster()):
+            result = da.map_blocks(
+                self.cellc_funcs.gauss_subt_filt,
+                block=da.from_zarr(self.pfm.dog),
+                sigma=self.pfm.config.large_gauss_sigma,
+            )
+            disk_cache(result, self.pfm.adaptv)
 
     @check_overwrite("threshd")
     def threshold(self, *, overwrite: bool = False) -> None:
         """Step 4: Manual thresholding."""
-        self._process_zarr_step("adaptv", "threshd", "manual_thresh", ["threshd_value"])
+        with cluster_process(self.gpu_cluster()):
+            result = da.map_blocks(
+                self.cellc_funcs.manual_thresh,
+                block=da.from_zarr(self.pfm.adaptv),
+                val=self.pfm.config.threshd_value,
+            )
+            disk_cache(result, self.pfm.threshd)
 
     @check_overwrite("threshd_labels")
     def label_thresholded(self, *, overwrite: bool = False) -> None:
         """Step 5: Label contiguous regions in thresholded image."""
         max_labels = int(np.ceil(np.prod(self.config.zarr_chunksize)) / 2) + 1
-        self._process_zarr_step(
-            "threshd",
-            "threshd_labels",
-            "mask2label",
-            extra_kwargs={"max_labels_per_chunk": max_labels, "dtype": np.uint64},
-        )
+        with cluster_process(self.gpu_cluster()):
+            result = da.map_blocks(
+                self.cellc_funcs.mask2label,
+                block=da.from_zarr(self.pfm.threshd),
+                max_labels_per_chunk=max_labels,
+            )
+            disk_cache(result, self.pfm.threshd_labels)
 
     @check_overwrite("threshd_volumes")
     def compute_thresholded_volumes(self, *, overwrite: bool = False) -> None:
         """Step 6: Compute contiguous sizes using union-find."""
         labels_arr = da.from_zarr(self.pfm.threshd_labels)
-        sizes_arr = self.spatial_connect_count(labels_arr)
+        sizes_arr = self._spatial_connect_count(labels_arr, self.gpu_cluster())
         disk_cache(sizes_arr, self.pfm.threshd_volumes)
 
     @check_overwrite("threshd_filt")
     def filter_thresholded(self, *, overwrite: bool = False) -> None:
         """Step 7: Filter out objects by size."""
-        self._process_zarr_step(
-            "threshd_volumes",
-            "threshd_filt",
-            "volume_filter",
-            ["min_threshd_size", "max_threshd_size"],
-        )
+        with cluster_process(self.gpu_cluster()):
+            result = da.map_blocks(
+                self.cellc_funcs.volume_filter,
+                block=da.from_zarr(self.pfm.threshd_volumes),
+                smin=self.pfm.config.min_threshd_size,
+                smax=self.pfm.config.max_threshd_size,
+            )
+            disk_cache(result, self.pfm.threshd_filt)
 
     @check_overwrite("maxima")
     def detect_maxima(self, *, overwrite: bool = False) -> None:
         """Step 8: Detect local maxima as cell candidates."""
-        self._process_zarr_step(
-            "raw",
-            "maxima",
-            "get_local_maxima",
-            ["maxima_sigma"],
-            extra_inputs=["threshd_filt"],
-        )
+        with cluster_process(self.gpu_cluster()):
+            result = da.map_blocks(
+                self.cellc_funcs.get_local_maxima,
+                block=da.from_zarr(self.pfm.raw),
+                sigma=self.pfm.config.maxima_sigma,
+                mask_block=da.from_zarr(self.pfm.threshd_filt),
+            )
+            disk_cache(result, self.pfm.maxima)
 
     @check_overwrite("maxima_labels")
     def label_maxima(self, *, overwrite: bool = False) -> None:
         """Step 9: Label maxima points."""
         max_labels = int(np.ceil(np.prod(self.config.zarr_chunksize)) / 2) + 1
-        self._process_zarr_step(
-            "maxima",
-            "maxima_labels",
-            "mask2label",
-            extra_kwargs={"max_labels_per_chunk": max_labels, "dtype": np.uint64},
-        )
+        with cluster_process(self.gpu_cluster()):
+            result = da.map_blocks(
+                self.cellc_funcs.mask2label,
+                block=da.from_zarr(self.pfm.maxima),
+                max_labels_per_chunk=max_labels,
+            )
+            disk_cache(result, self.pfm.maxima_labels)
 
     @check_overwrite("wshed_labels")
     def watershed(self, *, overwrite: bool = False) -> None:
         """Step 10: Watershed segmentation."""
         with cluster_process(self.heavy_cluster()):
-            raw_arr = da.from_zarr(self.pfm.raw)
-            maxima_labels_arr = da.from_zarr(self.pfm.maxima_labels)
-            threshd_filt_arr = da.from_zarr(self.pfm.threshd_filt)
-            wshed_labels_arr = da.map_blocks(
+            result = da.map_blocks(
                 self.cellc_funcs.wshed_segm,
-                raw_arr,
-                maxima_labels_arr,
-                threshd_filt_arr,
+                block=da.from_zarr(self.pfm.raw),
+                maxima_block=da.from_zarr(self.pfm.maxima_labels),
+                mask_block=da.from_zarr(self.pfm.threshd_filt),
             )
-            disk_cache(wshed_labels_arr, self.pfm.wshed_labels)
+            disk_cache(result, self.pfm.wshed_labels)
 
     @check_overwrite("wshed_volumes")
     def compute_watershed_volumes(self, *, overwrite: bool = False) -> None:
         """Step 11: Compute watershed volumes using union-find."""
         with cluster_process(self.heavy_cluster()):
             wshed_labels_arr = da.from_zarr(self.pfm.wshed_labels)
-            wshed_volumes_arr = self.spatial_connect_count(wshed_labels_arr)
+            wshed_volumes_arr = self._spatial_connect_count(
+                wshed_labels_arr, self.gpu_cluster()
+            )
             disk_cache(wshed_volumes_arr, self.pfm.wshed_volumes)
 
     @check_overwrite("wshed_filt")
     def filter_watershed(self, *, overwrite: bool = False) -> None:
         """Step 12: Filter watershed objects by size."""
-        self._process_zarr_step(
-            "wshed_volumes",
-            "wshed_filt",
-            "volume_filter",
-            ["min_wshed_size", "max_wshed_size"],
-        )
+        with cluster_process(self.heavy_cluster()):
+            result = da.map_blocks(
+                self.cellc_funcs.volume_filter,
+                block=da.from_zarr(self.pfm.wshed_volumes),
+                smin=self.pfm.config.min_wshed_size,
+                smax=self.pfm.config.max_wshed_size,
+            )
+            disk_cache(result, self.pfm.wshed_filt)
 
     @check_overwrite("cells_raw_df")
     def save_cells_table(self, *, overwrite: bool = False) -> None:

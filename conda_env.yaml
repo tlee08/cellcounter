@@ -8,5 +8,5 @@ dependencies:
   # GPU acceleration (only CuPy from conda works)
   # - cuda-toolkit
   - pip:
-      # - cellcounter[gpu,elastix]
-      - -e ".[gpu,elastix]"
+      # - cellcounter[gpu]
+      - -e ".[gpu]"

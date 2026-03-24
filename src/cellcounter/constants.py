@@ -1,14 +1,13 @@
+import importlib.util
 from enum import Enum
 from pathlib import Path
 
 import dask
 import numpy as np
 
-from cellcounter.utils.misc_utils import package_is_importable
-
 PROC_CHUNKS = (500, 500, 500)
 
-ROWS_PARTITION = 10000000
+ROWS_PARTITION = 10_000_000
 
 
 class Coords(Enum):
@@ -104,11 +103,9 @@ CACHE_DIR = Path.home() / ".cellcounter"
 ATLAS_DIR = CACHE_DIR / "atlas_resources"
 
 # Checking whether dask_cuda works (i.e. is Linux and has CUDA)
-DASK_CUDA_ENABLED = package_is_importable("dask_cuda")
+DASK_CUDA_ENABLED = importlib.util.find_spec("dask_cuda") is not None
 # Checking whether gpu extra dependency (CuPy) is installed
-GPU_ENABLED = package_is_importable("cupy")
-# Checking whether elastix extra dependency is installed
-ELASTIX_ENABLED = package_is_importable("itk")
+GPU_ENABLED = importlib.util.find_spec("cupy") is not None
 
 # Setting Dask configuration
 dask.config.set(

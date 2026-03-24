@@ -12,84 +12,90 @@ logger = logging.getLogger(__name__)
 
 
 class CpuCellcFuncs:
-    """CPU cell counting funcs."""
+    """CPU cell counting funcs with injectable backend."""
 
-    xp = np
-    xdimage = sc_ndimage
+    def __init__(
+        self,
+        xp: type[np] = np,
+        xdimage: type[sc_ndimage] = sc_ndimage,
+    ) -> None:
+        """Initialize CpuCellcFuncs.
 
-    @classmethod
-    def tophat_filt(cls, block: npt.NDArray, sigma: int = 10) -> npt.NDArray:
+        Args:
+            xp: Array backend (numpy for CPU, cupy for GPU).
+            xdimage: ndimage backend
+                (scipy.ndimage for CPU, cupyx.scipy.ndimage for GPU).
+        """
+        self.xp = xp
+        self.xdimage = xdimage
+
+    def tophat_filt(self, block: npt.NDArray, sigma: int = 10) -> npt.NDArray:
         """Calculate top hat filter.
 
         ```
         res = arr - max_filter(min_filter(arr, sigma), sigma)
         ```
         """
-        block = cls.xp.asarray(block).astype(cls.xp.float32)
+        block = self.xp.asarray(block).astype(self.xp.float32)
         logger.debug("Perform white top-hat filter")
-        res_block = cls.xdimage.white_tophat(block, sigma)
+        res_block = self.xdimage.white_tophat(block, sigma)
         logger.debug("ReLu")
-        res_block = cls.xp.maximum(res_block, 0)
-        return res_block.astype(cls.xp.uint16)
+        res_block = self.xp.maximum(res_block, 0)
+        return res_block.astype(self.xp.uint16)
 
-    @classmethod
     def dog_filt(
-        cls, block: npt.NDArray, sigma1: int = 1, sigma2: int = 2
+        self, block: npt.NDArray, sigma1: int = 1, sigma2: int = 2
     ) -> npt.NDArray:
-        block = cls.xp.asarray(block).astype(cls.xp.float32)
+        block = self.xp.asarray(block).astype(self.xp.float32)
         logger.debug("Making gaussian blur 1")
-        gaus1 = cls.xdimage.gaussian_filter(block, sigma=sigma1)
+        gaus1 = self.xdimage.gaussian_filter(block, sigma=sigma1)
         logger.debug("Making gaussian blur 2")
-        gaus2 = cls.xdimage.gaussian_filter(block, sigma=sigma2)
+        gaus2 = self.xdimage.gaussian_filter(block, sigma=sigma2)
         logger.debug("Subtracting gaussian blurs")
         res_block = gaus1 - gaus2
         logger.debug("ReLu")
-        res_block = cls.xp.maximum(res_block, 0)
-        return res_block.astype(cls.xp.uint16)
+        res_block = self.xp.maximum(res_block, 0)
+        return res_block.astype(self.xp.uint16)
 
-    @classmethod
-    def gauss_blur_filt(cls, block: npt.NDArray, sigma: int = 10) -> npt.NDArray:
-        block = cls.xp.asarray(block).astype(cls.xp.float32)
+    def gauss_blur_filt(self, block: npt.NDArray, sigma: int = 10) -> npt.NDArray:
+        block = self.xp.asarray(block).astype(self.xp.float32)
         logger.debug("Calculate Gaussian blur")
-        res_block = cls.xdimage.gaussian_filter(block, sigma=sigma)
-        return res_block.astype(cls.xp.uint16)
+        res_block = self.xdimage.gaussian_filter(block, sigma=sigma)
+        return res_block.astype(self.xp.uint16)
 
-    @classmethod
-    def gauss_subt_filt(cls, block: npt.NDArray, sigma: int = 10) -> npt.NDArray:
-        block = cls.xp.asarray(block).astype(cls.xp.float32)
+    def gauss_subt_filt(self, block: npt.NDArray, sigma: int = 10) -> npt.NDArray:
+        block = self.xp.asarray(block).astype(self.xp.float32)
         logger.debug("Calculate local Gaussian blur")
-        gaus = cls.xdimage.gaussian_filter(block, sigma=sigma)
+        gaus = self.xdimage.gaussian_filter(block, sigma=sigma)
         logger.debug("Apply the adaptive filter")
         res_block = block - gaus
         logger.debug("ReLu")
-        res_block = cls.xp.maximum(res_block, 0)
-        return res_block.astype(cls.xp.uint16)
+        res_block = self.xp.maximum(res_block, 0)
+        return res_block.astype(self.xp.uint16)
 
-    @classmethod
     def intensity_cutoff(
-        cls, block: npt.NDArray, min_: None | float = None, max_: None | float = None
+        self, block: npt.NDArray, min_: None | float = None, max_: None | float = None
     ) -> npt.NDArray:
         """Performing cutoffs on a 3D tensor."""
-        block = cls.xp.asarray(block)
+        block = self.xp.asarray(block)
         logger.debug("Making cutoffs")
         res_block = block
         if min_ is not None:
-            res_block = cls.xp.maximum(res_block, min_)
+            res_block = self.xp.maximum(res_block, min_)
         if max_ is not None:
-            res_block = cls.xp.minimum(res_block, max_)
+            res_block = self.xp.minimum(res_block, max_)
         return res_block
 
-    @classmethod
-    def otsu_thresh(cls, block: npt.NDArray) -> npt.NDArray:
+    def otsu_thresh(self, block: npt.NDArray) -> npt.NDArray:
         """Perform Otsu's thresholding on a 3D tensor."""
-        block = cls.xp.asarray(block)
+        block = self.xp.asarray(block)
         logger.debug("Calculate histogram")
-        hist, bin_edges = cls.xp.histogram(block, bins=256)
+        hist, bin_edges = self.xp.histogram(block, bins=256)
         logger.debug("Normalize histogram")
         prob_hist = hist / hist.sum()
         logger.debug("Compute cumulative sum and cumulative mean")
-        cum_sum = cls.xp.cumsum(prob_hist)
-        cum_mean = cls.xp.cumsum(prob_hist * cls.xp.arange(256))
+        cum_sum = self.xp.cumsum(prob_hist)
+        cum_mean = self.xp.cumsum(prob_hist * self.xp.arange(256))
         logger.debug("Compute global mean")
         global_mean = cum_mean[-1]
         logger.debug(
@@ -98,59 +104,55 @@ class CpuCellcFuncs:
         numerator = (global_mean * cum_sum - cum_mean) ** 2
         denominator = cum_sum * (1.0 - cum_sum)
         logger.debug("Avoid division by zero")
-        denominator = cls.xp.where(denominator == 0, float("inf"), denominator)
+        denominator = self.xp.where(denominator == 0, float("inf"), denominator)
         between_class_variance = numerator / denominator
         logger.debug("Find the threshold that maximizes the between class variance")
-        optimal_threshold = cls.xp.argmax(between_class_variance)
+        optimal_threshold = self.xp.argmax(between_class_variance)
         logger.debug("Apply threshold")
         res_block = block > optimal_threshold
-        return res_block.astype(cls.xp.uint8)
+        return res_block.astype(self.xp.uint8)
 
-    @classmethod
-    def mean_thresh(cls, block: npt.NDArray, offset_sd: float = 0.0) -> npt.NDArray:
-        """Perform adaptive thresholding on a 3D tensor on GPU."""
-        block = cls.xp.asarray(block)
+    def mean_thresh(self, block: npt.NDArray, offset_sd: float = 0.0) -> npt.NDArray:
+        """Perform adaptive thresholding on a 3D tensor."""
+        block = self.xp.asarray(block)
         logger.debug("Get mean and std of ONLY non-zero values")
         arr0 = block[block > 0]
         mu = arr0.mean()
         sd = arr0.std()
         logger.debug("Apply the threshold")
         res_block = block > mu + offset_sd * sd
-        return res_block.astype(cls.xp.uint8)
+        return res_block.astype(self.xp.uint8)
 
-    @classmethod
-    def manual_thresh(cls, block: npt.NDArray, val: int) -> npt.NDArray:
+    def manual_thresh(self, block: npt.NDArray, val: int) -> npt.NDArray:
         """Perform manual thresholding on a tensor."""
-        block = cls.xp.asarray(block)
+        block = self.xp.asarray(block)
         logger.debug("Applying the threshold")
         res_block = block >= val
-        return res_block.astype(cls.xp.uint8)
+        return res_block.astype(self.xp.uint8)
 
-    @classmethod
     def offset_labels_by_block(
-        cls,
+        self,
         block: npt.NDArray,
         block_info: dict | None = None,
         max_labels_per_chunk: int | None = None,
     ) -> npt.NDArray:
         """Offset labels by block."""
-        block = cls.xp.asarray(block)
+        block = self.xp.asarray(block)
         if (
             block_info is not None
             and block_info[0]
             and max_labels_per_chunk is not None
         ):
-            loc = cls.xp.asarray(block_info[0]["chunk-location"])
+            loc = self.xp.asarray(block_info[0]["chunk-location"])
             grid_shape = block_info[0]["num-chunks"]
-            flat_idx = cls.xp.ravel_multi_index(loc, grid_shape)
+            flat_idx = self.xp.ravel_multi_index(loc, grid_shape)
             offset = flat_idx * max_labels_per_chunk
             block[block > 0] += offset.astype(block.dtype)
             logger.debug("Applied label offset: %s", offset)
         return block
 
-    @classmethod
     def mask2label(
-        cls,
+        self,
         block: npt.NDArray,
         block_info: dict | None = None,
         max_labels_per_chunk: int | None = None,
@@ -175,18 +177,17 @@ class CpuCellcFuncs:
         npt.NDArray
             Labeled array with uint32 dtype (or int64 if using global offsets)
         """
-        block = cls.xp.asarray(block).astype(cls.xp.uint8)
+        block = self.xp.asarray(block).astype(self.xp.uint8)
         logger.debug("Labelling contiguous objects uniquely")
-        res_block, _ = cls.xdimage.label(block)
-        res_block = res_block.astype(cls.xp.uint64)
+        res_block, _ = self.xdimage.label(block)
+        res_block = res_block.astype(self.xp.uint64)
         # Add globally unique offset if parameters provided
-        res_block = cls.offset_labels_by_block(
+        res_block = self.offset_labels_by_block(
             res_block, block_info, max_labels_per_chunk
         )
         return res_block
 
-    @classmethod
-    def get_boundary_pairs(cls, block: npt.NDArray, depth: int = 1) -> npt.NDArray:
+    def get_boundary_pairs(self, block: npt.NDArray, depth: int = 1) -> npt.NDArray:
         """Find adjacent label pairs at chunk boundaries.
 
         Only checks the halo-interior interfaces, not the entire chunk interior.
@@ -205,7 +206,7 @@ class CpuCellcFuncs:
         npt.NDArray
             Array of shape (N, 2) with adjacent label pairs
         """
-        block = cls.xp.asarray(block)
+        block = self.xp.asarray(block)
         pairs = set()
         for axis in range(block.ndim):
             # Check both faces of this axis
@@ -219,27 +220,25 @@ class CpuCellcFuncs:
                 b = block[tuple(sl_b)].ravel()
                 mask = (a > 0) & (b > 0) & (a != b)
                 if mask.any():
-                    lo = cls.xp.minimum(a[mask], b[mask])
-                    hi = cls.xp.maximum(a[mask], b[mask])
+                    lo = self.xp.minimum(a[mask], b[mask])
+                    hi = self.xp.maximum(a[mask], b[mask])
                     pairs.update(zip(lo.tolist(), hi.tolist(), strict=True))
         if pairs:
-            return cls.cp2np(list(pairs))
-        return cls.cp2np(np.empty((0, 2)))
+            return self.cp2np(list(pairs))
+        return self.cp2np(np.empty((0, 2)))
 
-    @classmethod
-    def get_label_sizemap(cls, block: npt.NDArray) -> tuple[npt.NDArray, npt.NDArray]:
+    def get_label_sizemap(self, block: npt.NDArray) -> tuple[npt.NDArray, npt.NDArray]:
         """Get a dict of label_val : contiguous_size."""
-        block = cls.xp.asarray(block)
+        block = self.xp.asarray(block)
         logger.debug("Getting vector of ids and volumes (not incl. 0)")
         mask = block > 0
         labels_fg = block[mask]
-        ids, counts = cls.xp.unique(labels_fg, return_counts=True)
+        ids, counts = self.xp.unique(labels_fg, return_counts=True)
         # Return ids and corresponding counts (as np array)
-        return cls.cp2np(ids), cls.cp2np(counts)
+        return self.cp2np(ids), self.cp2np(counts)
 
-    @classmethod
     def map_values_to_arr(
-        cls,
+        self,
         block: npt.NDArray,
         ids: npt.NDArray,
         values: npt.NDArray,
@@ -260,34 +259,32 @@ class CpuCellcFuncs:
         npt.NDArray
             Array where each voxel contains its component size (0 for background)
         """
-        block = cls.xp.asarray(block)
-        ids = cls.xp.asarray(ids)
-        values = cls.xp.asarray(values)
-        res_block = cls.xp.zeros(block.shape, dtype=cls.xp.uint64)
+        block = self.xp.asarray(block)
+        ids = self.xp.asarray(ids)
+        values = self.xp.asarray(values)
+        res_block = self.xp.zeros(block.shape, dtype=self.xp.uint64)
         mask = block > 0
         if not mask.any():
             return res_block
         labels_vect = block[mask]
         # Find each label's position in the sorted lookup table
-        pos = cls.xp.searchsorted(ids, labels_vect)
-        pos = cls.xp.clip(pos, 0, len(ids) - 1)
+        pos = self.xp.searchsorted(ids, labels_vect)
+        pos = self.xp.clip(pos, 0, len(ids) - 1)
         valid = ids[pos] == labels_vect  # guard against missing keys
-        res_block[mask] = cls.xp.where(valid, values[pos], 0)
+        res_block[mask] = self.xp.where(valid, values[pos], 0)
         return res_block
 
-    @classmethod
-    def label2volume(cls, block: npt.NDArray) -> npt.NDArray:
+    def label2volume(self, block: npt.NDArray) -> npt.NDArray:
         """Convert array of label values to contiguous volume (i.e. count) values."""
-        ids, counts = cls.get_label_sizemap(block)
-        res_block = cls.map_values_to_arr(block, ids, counts)
+        ids, counts = self.get_label_sizemap(block)
+        res_block = self.map_values_to_arr(block, ids, counts)
         return res_block
 
-    @classmethod
     def volume_filter(
-        cls, block: npt.NDArray, smin: int | None = None, smax: int | None = None
+        self, block: npt.NDArray, smin: int | None = None, smax: int | None = None
     ) -> npt.NDArray:
         """Assumes `arr` is array of objects labelled with their volumes."""
-        block = cls.xp.asarray(block)
+        block = self.xp.asarray(block)
         logger.debug("Getting filter of small and large object to filter out")
         smin = smin or 0
         smax = smax or block.max()
@@ -296,9 +293,8 @@ class CpuCellcFuncs:
         block[filt_objs] = 0
         return block
 
-    @classmethod
     def get_local_maxima(
-        cls,
+        self,
         block: npt.NDArray,
         sigma: int = 10,
         mask_block: None | npt.NDArray = None,
@@ -311,33 +307,31 @@ class CpuCellcFuncs:
 
         If `mask_arr` is provided, then only maxima within the mask are kept.
         """
-        block = cls.xp.asarray(block)
+        block = self.xp.asarray(block)
         logger.debug("Making max filter for raw arr (maximum in given area)")
-        max_arr = cls.xdimage.maximum_filter(block, sigma)
+        max_arr = self.xdimage.maximum_filter(block, sigma)
         logger.debug("Getting local maxima (where arr == max_arr)")
         res_block = block == max_arr
         # If a mask is given, then keep only the maxima within the mask
         if mask_block is not None:
             logger.debug("Mask provided. Maxima only in mask regions considered.")
-            mask_block = (cls.xp.asarray(mask_block) > 0).astype(cls.xp.uint8)
-            res_block = (res_block * mask_block).astype(cls.xp.uint8)
+            mask_block = (self.xp.asarray(mask_block) > 0).astype(self.xp.uint8)
+            res_block = (res_block * mask_block).astype(self.xp.uint8)
         # Add globally unique offset if parameters provided
-        res_block = cls.offset_labels_by_block(
+        res_block = self.offset_labels_by_block(
             res_block, block_info, max_labels_per_chunk
         )
         return res_block
 
-    @classmethod
-    def mask(cls, block: npt.NDArray, mask_block: npt.NDArray) -> npt.NDArray:
-        block = cls.xp.asarray(block)
-        mask_block = cls.xp.asarray(mask_block).astype(cls.xp.uint8)
+    def mask(self, block: npt.NDArray, mask_block: npt.NDArray) -> npt.NDArray:
+        block = self.xp.asarray(block)
+        mask_block = self.xp.asarray(mask_block).astype(self.xp.uint8)
         logger.debug("Masking for only maxima within mask")
         res_block = block * (mask_block > 0)
         return res_block
 
-    @classmethod
     def wshed_segm(
-        cls, raw_block: npt.NDArray, maxima_block: npt.NDArray, mask_block: npt.NDArray
+        self, raw_block: npt.NDArray, maxima_block: npt.NDArray, mask_block: npt.NDArray
     ) -> npt.NDArray:
         """Do watershed segmentation.
 
@@ -353,24 +347,22 @@ class CpuCellcFuncs:
         )
         return res_block
 
-    @classmethod
     def wshed_segm_volumes(
-        cls, raw_block: npt.NDArray, maxima_block: npt.NDArray, mask_block: npt.NDArray
+        self, raw_block: npt.NDArray, maxima_block: npt.NDArray, mask_block: npt.NDArray
     ) -> npt.NDArray:
         """Do watershed segmentation with volumes.
 
         NOTE: NOT GPU accelerated
         """
         # Labelling contiguous maxima with unique labels
-        maxima_block = cls.mask2label(maxima_block)
+        maxima_block = self.mask2label(maxima_block)
         # Watershed segmentation
-        wshed_arr = cls.wshed_segm(raw_block, maxima_block, mask_block)
+        wshed_arr = self.wshed_segm(raw_block, maxima_block, mask_block)
         # Getting volumes of watershed regions
-        res_block = cls.label2volume(wshed_arr)
+        res_block = self.label2volume(wshed_arr)
         return res_block
 
-    @classmethod
-    def get_coords(cls, block: npt.NDArray) -> pd.DataFrame:
+    def get_coords(self, block: npt.NDArray) -> pd.DataFrame:
         """Get coordinates of regions in 3D tensor.
 
         TODO: Keep only the first row (i.e cell) for each label (groupby).
@@ -393,9 +385,8 @@ class CpuCellcFuncs:
         # df[CellColumns.MAX_INTENSITY.value] = -1  # TODO: placeholder
         return df
 
-    @classmethod
     def get_cells(
-        cls,
+        self,
         raw_block: npt.NDArray,
         maxima_labels_block: npt.NDArray,
         wshed_labels_block: npt.NDArray,
@@ -427,22 +418,22 @@ class CpuCellcFuncs:
         assert raw_block.shape == maxima_labels_block.shape
         assert raw_block.shape == wshed_filt_block.shape
         # Convert to xp arrays (GPU-aware)
-        raw = cls.xp.asarray(raw_block)
-        maxima_labels = cls.xp.asarray(maxima_labels_block)
-        wshed_labels = cls.xp.asarray(wshed_labels_block)
-        wshed_filt = cls.xp.asarray(wshed_filt_block)
+        raw = self.xp.asarray(raw_block)
+        maxima_labels = self.xp.asarray(maxima_labels_block)
+        wshed_labels = self.xp.asarray(wshed_labels_block)
+        wshed_filt = self.xp.asarray(wshed_filt_block)
         mask = wshed_filt > 0
         # Get maxima positions (first occurrence of each label)
-        labels, coords_flat = cls.xp.unique(maxima_labels[mask], return_index=True)
-        z, y, x = cls.xp.unravel_index(coords_flat, maxima_labels.shape)
+        labels, coords_flat = self.xp.unique(maxima_labels[mask], return_index=True)
+        z, y, x = self.xp.unravel_index(coords_flat, maxima_labels.shape)
         # Build cells DataFrame with offset coordinates
         cells_df = pd.DataFrame(
             {
-                Coords.Z.value: cls.cp2np(z) + z_offset,
-                Coords.Y.value: cls.cp2np(y) + y_offset,
-                Coords.X.value: cls.cp2np(x) + x_offset,
+                Coords.Z.value: self.cp2np(z) + z_offset,
+                Coords.Y.value: self.cp2np(y) + y_offset,
+                Coords.X.value: self.cp2np(x) + x_offset,
             },
-            index=pd.Index(cls.cp2np(labels).astype(np.uint32), name=CELL_IDX_NAME),
+            index=pd.Index(self.cp2np(labels).astype(np.uint32), name=CELL_IDX_NAME),
         ).astype(np.uint16)
         if cells_df.shape[0] > 0:
             # Without if statement, throws error if no cells
@@ -450,7 +441,7 @@ class CpuCellcFuncs:
             cells_df.drop(index=0)
         cells_df[CellColumns.COUNT.value] = 1
         # Get volume at each maxima position
-        cells_df[CellColumns.VOLUME.value] = cls.cp2np(
+        cells_df[CellColumns.VOLUME.value] = self.cp2np(
             wshed_filt[
                 cells_df[Coords.Z.value] - z_offset,
                 cells_df[Coords.Y.value] - y_offset,
@@ -463,12 +454,12 @@ class CpuCellcFuncs:
         if cells_df.empty:
             cells_df[CellColumns.SUM_INTENSITY.value] = 0.0
             return cells_df
-        fg_labels, inverse = cls.xp.unique(
+        fg_labels, inverse = self.xp.unique(
             wshed_labels[mask].ravel(), return_inverse=True
         )
-        intensities = cls.xp.bincount(inverse, weights=raw[mask].ravel())
+        intensities = self.xp.bincount(inverse, weights=raw[mask].ravel())
         label_to_intensity = dict(
-            zip(cls.cp2np(fg_labels), cls.cp2np(intensities), strict=True)
+            zip(self.cp2np(fg_labels), self.cp2np(intensities), strict=True)
         )
         cells_df[CellColumns.SUM_INTENSITY.value] = cells_df.index.map(
             label_to_intensity.get
