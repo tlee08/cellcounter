@@ -163,7 +163,7 @@ def sanitise_smb_df(df: pd.DataFrame) -> pd.DataFrame:
 def write_parquet(df: pd.DataFrame, fp: Path | str) -> None:
     """Write parquet."""
     fp = Path(fp)
-    fp.mkdir(exist_ok=True)
+    fp.parent.mkdir(exist_ok=True)
     df.to_parquet(fp)
 
 
