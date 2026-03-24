@@ -1,19 +1,18 @@
-import os
 import subprocess
+from pathlib import Path
 
 from cellcounter.gui.main import main
 
 
 def run_script():
-    """
-    Running the streamlit script.
+    """Running the streamlit script.
 
     Note that it must be run in a subprocess to make the call:
     ```
     streamlit run /path/to/gui.py
     ```
     """
-    curr_fp = os.path.abspath(__file__)
+    curr_fp = Path(__file__).absolute()
     subprocess.run(["streamlit", "run", curr_fp])
 
 

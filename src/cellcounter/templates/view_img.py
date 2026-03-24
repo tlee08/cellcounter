@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 
 from cellcounter import ViewerFuncs
 
@@ -9,7 +9,8 @@ if __name__ == "__main__":
     # CHANGE IMAGE NAME
     image_name = "proj_name"
     ##############################
-    analysis_img_dir = os.path.join(analysis_root_dir, image_name)
+    analysis_root_dir = Path(analysis_root_dir)
+    analysis_img_dir = analysis_root_dir / image_name
 
     # Trimmer
     trimmer = (
