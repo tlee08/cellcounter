@@ -138,7 +138,7 @@ class Pipeline(AbstractPipeline):
     # CONVERT TIFF TO ZARR
     #############################################
 
-    @check_overwrite("raw")
+    # @check_overwrite("raw")
     def tiff2zarr(self, in_fp: Path | str, *, overwrite: bool = False) -> None:
         """Convert TIFF file(s) to Zarr format."""
         in_fp = Path(in_fp)
