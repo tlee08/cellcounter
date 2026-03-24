@@ -14,6 +14,7 @@ from natsort import natsorted
 
 from cellcounter.constants import (
     ANNOT_COLUMNS_FINAL,
+    CACHE_DIR,
     CELL_AGG_MAPPINGS,
     TRFM,
     AnnotColumns,
@@ -167,6 +168,20 @@ class Pipeline(AbstractPipeline):
             else:
                 err_msg = f'Input file path, "{in_fp}" does not exist.'
                 raise ValueError(err_msg)
+
+    #############################################
+    # RECHUNK
+    #############################################
+
+    def rechunk_raw(self) -> None:
+        """Rechunk a zarr file."""
+        with cluster_process(self.busy_cluster()):
+            zarr_arr = da.from_zarr(self.pfm.raw)
+            temp_fp = CACHE_DIR / "rechunk_temp.zarr"
+            zarr_rechunked = zarr_arr.rechunk(self.config.zarr_chunksize)
+            disk_cache(zarr_rechunked, temp_fp)
+            silent_remove(self.pfm.raw)
+            shutil.move(temp_fp, self.pfm.raw)
 
     #############################################
     # REGISTRATION PIPELINE FUNCS
@@ -558,7 +573,7 @@ class Pipeline(AbstractPipeline):
         cells_agg_df.to_csv(self.pfm.cells_agg_csv)
 
     #############################################
-    # CLEAN / RECHUNK
+    # CLEAN
     #############################################
 
     def clean_proj(self) -> None:
@@ -568,13 +583,6 @@ class Pipeline(AbstractPipeline):
         pfm_tuning = get_proj_fm(self.pfm.root_dir, tuning=True)
         silent_remove(pfm_tuning.root_dir / pfm_tuning.cellcount_sdir)
         logger.info("Project %s cleaned.", self.pfm.root_dir)
-
-    def rechunk(self, src_fp: str, dst_fp: str) -> None:
-        """Rechunk a zarr file."""
-        with cluster_process(self.busy_cluster()):
-            zarr_arr = da.from_zarr(src_fp)
-            zarr_rechunked = zarr_arr.rechunk(self.config.zarr_chunksize)
-            disk_cache(zarr_rechunked, dst_fp)
 
     #############################################
     # RUN PIPELINE
