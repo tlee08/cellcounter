@@ -155,7 +155,15 @@ def btiff2zarr(
     dst_fp: Path | str,
     chunks: tuple[int, ...] = PROC_CHUNKS,
 ) -> None:
-    """Convert bigtiff to zarr."""
+    """Convert big TIFF to Zarr format with chunked storage.
+
+    Uses memory-mapped reading to handle large files.
+
+    Args:
+        src_fp: Input big TIFF file path.
+        dst_fp: Output Zarr directory path.
+        chunks: Chunk size for Zarr array.
+    """
     # To intermediate tiff
     mmap_arr = tifffile.memmap(src_fp)
     zarr_arr = zarr.open(
@@ -179,7 +187,15 @@ def tiffs2zarr(
     dst_fp: Path | str,
     chunks: tuple[int, ...] = PROC_CHUNKS,
 ) -> None:
-    """Convert folder of tiffs to zarr."""
+    """Convert stack of TIFF files to single Zarr.
+
+    Stacks individual TIFFs along new first axis.
+
+    Args:
+        src_fp_ls: Tuple of input TIFF file paths.
+        dst_fp: Output Zarr directory path.
+        chunks: Chunk size for Zarr array.
+    """
     # Getting shape and dtype
     arr0 = read_tiff(src_fp_ls[0])
     shape = (len(src_fp_ls), *arr0.shape)
@@ -199,7 +215,12 @@ def tiffs2zarr(
 
 
 def zarr2tiff(src_fp: str, dst_fp: str) -> None:
-    """Convert zarr to tiff."""
+    """Convert Zarr to TIFF format.
+
+    Args:
+        src_fp: Input Zarr directory path.
+        dst_fp: Output TIFF file path.
+    """
     arr = da.from_zarr(src_fp)
     write_tiff(arr, dst_fp)
 
