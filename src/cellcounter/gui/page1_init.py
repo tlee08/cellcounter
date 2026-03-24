@@ -25,7 +25,7 @@ SET = f"{INIT}_set"
 CREATE = f"{INIT}_create"
 
 
-def input_s_func():
+def input_s_func() -> None:
     # Updating own input variable
     st.session_state[INPUT_S] = st.session_state[f"{INPUT_S}_w"]
     # Updating input and disabled variables
@@ -33,7 +33,7 @@ def input_s_func():
     st.session_state[DISABLED] = st.session_state[INPUT] is None
 
 
-def input_m_func():
+def input_m_func() -> None:
     # Updating own input variable
     st.session_state[INPUT_M] = st.session_state[f"{INPUT_M}_w"]
     # Setting selectbox options
@@ -57,7 +57,7 @@ def input_m_func():
     st.session_state[DISABLED] = True
 
 
-def select_m_func():
+def select_m_func() -> None:
     # Updating own input variable
     st.session_state[SELECT_M] = st.session_state[f"{SELECT_M}_w"]
     # Updatating selectbox index
@@ -75,7 +75,7 @@ def select_m_func():
         st.session_state[DISABLED] = True
 
 
-def set_func():
+def set_func() -> None:
     """Changes the project directory in session state.
     Runs relevant checks.
     """
@@ -98,7 +98,7 @@ def set_func():
             st.session_state[PROJ_DIR_STATUS] = ProjDirStatus.NOT_INIT
 
 
-def create_func():
+def create_func() -> None:
     """Function to make new project.
 
     Makes project folders and configs file.
@@ -112,7 +112,7 @@ def create_func():
 
 
 @page_decorator(check_proj_dir=False)
-def page1_init():
+def page1_init() -> None:
     """Initializes the project page in the GUI.
     This function sets up the user interface for initializing a project directory.
     It includes input fields for the root directory and buttons to confirm the

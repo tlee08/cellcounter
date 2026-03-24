@@ -24,7 +24,14 @@ logger = logging.getLogger(__name__)
 
 
 def annot_fp2df(fp: Path | str) -> pd.DataFrame:
-    """Read and load from filepath."""
+    """Read annotation JSON file and convert to DataFrame.
+
+    Args:
+        fp: Path to Allen Brain Atlas annotation JSON file.
+
+    Returns:
+        DataFrame with region ID as index and region metadata as columns.
+    """
     fp = Path(fp)
     with fp.open(mode="r") as f:
         content = json.load(f)
@@ -33,19 +40,17 @@ def annot_fp2df(fp: Path | str) -> pd.DataFrame:
 
 
 def annot_dict2df(data_dict: dict) -> pd.DataFrame:
-    """Recursively find the region information for all nested objects.
+    """Recursively parse Allen Brain Atlas JSON to DataFrame.
 
-    Returns a new dataframe with index as the region ID
-    and the columns:
-    - ATLAS_ID
-    - ONTOLOGY_ID
-    - ACRONYM
-    - NAME
-    - COLOR_HEX_TRIPLET
-    - GRAPH_ORDER
-    - ST_LEVEL
-    - HEMISPHERE_ID
-    - PARENT_STRUCTURE_ID
+    Traverses the nested region hierarchy and extracts metadata for each region.
+
+    Args:
+        data_dict: Parsed JSON from Allen Brain Atlas annotation file.
+
+    Returns:
+        DataFrame with region ID as index and columns: ATLAS_ID, ONTOLOGY_ID,
+        ACRONYM, NAME, COLOR_HEX_TRIPLET, GRAPH_ORDER, ST_LEVEL,
+        HEMISPHERE_ID, PARENT_STRUCTURE_ID.
     """
 
     def recursive_gen(annot_dict):
@@ -76,13 +81,13 @@ def annot_dict2df(data_dict: dict) -> pd.DataFrame:
 
 
 def annot_df_get_parents(annot_df: pd.DataFrame) -> pd.DataFrame:
-    """Get parent region information for all regions in the annotation mappings.
+    """Add parent region acronym column to annotation DataFrame.
 
-    Returns a new dataframe with index as region ID,
-    all original columns, and the new columns:
-    - PARENT_ACRONYM
+    Args:
+        annot_df: Annotation DataFrame with region information.
 
-    NOTE: any root rows (i.e. no parent region) will have NaN in the PARENT_ACRONYM column.
+    Returns:
+        DataFrame with new PARENT_ACRONYM column. Root regions have NaN.
     """
     # For each region (i.e. row), storing the parent region name in a column
     # by merging the annot_df on parent_structure_id

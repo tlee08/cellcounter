@@ -31,12 +31,12 @@ class ProjDirStatus(Enum):
 #####################################################################
 
 
-def init_var(name: str, default: Any):
+def init_var(name: str, default: Any) -> None:
     """Initialising session state variable with default value if not already set."""
     st.session_state[name] = st.session_state.get(name, default)
 
 
-def load_configs():
+def load_configs() -> None:
     """Loading in configs to session state from project directory.
 
     NOTE: does not catch errors

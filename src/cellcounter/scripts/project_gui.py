@@ -4,7 +4,7 @@ from pathlib import Path
 from cellcounter.gui.main import main
 
 
-def run_script():
+def run_script() -> None:
     """Running the streamlit script.
 
     Note that it must be run in a subprocess to make the call:

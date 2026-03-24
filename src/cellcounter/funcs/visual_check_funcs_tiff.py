@@ -7,6 +7,8 @@ but not RAM:
 - coords2heatmap: Spherical markers with radius for density visualization
 - coords2regions: Region ID labels at each coordinate
 """
+
+import os
 from pathlib import Path
 
 import numpy as np
@@ -90,7 +92,7 @@ def coords2heatmap(
     shape: tuple[int, ...],
     out_fp: Path | str,
     radius: int,
-):
+) -> None:
     """Converts list of coordinates to spatial array as voxels.
 
     Overlaying areas accumulate in intensity.
@@ -117,7 +119,7 @@ def coords2heatmap(
     i = np.arange(-radius + 1, radius)
     z_ind, y_ind, x_ind = np.meshgrid(i, i, i, indexing="ij")
     # Adding coords to image
-    for z, y, x, t in zip(z_ind.ravel(), y_ind.ravel(), x_ind.ravel(), circ.ravel()):
+    for z, y, x, t in zip(z_ind.ravel(), y_ind.ravel(), x_ind.ravel(), circ.ravel(), strict=False):
         if t:
             coords_i = coords.copy()
             coords_i[Coords.Z.value] += z
@@ -131,7 +133,7 @@ def coords2heatmap(
     silent_remove(temp_fp)
 
 
-def coords2regions(coords, shape: tuple[int, ...], out_fp: Path | str):
+def coords2regions(coords, shape: tuple[int, ...], out_fp: Path | str) -> None:
     """Converts list of coordinates to spatial array.
 
     Params:
@@ -147,7 +149,7 @@ def coords2regions(coords, shape: tuple[int, ...], out_fp: Path | str):
     arr = make_mmap(shape, temp_fp)
 
     # Adding coords to image with np.apply_along_axis
-    def f(coord):
+    def f(coord) -> None:
         # Plotting coord to image. Including only coords within the image's bounds
         if np.all((coord >= 0) & (coord < shape)):
             z, y, x, _id = coord

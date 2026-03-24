@@ -50,7 +50,16 @@ logger = logging.getLogger(__name__)
 
 
 class Pipeline(AbstractPipeline):
-    """Cell counting pipeline orchestrator."""
+    """Cell counting pipeline orchestrator.
+
+    Coordinates registration, cell counting, and mapping workflows.
+    All pipeline methods use @check_overwrite decorator for file safety.
+
+    Attributes:
+        STEPS_REGISTRATION: Tuple of registration step method names.
+        STEPS_CELL_COUNTING: Tuple of cell counting step method names.
+        STEPS_MAPPING: Tuple of mapping step method names.
+    """
 
     # Pipeline step registry for declarative execution
     STEPS_REGISTRATION = (
@@ -91,7 +100,18 @@ class Pipeline(AbstractPipeline):
     def _spatial_connect_count(
         self, label_arr: da.array, cluster: SpecCluster
     ) -> da.array:
-        """Connect contiguous foreground components using Union-Find."""
+        """Connect contiguous foreground components across chunk boundaries.
+
+        Uses Union-Find to merge labels that span chunk boundaries,
+        then computes total volume for each connected component.
+
+        Args:
+            label_arr: Dask array of labels.
+            cluster: Dask cluster for computation.
+
+        Returns:
+            Dask array where each voxel contains its component's total volume.
+        """
         with cluster_process(cluster):
             label_overlap = da.overlap.overlap(label_arr, depth=1, boundary=0)
             logger.debug("Finding cross-boundary pairs...")
@@ -139,7 +159,14 @@ class Pipeline(AbstractPipeline):
 
     @staticmethod
     def get_imgs_ls(imgs_dir: Path | str) -> list:
-        """Get list of images."""
+        """Get sorted list of subdirectories in a directory.
+
+        Args:
+            imgs_dir: Directory path to list.
+
+        Returns:
+            Naturally sorted list of subdirectory paths.
+        """
         imgs_dir = Path(imgs_dir)
         return natsorted([fp for fp in imgs_dir.iterdir() if (imgs_dir / fp).is_dir()])
 
@@ -149,7 +176,12 @@ class Pipeline(AbstractPipeline):
 
     @check_overwrite("raw")
     def tiff2zarr(self, in_fp: Path | str, *, overwrite: bool = False) -> None:
-        """Convert TIFF file(s) to Zarr format."""
+        """Convert TIFF file(s) to Zarr format.
+
+        Args:
+            in_fp: Path to TIFF file or directory of TIFF files.
+            overwrite: If True, overwrite existing output.
+        """
         in_fp = Path(in_fp)
         logger.debug("Making zarr from tiff file(s)")
         with cluster_process(LocalCluster(n_workers=1, threads_per_worker=6)):
@@ -182,7 +214,10 @@ class Pipeline(AbstractPipeline):
     #############################################
 
     def rechunk_raw(self) -> None:
-        """Rechunk the raw zarr."""
+        """Rechunk raw zarr to configured chunk size.
+
+        Useful when chunk size needs adjustment after initial conversion.
+        """
         with cluster_process(self.busy_cluster()):
             zarr_arr = da.from_zarr(self.pfm.raw)
             temp_fp = self.pfm.raw.with_suffix(".rechunk_temp.zarr")
@@ -197,7 +232,11 @@ class Pipeline(AbstractPipeline):
 
     @check_overwrite("ref", "annot", "map", "affine", "bspline")
     def reg_ref_prepare(self, *, overwrite: bool = False) -> None:
-        """Prepare reference atlas images for registration."""
+        """Prepare reference atlas images for registration.
+
+        Copies and preprocesses reference/annotation images from atlas,
+        applying orientation and trimming as configured.
+        """
         rfm = RefFp(
             self.config.atlas_dir,
             self.config.ref_version,
@@ -219,6 +258,10 @@ class Pipeline(AbstractPipeline):
 
     @check_overwrite("downsmpl1")
     def reg_img_rough(self, *, overwrite: bool = False) -> None:
+        """Rough downsampling of raw image by integer strides.
+
+        First pass downsampling for registration pyramid.
+        """
         with cluster_process(self.busy_cluster()):
             raw_arr = da.from_zarr(self.pfm.raw)
             downsmpl1_arr = raw_arr[
@@ -231,6 +274,10 @@ class Pipeline(AbstractPipeline):
 
     @check_overwrite("downsmpl2")
     def reg_img_fine(self, *, overwrite: bool = False) -> None:
+        """Fine downsampling using Gaussian zoom.
+
+        Second pass downsampling for registration pyramid.
+        """
         downsmpl1_arr = tifffile.imread(self.pfm.downsmpl1)
         downsmpl2_arr = self.cellc_funcs.downsample(
             downsmpl1_arr, self.config.z_fine, self.config.y_fine, self.config.x_fine
@@ -239,6 +286,7 @@ class Pipeline(AbstractPipeline):
 
     @check_overwrite("trimmed")
     def reg_img_trim(self, *, overwrite: bool = False) -> None:
+        """Trim downsampled image to region of interest."""
         downsmpl2_arr = tifffile.imread(self.pfm.downsmpl2)
         trimmed_arr = downsmpl2_arr[
             slice(*self.config.z_trim),
@@ -249,6 +297,10 @@ class Pipeline(AbstractPipeline):
 
     @check_overwrite("bounded")
     def reg_img_bound(self, *, overwrite: bool = False) -> None:
+        """Apply intensity bounds to trimmed image.
+
+        Clips intensities to configured range for better registration.
+        """
         assert self.config.lower_bound[0] < self.config.upper_bound[0], (
             "Error in config parameters: lower bound condition must be less than upper bound condition."
         )

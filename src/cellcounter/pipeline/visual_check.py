@@ -20,10 +20,15 @@ logger = logging.getLogger(__name__)
 
 
 class VisualCheck(AbstractPipeline):
-    """Visual Check Functions."""
+    """Visual quality control for pipeline outputs.
+
+    Generates visualization arrays (points, heatmaps, combined images)
+    for verifying registration and cell counting results in Napari.
+    """
 
     @check_overwrite("points_raw")
     def coords2points_raw(self, *, overwrite: bool = False) -> None:
+        """Generate single-voxel markers at raw cell coordinates."""
         with cluster_process(self.busy_cluster()):
             visual_check_funcs_dask.coords2points(
                 coords=pd.read_parquet(self.pfm.cells_raw_df),
@@ -33,6 +38,7 @@ class VisualCheck(AbstractPipeline):
 
     @check_overwrite("heatmap_raw")
     def coords2heatmap_raw(self, *, overwrite: bool = False) -> None:
+        """Generate spherical heatmap at raw cell coordinates."""
         with cluster_process(self.busy_cluster()):
             visual_check_funcs_dask.coords2heatmap(
                 coords=pd.read_parquet(self.pfm.cells_raw_df),
@@ -43,6 +49,7 @@ class VisualCheck(AbstractPipeline):
 
     @check_overwrite("points_trfm")
     def coords2points_trfm(self, *, overwrite: bool = False) -> None:
+        """Generate single-voxel markers at transformed cell coordinates."""
         visual_check_funcs_tiff.coords2points(
             coords=pd.read_parquet(self.pfm.cells_trfm_df),
             shape=tifffile.imread(self.pfm.ref).shape,
@@ -51,6 +58,7 @@ class VisualCheck(AbstractPipeline):
 
     @check_overwrite("heatmap_trfm")
     def coords2heatmap_trfm(self, *, overwrite: bool = False) -> None:
+        """Generate spherical heatmap at transformed cell coordinates."""
         visual_check_funcs_tiff.coords2heatmap(
             coords=pd.read_parquet(self.pfm.cells_trfm_df),
             shape=tifffile.imread(self.pfm.ref).shape,
@@ -60,6 +68,7 @@ class VisualCheck(AbstractPipeline):
 
     @check_overwrite("comb_reg")
     def combine_reg(self, *, overwrite: bool = False) -> None:
+        """Combine registration images into multi-channel TIFF for viewing."""
         combine_arrs(
             fp_in_ls=(self.pfm.trimmed, self.pfm.bounded, self.pfm.regresult),
             fp_out=self.pfm.comb_reg,
@@ -67,6 +76,7 @@ class VisualCheck(AbstractPipeline):
 
     @check_overwrite("comb_cellc")
     def combine_cellc(self, *, overwrite: bool = False) -> None:
+        """Combine cell counting images into multi-channel TIFF for viewing."""
         z_trim = slice(None)
         y_trim = slice(None)
         x_trim = slice(None)

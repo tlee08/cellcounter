@@ -272,6 +272,7 @@ source = { editable = "." }
 dependencies = [
     { name = "dask", extra = ["complete"] },
     { name = "ipykernel" },
+    { name = "itk-elastix" },
     { name = "jinja2" },
     { name = "napari", extra = ["all"] },
     { name = "natsort" },
@@ -287,9 +288,6 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
-elastix = [
-    { name = "itk-elastix" },
-]
 gpu = [
     { name = "cupy-cuda13x" },
     { name = "dask-cuda" },
@@ -310,7 +308,7 @@ requires-dist = [
     { name = "dask", extras = ["complete"], specifier = ">=2026.1.1" },
     { name = "dask-cuda", marker = "extra == 'gpu'", specifier = ">=26.2.0" },
     { name = "ipykernel", specifier = ">=7.2.0" },
-    { name = "itk-elastix", marker = "extra == 'elastix'", specifier = ">=0.25.1" },
+    { name = "itk-elastix", specifier = ">=0.25.1" },
     { name = "jinja2", specifier = ">=3.1.6" },
     { name = "napari", extras = ["all"], specifier = ">=0.6.5" },
     { name = "natsort", specifier = ">=8.4.0" },
@@ -324,7 +322,7 @@ requires-dist = [
     { name = "tifffile", specifier = ">=2026.3.3" },
     { name = "zarr", specifier = ">=3.1.5" },
 ]
-provides-extras = ["elastix", "gpu"]
+provides-extras = ["gpu"]
 
 [package.metadata.requires-dev]
 dev = [

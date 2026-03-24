@@ -39,7 +39,7 @@ class Colormaps(Enum):
     SET1 = "Set1"
 
 
-def is_tuning_func():
+def is_tuning_func() -> None:
     # Set tuning mode
     # Resetting trimmer
     if TRIMMER in st.session_state:
@@ -47,7 +47,7 @@ def is_tuning_func():
     init_var(TRIMMER, {coord: slice(None) for coord in Coords})
 
 
-def trimmer_func(coord):
+def trimmer_func(coord) -> None:
     # Updating own input variable
     st.session_state[TRIMMER][coord] = slice(
         st.session_state[f"{TRIMMER}_{coord}_w"][0],
@@ -56,7 +56,7 @@ def trimmer_func(coord):
 
 
 @page_decorator()
-def page5_view():
+def page5_view() -> None:
     # Initialising session state variables
     init_var(IMGS, deepcopy(IMGS_D))
     init_var(TRIMMER, {coord: slice(None) for coord in Coords})

@@ -220,7 +220,7 @@ class ConfigsUpdater:
         assert len(default_ls) == n
         assert len(sublabels_ls) == n
         # Asserting all kwargs_ls list lengths are equal to n
-        for k, v in kwargs_ls.items():
+        for v in kwargs_ls.values():
             assert len(v) == n
         # "Transposing" kwargs_ls so it becomes a list of dicts.
         kwargs_ls = dictlists2listdicts(kwargs_ls)
@@ -247,13 +247,14 @@ class ConfigsUpdater:
             return cls.float_input
         if my_type is str:
             return cls.str_input
-        raise NotImplementedError(f"Type {my_type} not implemented")
+        msg = f"Type {my_type} not implemented"
+        raise NotImplementedError(msg)
 
     @staticmethod
     def get_type_and_nullable(my_type):
         """Returns tuple of:
         - The non-nullable type
-        - Whether the type is nullable
+        - Whether the type is nullable.
         """
         origin = get_origin(my_type) or my_type
         args = list(get_args(my_type))
@@ -273,7 +274,7 @@ class ConfigsUpdater:
         pydantic_instance: BaseModel,
         field_name: str,
         **kwargs,
-    ):
+    ) -> None:
         """Builds a streamlit value updater widget for a given pydantic field.
 
         The output is saved to the pydantic_instance object AND the session state.
@@ -296,7 +297,7 @@ class ConfigsUpdater:
             # Building tuple inputs
             funcs_ls = []
             nullable_ls = []
-            for i, arg in enumerate(args):
+            for _i, arg in enumerate(args):
                 nullable, my_type = cls.get_type_and_nullable(arg)
                 funcs_ls.append(cls.type2updater(my_type))
                 nullable_ls.append(nullable)
@@ -327,7 +328,7 @@ class ConfigsUpdater:
         pydantic_instance: BaseModel,
         field_name: str,
         **kwargs,
-    ):
+    ) -> None:
         sublabels = SUBLABEL_NAMES_MAP.get(field_name)
         cls.field2updater(
             pydantic_instance=pydantic_instance,
@@ -338,7 +339,7 @@ class ConfigsUpdater:
 
 
 @staticmethod
-def configs_reset_func():
+def configs_reset_func() -> None:
     """For each config parameter, resets the value to the value from disk.
 
     Also updates the session state variable that are dependent on this value:
@@ -362,7 +363,7 @@ def configs_reset_func():
             st.session_state[f"{IS_NONE}_{label}"] = value is None
 
 
-def configs_save_func():
+def configs_save_func() -> None:
     """Saving configs from session state to project directory.
 
     NOTE: does not catch errors
@@ -375,7 +376,7 @@ def configs_save_func():
 
 
 @page_decorator()
-def page2_configs():
+def page2_configs() -> None:
     """Displays and allows editing of configuration parameters for the project.
     This function uses Streamlit to create an interactive GUI for editing various
     configuration parameters stored in the session state. The parameters are grouped

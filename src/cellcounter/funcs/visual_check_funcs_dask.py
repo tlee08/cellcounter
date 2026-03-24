@@ -7,6 +7,8 @@ out-of-core processing of images too large for memory:
 - coords2regions: Region ID labels at each coordinate
 """
 
+from pathlib import Path
+
 import dask.array as da
 import numpy as np
 import numpy.typing as npt
@@ -178,7 +180,7 @@ def coords2regions(
     arr = da.zeros(shape, chunks=PROC_CHUNKS, dtype=np.uint8)
 
     # Adding coords to image with np.apply_along_axis
-    def f(coord):
+    def f(coord) -> None:
         # Plotting coord to image. Including only coords within the image's bounds
         if np.all((coord >= 0) & (coord < shape)):
             z, y, x, _id = coord

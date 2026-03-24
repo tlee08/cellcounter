@@ -152,7 +152,7 @@ class CpuCellcFuncs:
         """Perform Otsu's thresholding on a 3D tensor."""
         block = self.xp.asarray(block)
         logger.debug("Calculate histogram")
-        hist, bin_edges = self.xp.histogram(block, bins=256)
+        hist, _bin_edges = self.xp.histogram(block, bins=256)
         logger.debug("Normalize histogram")
         prob_hist = hist / hist.sum()
         logger.debug("Compute cumulative sum and cumulative mean")

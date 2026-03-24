@@ -52,7 +52,7 @@ _GPU_METHODS_NO_CONVERT = {
 }
 
 
-def _clear_gpu_memory(func: Callable[P, T]) -> Callable[P, T]:
+def _clear_gpu_memory[**P, T](func: Callable[P, T]) -> Callable[P, T]:
     """Decorator to clear GPU memory before and after function execution."""
 
     @functools.wraps(func)
@@ -67,7 +67,7 @@ def _clear_gpu_memory(func: Callable[P, T]) -> Callable[P, T]:
     return wrapper
 
 
-def _to_numpy(func: Callable[P, cp.ndarray]) -> Callable[P, npt.NDArray]:
+def _to_numpy[**P](func: Callable[P, cp.ndarray]) -> Callable[P, npt.NDArray]:
     """Decorator to convert cupy result to numpy."""
 
     @functools.wraps(func)

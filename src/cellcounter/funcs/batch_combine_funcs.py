@@ -36,6 +36,12 @@ class CombinedColumns(Enum):
 
 
 class BatchCombineFuncs:
+    """Utilities for combining cell counting results across experiments.
+
+    Aggregates results from multiple specimens into a single DataFrame
+    with MultiIndex columns (specimen, measure) for cross-experiment analysis.
+    """
+
     @classmethod
     def combine_ls_pipeline(
         cls,
@@ -44,6 +50,13 @@ class BatchCombineFuncs:
         *,
         overwrite: bool = False,
     ) -> None:
+        """Combine results from a list of project directories.
+
+        Args:
+            proj_dir_ls: List of project directory paths.
+            out_dir: Output directory for combined results.
+            overwrite: If True, overwrite existing output files.
+        """
         # Checking should overwrite
         # If overwrite is False and out_fp_parquet exists, then skip
         out_dir = Path(out_dir)
@@ -169,7 +182,17 @@ class BatchCombineFuncs:
         out_dir: Path | str,
         *,
         overwrite: bool = False,
-    ):
+    ) -> None:
+        """Combine results from all projects in a root directory.
+
+        Automatically discovers project directories (those with config files)
+        and combines their results.
+
+        Args:
+            root_dir: Root directory containing project subdirectories.
+            out_dir: Output directory for combined results.
+            overwrite: If True, overwrite existing output files.
+        """
         # Get all experiments in root_dir (any dir with a configs file)
         # NOTE: not using the cells_agg and mask file to check for valid projects
         # so we can catch any projects that are missing these files

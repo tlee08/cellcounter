@@ -38,18 +38,16 @@ STEP_NAMES = [
 ]
 
 
-def is_tuning_func():
+def is_tuning_func() -> None:
     # Set tuning mode
     pass
 
 
 @page_decorator()
-def page4_pipeline():
-    """
-    Displays the pipeline page in the GUI, allowing users to select and run various pipeline functions.
-    """
+def page4_pipeline() -> None:
+    """Displays the pipeline page in the GUI, allowing users to select and run various pipeline functions."""
     # Initialising session state variables
-    init_var(CHECKBOXES, {name: False for name in STEP_NAMES})
+    init_var(CHECKBOXES, dict.fromkeys(STEP_NAMES, False))
     init_var(OVERWRITE, False)
     init_var(IS_TUNING, False)
 

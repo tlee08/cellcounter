@@ -41,7 +41,18 @@ def _get_cellc_funcs() -> CpuCellcFuncs:
 
 
 class AbstractPipeline(ABC):
-    """Base class for pipeline operations."""
+    """Base class for pipeline operations with GPU/CPU switching.
+
+    Provides:
+    - Runtime GPU/CPU mode switching via set_gpu()
+    - Dask cluster factories (heavy, busy, GPU)
+    - Config and filepath model access
+
+    Attributes:
+        cellc_funcs: Cell counting functions (CPU or GPU backend).
+        pfm: Project filepath model.
+        config: Project configuration.
+    """
 
     cellc_funcs: CpuCellcFuncs
     _gpu_cluster: Callable[..., SpecCluster]
@@ -49,7 +60,12 @@ class AbstractPipeline(ABC):
     _tuning: bool
 
     def __init__(self, proj_dir: Path | str, *, tuning: bool = False) -> None:
-        """Init."""
+        """Initialize pipeline with project directory.
+
+        Args:
+            proj_dir: Path to project directory.
+            tuning: If True, use tuning subdirectory for parameters.
+        """
         self._pfm = get_proj_fm(proj_dir, tuning=tuning)
         self._tuning = tuning
         self.set_gpu(enabled=True)
@@ -65,29 +81,46 @@ class AbstractPipeline(ABC):
         return self._pfm.config
 
     def update_config(self, **updates) -> None:
-        """Update configs."""
+        """Update project configuration with new values.
+
+        Args:
+            **updates: Key-value pairs to update in config.
+        """
         ProjConfig.ensure(self._pfm.config_fp, **updates)
 
     def heavy_cluster(self) -> SpecCluster:
-        """Make heavy cluster (few workers, high RAM)."""
+        """Create cluster with few workers and high memory per worker.
+
+        Use for memory-intensive operations like watershed.
+        """
         return LocalCluster(
             n_workers=self.config.heavy_n_workers,
             threads_per_worker=self.config.heavy_threads_per_worker,
         )
 
     def busy_cluster(self) -> SpecCluster:
-        """Make busy cluster (many workers, low RAM)."""
+        """Create cluster with many workers and low memory per worker.
+
+        Use for I/O-bound or parallel operations.
+        """
         return LocalCluster(
             n_workers=self.config.busy_n_workers,
             threads_per_worker=self.config.busy_threads_per_worker,
         )
 
     def gpu_cluster(self) -> SpecCluster:
-        """Make GPU cluster."""
+        """Create GPU-enabled cluster for CUDA operations.
+
+        Falls back to CPU cluster if CUDA unavailable.
+        """
         return self._gpu_cluster()
 
     def set_gpu(self, *, enabled: bool = True) -> None:
-        """Force GPU or CPU mode at runtime."""
+        """Switch between GPU and CPU mode at runtime.
+
+        Args:
+            enabled: True for GPU mode, False for CPU mode.
+        """
         if enabled:
             self._gpu_cluster = _get_gpu_cluster_factory()
             self.cellc_funcs = _get_cellc_funcs()

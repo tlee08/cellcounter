@@ -22,7 +22,7 @@ DISABLED = f"{COMBINE}_disabled"
 RUN = f"{COMBINE}_run"
 
 
-def update_disabled():
+def update_disabled() -> None:
     # Disabled is True if:
     # - input_root or
     # - input_out is not valid or
@@ -34,14 +34,14 @@ def update_disabled():
     )
 
 
-def use_pdir_func():
+def use_pdir_func() -> None:
     # Updating session_state: INPUT_ROOT from PDIR_INPUT_M (in page1_init)
     st.session_state[f"{INPUT_ROOT}_w"] = st.session_state.get(PDIR_INPUT_M, None)
     # Running input_root_func (for on_change)
     input_root_func()
 
 
-def input_root_func():
+def input_root_func() -> None:
     # Updating own input variable
     st.session_state[INPUT_ROOT] = st.session_state[f"{INPUT_ROOT}_w"]
     # Updating session state: INPUT_ROOT_STATUS
@@ -64,7 +64,7 @@ def input_root_func():
     update_disabled()
 
 
-def input_out_func():
+def input_out_func() -> None:
     # Updating own input variable
     st.session_state[INPUT_OUT] = st.session_state[f"{INPUT_OUT}_w"]
     # Updating session state: INPUT_OUT_STATUS
@@ -78,7 +78,7 @@ def input_out_func():
     update_disabled()
 
 
-def checkbox_all_func():
+def checkbox_all_func() -> None:
     # Updating own input variable
     st.session_state[CHECKBOX_ALL] = st.session_state[f"{CHECKBOX_ALL}_w"]
     # Updating all checkboxes
@@ -89,7 +89,7 @@ def checkbox_all_func():
 
 
 @page_decorator(check_proj_dir=False)
-def page6_combine():
+def page6_combine() -> None:
     # Initialising session state variables
     init_var(OVERWRITE, False)
     init_var(INPUT_ROOT, None)

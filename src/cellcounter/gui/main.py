@@ -12,7 +12,7 @@ from cellcounter.gui.page6_combine import page6_combine
 #####################################################################
 
 
-def main():
+def main() -> None:
     # Initialising session state
     if PROJ_DIR not in st.session_state:
         st.session_state[PROJ_DIR] = None

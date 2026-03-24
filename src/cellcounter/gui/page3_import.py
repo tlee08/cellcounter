@@ -18,7 +18,7 @@ DISABLED = f"{IMPORT}_disabled"
 RUN = f"{IMPORT}_run"
 
 
-def input_src_func():
+def input_src_func() -> None:
     # Updating own input variable
     st.session_state[INPUT_SRC] = st.session_state[f"{INPUT_SRC}_w"]
     # Updating session state: INPUT_SRC_STATUS
@@ -33,7 +33,7 @@ def input_src_func():
 
 
 @page_decorator()
-def page3_import():
+def page3_import() -> None:
     """ """
     # Initialising session state variables
     init_var(OVERWRITE, False)
@@ -43,7 +43,7 @@ def page3_import():
 
     # Recalling session state variables
     proj_dir = st.session_state[PROJ_DIR]
-    pfm = Pipeline.get_pfm(proj_dir)
+    Pipeline.get_pfm(proj_dir)
 
     st.write("## Import Image")
     st.write("Imports image into project directory as a zarr chunked file.")
