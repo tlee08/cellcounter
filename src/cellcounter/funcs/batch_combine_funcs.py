@@ -12,9 +12,7 @@ from cellcounter.constants import (
     MaskColumns,
     SpecialRegions,
 )
-from cellcounter.funcs.map_funcs import (
-    MapFuncs,
-)
+from cellcounter.funcs.map_funcs import annot_df_get_parents, annot_fp2df
 from cellcounter.models.fp_models.proj_fp import ProjFp
 from cellcounter.pipeline.pipeline import Pipeline
 from cellcounter.utils.misc_utils import enum2list
@@ -90,9 +88,9 @@ class BatchCombineFuncs:
             )
         # Making combined_agg_df
         # Starting with annot_df (asserted all the same so using first)
-        total_df = MapFuncs.annot_fp2df(pfm0.map)
+        total_df = annot_fp2df(pfm0.map)
         # Adding parent columns to annot_df
-        total_df = MapFuncs.annot_df_get_parents(total_df)
+        total_df = annot_df_get_parents(total_df)
         # Adding special rows (e.g. "universe")
         # TODO: is neither clean nor modular
         total_df.loc[-1] = pd.Series(

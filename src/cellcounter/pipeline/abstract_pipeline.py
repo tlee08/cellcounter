@@ -6,14 +6,12 @@ from dask.distributed import LocalCluster, SpecCluster
 
 from cellcounter.constants import (
     DASK_CUDA_ENABLED,
-    ELASTIX_ENABLED,
     GPU_ENABLED,
 )
 from cellcounter.funcs.cpu_cellc_funcs import CpuCellcFuncs
 from cellcounter.models.fp_models import get_proj_fm
 from cellcounter.models.fp_models.proj_fp import ProjFp
 from cellcounter.models.proj_config import ProjConfig
-from cellcounter.utils.misc_utils import import_extra_error_func
 
 logger = logging.getLogger(__name__)
 
@@ -38,15 +36,6 @@ else:
         "Warning GPU functionality not installed.\n"
         "Using CPU functionality instead (much slower).\n"
         'Can install with `pip install "cellcounter[gpu]"`'
-    )
-# Optional dependency: elastix
-if ELASTIX_ENABLED:
-    from cellcounter.funcs.elastix_funcs import ElastixFuncs
-else:
-    ElastixFuncs = import_extra_error_func("elastix")
-    logger.warning(
-        "Warning Elastix functionality not installed and unavailable.\n"
-        'Can install with `pip install "cellcounter[elastix]"`'
     )
 
 

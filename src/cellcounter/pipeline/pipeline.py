@@ -1,3 +1,6 @@
+from cellcounter.funcs.elastix_funcs import registration, transformation_coords
+from cellcounter.funcs.reg_funcs import reorient, downsmpl_rough, downsmpl_fine
+from cellcounter.funcs.map_funcs import annot_fp2df, df_map_ids, combine_nested_regions
 import logging
 import re
 import shutil
@@ -19,11 +22,9 @@ from cellcounter.constants import (
     TRFM,
     AnnotColumns,
     CellColumns,
-    Coords,
+    Coords, ELASTIX_ENABLED,
 )
 from cellcounter.funcs.io_funcs import silent_remove, write_parquet, tiffs2zarr, btiff2zarr, write_tiff, 
-from cellcounter.funcs.map_funcs import MapFuncs
-from cellcounter.funcs.reg_funcs import RegFuncs
 from cellcounter.models.fp_models import check_overwrite, get_proj_fm
 from cellcounter.models.fp_models.ref_fp import RefFp
 from cellcounter.pipeline.abstract_pipeline import AbstractPipeline
@@ -31,10 +32,26 @@ from cellcounter.utils.dask_utils import (
     cluster_process,
     disk_cache,
 )
-from cellcounter.utils.misc_utils import enum2list
+from cellcounter.utils.misc_utils import enum2list, import_extra_error_func
 from cellcounter.utils.union_find import UnionFind
 
 logger = logging.getLogger(__name__)
+
+# Optional dependency: elastix
+if ELASTIX_ENABLED:
+    from cellcounter.funcs.elastix_funcs import ElastixFuncs
+else:
+    ElastixFuncs = import_extra_error_func("elastix")
+    logger.warning(
+        "Warning Elastix functionality not installed and unavailable.\n"
+        'Can install with `pip install "cellcounter[elastix]"`'
+    )
+
+
+
+
+
+
 
 
 class Pipeline(AbstractPipeline):
@@ -187,7 +204,7 @@ class Pipeline(AbstractPipeline):
         )
         for fp_i, fp_o in [(rfm.ref, self.pfm.ref), (rfm.annot, self.pfm.annot)]:
             arr = tifffile.imread(fp_i)
-            arr = RegFuncs.reorient(arr, self.config.ref_orient_ls)
+            arr = reorient(arr, self.config.ref_orient_ls)
             arr = arr[
                 slice(*self.config.ref_z_trim),
                 slice(*self.config.ref_y_trim),
@@ -202,7 +219,7 @@ class Pipeline(AbstractPipeline):
     def reg_img_rough(self, *, overwrite: bool = False) -> None:
         with cluster_process(self.busy_cluster()):
             raw_arr = da.from_zarr(self.pfm.raw)
-            downsmpl1_arr = RegFuncs.downsmpl_rough(
+            downsmpl1_arr = downsmpl_rough(
                 raw_arr, self.config.z_rough, self.config.y_rough, self.config.x_rough
             )
             downsmpl1_arr = downsmpl1_arr.compute()
@@ -211,7 +228,7 @@ class Pipeline(AbstractPipeline):
     @check_overwrite("downsmpl2")
     def reg_img_fine(self, *, overwrite: bool = False) -> None:
         downsmpl1_arr = tifffile.imread(self.pfm.downsmpl1)
-        downsmpl2_arr = RegFuncs.downsmpl_fine(
+        downsmpl2_arr = downsmpl_fine(
             downsmpl1_arr, self.config.z_fine, self.config.y_fine, self.config.x_fine
         )
         write_tiff(downsmpl2_arr, self.pfm.downsmpl2)
@@ -243,7 +260,7 @@ class Pipeline(AbstractPipeline):
 
     @check_overwrite("regresult")
     def reg_elastix(self, *, overwrite: bool = False) -> None:
-        ElastixFuncs.registration(
+        registration(
             fixed_img_fp=self.pfm.bounded,
             moving_img_fp=self.pfm.ref,
             output_img_fp=self.pfm.regresult,
@@ -505,7 +522,7 @@ class Pipeline(AbstractPipeline):
             )
             cells_df = pd.DataFrame(cells_df, columns=enum2list(Coords))
 
-            cells_trfm_df = ElastixFuncs.transformation_coords(
+            cells_trfm_df = transformation_coords(
                 cells_df,
                 str(self.pfm.ref),
                 str(self.pfm.regresult),
@@ -546,9 +563,11 @@ class Pipeline(AbstractPipeline):
                 index=trfm_loc.index,
             ).fillna(-1)
 
-            annot_df = MapFuncs.annot_fp2df(self.pfm.map)
-            cells_df = MapFuncs.df_map_ids(cells_df, annot_df)
+            annot_df = annot_fp2df(self.pfm.map)
+            cells_df = df_map_ids(cells_df, annot_df)
             write_parquet(cells_df, self.pfm.cells_df)
+
+
 
     @check_overwrite("cells_agg_df")
     def group_cells(self, *, overwrite: bool = False) -> None:
@@ -560,8 +579,8 @@ class Pipeline(AbstractPipeline):
             )
             cells_agg_df.columns = list(CELL_AGG_MAPPINGS.keys())
 
-            annot_df = MapFuncs.annot_fp2df(self.pfm.map)
-            cells_agg_df = MapFuncs.combine_nested_regions(cells_agg_df, annot_df)
+            annot_df = annot_fp2df(self.pfm.map)
+            cells_agg_df = combine_nested_regions(cells_agg_df, annot_df)
             cells_agg_df[CellColumns.IOV.value] = (
                 cells_agg_df[CellColumns.SUM_INTENSITY.value]
                 / cells_agg_df[CellColumns.VOLUME.value]
