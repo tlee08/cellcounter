@@ -32,7 +32,7 @@ from cellcounter.funcs.map_funcs import MapFuncs
 from cellcounter.funcs.mask_funcs import MaskFuncs
 from cellcounter.funcs.reg_funcs import RegFuncs
 from cellcounter.funcs.visual_check_funcs_tiff import VisualCheckFuncsTiff
-from cellcounter.utils.config_params_model import ConfigParamsModel
+from cellcounter.models.proj_config import ConfigParamsModel
 from cellcounter.utils.dask_utils import (
     block2coords,
     cluster_process,
@@ -45,7 +45,7 @@ from cellcounter.utils.io_utils import (
     silent_remove,
     write_parquet,
 )
-from cellcounter.utils.logging_utils import init_logger_file
+from cellcounter.utils.logger import init_logger_file
 from cellcounter.utils.misc_utils import enum2list, import_extra_error_func
 from cellcounter.utils.proj_org_utils import (
     ProjFpModel,

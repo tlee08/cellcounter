@@ -8,10 +8,10 @@ from dask.distributed import LocalCluster
 from cellcounter.funcs.viewer_funcs import ViewerFuncs
 from cellcounter.funcs.visual_check_funcs_dask import VisualCheckFuncsDask
 from cellcounter.funcs.visual_check_funcs_tiff import VisualCheckFuncsTiff
-from cellcounter.utils.config_params_model import ConfigParamsModel
+from cellcounter.models.proj_config import ConfigParamsModel
 from cellcounter.utils.dask_utils import cluster_process
 from cellcounter.utils.diagnostics_utils import file_exists_msg
-from cellcounter.utils.logging_utils import init_logger_file
+from cellcounter.utils.logger import init_logger_file
 from cellcounter.utils.proj_org_utils import ProjFpModel, ProjFpModelTuning
 
 logger = init_logger_file(__name__)

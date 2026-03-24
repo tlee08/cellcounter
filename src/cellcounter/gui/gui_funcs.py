@@ -4,8 +4,8 @@ from typing import Any
 
 import streamlit as st
 
+from cellcounter.models.proj_config import ConfigParamsModel
 from cellcounter.pipeline.pipeline import Pipeline
-from cellcounter.utils.config_params_model import ConfigParamsModel
 from cellcounter.utils.io_utils import read_json
 
 PROJ_DIR = "proj_dir"

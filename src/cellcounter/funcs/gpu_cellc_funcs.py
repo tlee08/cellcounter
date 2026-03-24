@@ -4,7 +4,7 @@ import numpy.typing as npt
 
 from cellcounter.constants import GPU_ENABLED
 from cellcounter.funcs.cpu_cellc_funcs import CpuCellcFuncs
-from cellcounter.utils.logging_utils import init_logger_file
+from cellcounter.utils.logger import init_logger_file
 from cellcounter.utils.misc_utils import import_extra_error_func
 
 logger = init_logger_file(__name__)

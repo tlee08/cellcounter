@@ -56,10 +56,10 @@ def add_log_file_handler(
     """
     log_fp = Path(log_fp) or CACHE_DIR / "debug.log"
     for handler in logger.handlers:
-        if isinstance(handler, logging.FileHandler) and handler.baseFilename == log_fp:
+        if isinstance(handler, logging.FileHandler) and handler.baseFilename == str(log_fp):
             return handler.baseFilename
     try:
-        log_fp.mkdir(exist_ok=True)
+        log_fp.parent.mkdir(parents=True, exist_ok=True)
         file_handler = logging.FileHandler(log_fp, mode="a")
         file_handler.setLevel(level)
         file_handler.setFormatter(logging.Formatter(LOG_FORMAT))

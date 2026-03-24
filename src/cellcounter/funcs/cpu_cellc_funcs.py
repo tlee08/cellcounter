@@ -5,7 +5,7 @@ from scipy import ndimage as sc_ndimage
 from skimage.segmentation import watershed
 
 from cellcounter.constants import CELL_IDX_NAME, CellColumns, Coords
-from cellcounter.utils.logging_utils import init_logger_file
+from cellcounter.utils.logger import init_logger_file
 
 logger = init_logger_file(__name__)
 

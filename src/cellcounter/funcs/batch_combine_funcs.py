@@ -15,9 +15,9 @@ from cellcounter.funcs.map_funcs import (
     MapFuncs,
 )
 from cellcounter.pipeline.pipeline import Pipeline
-from cellcounter.utils.config_params_model import ConfigParamsModel
+from cellcounter.models.proj_config import ConfigParamsModel
 from cellcounter.utils.io_utils import read_json, sanitise_smb_df
-from cellcounter.utils.logging_utils import init_logger
+from cellcounter.utils.logger import init_logger
 from cellcounter.utils.misc_utils import enum2list
 from cellcounter.utils.proj_org_utils import ProjFpModel
 
