@@ -30,6 +30,8 @@ CMAP = "cmap"
 
 
 class Colormaps(Enum):
+    """Available colormaps for Napari visualization."""
+
     GRAY = "gray"
     RED = "red"
     GREEN = "green"
@@ -73,7 +75,15 @@ VIEW_IMGS_PARAMS = {
 
 
 def read_img(fp: Path | str, trimmer: None | tuple[slice, ...] = None) -> npt.NDArray:
-    """Reading, trimming (if possible), and returning the array in memory."""
+    """Load TIFF or Zarr file into memory with optional trimming.
+
+    Args:
+        fp: Path to .tif or .zarr file.
+        trimmer: Optional tuple of slices to extract region of interest.
+
+    Returns:
+        Numpy array loaded into memory.
+    """
     fp = Path(fp)
     if fp.suffix == ".zarr":
         arr = da.from_zarr(fp)
@@ -90,7 +100,13 @@ def read_img(fp: Path | str, trimmer: None | tuple[slice, ...] = None) -> npt.ND
 
 
 def view_arrs(fp_ls: list[Path | str], trimmer: tuple[slice, ...], **kwargs) -> None:
-    """Run Napari viewer."""
+    """Display multiple arrays in Napari viewer.
+
+    Args:
+        fp_ls: List of file paths to load.
+        trimmer: Tuple of slices to extract region of interest.
+        **kwargs: Per-image options (name, contrast_limits, colormap as lists).
+    """
     # Asserting all kwargs_ls list lengths are equal to fp_ls length
     for v in kwargs.values():
         assert len(v) == len(fp_ls)
@@ -120,7 +136,17 @@ def view_arrs_from_pfm(
     *,
     tuning: bool = True,
 ) -> None:
-    """Run Napari viewer."""
+    """Display project images in Napari using predefined display settings.
+
+    Convenience wrapper that loads files from project filepath model
+    and applies default colormaps/contrast limits.
+
+    Args:
+        proj_dir: Project directory path.
+        imgs_to_view_ls: List of image attribute names from pfm.
+        trimmer: Tuple of slices to extract region of interest.
+        tuning: Use tuning subdirectory if True.
+    """
     pfm = get_proj_fm(proj_dir, tuning=tuning)
     return view_arrs(
         fp_ls=[getattr(pfm, i) for i in imgs_to_view_ls],
@@ -137,7 +163,16 @@ def save_arr(
     trimmer: tuple[slice, ...] | None = None,
     **kwargs,
 ) -> npt.NDArray:
-    """NOTE: exports as tiff only."""
+    """Read and save array to TIFF format.
+
+    Args:
+        fp_in: Input file path (.tif or .zarr).
+        fp_out: Output TIFF file path.
+        trimmer: Optional tuple of slices to extract region of interest.
+
+    Returns:
+        The saved array.
+    """
     with cluster_process(LocalCluster()):
         # Reading
         arr = read_img(fp_in, trimmer)
@@ -153,6 +188,16 @@ def combine_arrs(
     trimmer: tuple[slice, ...] | None = None,
     **kwargs,
 ) -> npt.NDArray:
+    """Stack multiple arrays into multi-channel TIFF.
+
+    Args:
+        fp_in_ls: Tuple of input file paths.
+        fp_out: Output TIFF file path.
+        trimmer: Optional tuple of slices to extract region of interest.
+
+    Returns:
+        Stacked array with shape (z, y, x, channels).
+    """
     dtype = np.uint16
     # Reading arrays
     arr_ls = []

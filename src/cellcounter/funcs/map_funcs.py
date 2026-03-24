@@ -108,16 +108,13 @@ def annot_df_get_parents(annot_df: pd.DataFrame) -> pd.DataFrame:
 
 
 def annot_df_get_children(annot_df: pd.DataFrame) -> pd.DataFrame:
-    """Get the children region information for all regions in the annotation mappings.
+    """Add children region ID list column to annotation DataFrame.
 
-    Returns a new dataframe with index as region ID
-    and the columns:
-    - NAME
-    - ACRONYM
-    - COLOR_HEX_TRIPLET
-    - PARENT_STRUCTURE_ID
-    - PARENT_ACRONYM
-    - CHILDREN
+    Args:
+        annot_df: Annotation DataFrame with region information.
+
+    Returns:
+        DataFrame with new CHILDREN column containing list of child region IDs.
     """
     # Making copy
     annot_df = annot_df.copy()
@@ -132,19 +129,17 @@ def annot_df_get_children(annot_df: pd.DataFrame) -> pd.DataFrame:
     return annot_df
 
 
-def combine_nested_regions(cells_agg_df: pd.DataFrame, annot_df: pd.DataFrame):
-    """Combine (sum) children regions in their parent regions in the cells_agg.
+def combine_nested_regions(
+    cells_agg_df: pd.DataFrame, annot_df: pd.DataFrame
+) -> pd.DataFrame:
+    """Recursively aggregate child region counts into parent regions.
 
-    Done recursively.
+    Args:
+        cells_agg_df: DataFrame of cells grouped by region ID.
+        annot_df: Annotation DataFrame with region hierarchy.
 
-    Returns a new dataframe with index as region ID,
-    the annotation columns, and the
-    same columns as the input `cells_agg_df` dataframe.
-
-    Notes:
-    -----
-    - The `annot_df` is the annotation mappings dataframe.
-    - The `cells_agg` is the cells dataframe grouped by region ID (so ID is the index).
+    Returns:
+        DataFrame with aggregated counts propagated up the region hierarchy.
     """
     # Getting the sum column names (i.e. all columns in cells_agg_d)
     sum_cols = cells_agg_df.columns.to_list()
@@ -196,14 +191,15 @@ def combine_nested_regions(cells_agg_df: pd.DataFrame, annot_df: pd.DataFrame):
 
 @classmethod
 def annot_df2dict(annot_df: pd.DataFrame) -> list:
-    """Converts an annotation DataFrame into a nested dictionary structure.
+    """Convert annotation DataFrame to nested dictionary structure.
 
-    This function takes an annotation DataFrame, adds a list of children to each region,
-    and then recursively converts the DataFrame into a nested dictionary format. Each
-    dictionary represents a region and contains its information along with its children.
+    Each dictionary represents a region with its metadata and children.
 
-    NOTE: the outputted dict is actually a list as there
-    can be multiple roots.
+    Args:
+        annot_df: Annotation DataFrame with region information.
+
+    Returns:
+        List of root region dictionaries (multiple roots possible).
     """
     # Adding children list to each region
     annot_df = annot_df_get_children(annot_df)
@@ -230,6 +226,15 @@ def annot_df2dict(annot_df: pd.DataFrame) -> list:
 
 @classmethod
 def df_map_ids(cells_df: pd.DataFrame, annot_df: pd.DataFrame) -> pd.DataFrame:
+    """Map region IDs to annotation metadata (name, acronym, etc.).
+
+    Args:
+        cells_df: DataFrame of cells with region ID column.
+        annot_df: Annotation DataFrame with region information.
+
+    Returns:
+        DataFrame with annotation columns added (left join on ID).
+    """
     # Getting the annotation name for every cell (zyx coord)
     # Left-joining the cells dataframe with the annotation mappings dataframe
     cells_df = pd.merge(
@@ -245,6 +250,16 @@ def df_map_ids(cells_df: pd.DataFrame, annot_df: pd.DataFrame) -> pd.DataFrame:
 
 @classmethod
 def df_include_special_ids(cells_df: pd.DataFrame) -> pd.DataFrame:
+    """Add special region labels for invalid/unlabeled coordinates.
+
+    Assigns special names for IDs: -1=invalid, 0=universe, NaN=no_label.
+
+    Args:
+        cells_df: DataFrame of cells with region ID and name columns.
+
+    Returns:
+        DataFrame with special region names filled in.
+    """
     cells_df = cells_df.copy()
     id_col = AnnotColumns.ID.value
     name_col = AnnotColumns.NAME.value

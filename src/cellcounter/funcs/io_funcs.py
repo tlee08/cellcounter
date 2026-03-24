@@ -32,7 +32,11 @@ from cellcounter.constants import PROC_CHUNKS
 
 
 def silent_remove(fp: Path | str) -> None:
-    """Remove file or dir without throwing errors."""
+    """Remove file or directory, suppressing errors if not found.
+
+    Args:
+        fp: Path to file or directory to remove.
+    """
     fp = Path(fp)
     if fp.is_file():
         with contextlib.suppress(OSError):
@@ -48,7 +52,12 @@ def silent_remove(fp: Path | str) -> None:
 
 
 def write_parquet(df: pd.DataFrame, fp: Path | str) -> None:
-    """Write parquet."""
+    """Write DataFrame to Parquet format, creating parent directories.
+
+    Args:
+        df: DataFrame to save.
+        fp: Output file path.
+    """
     fp = Path(fp)
     fp.parent.mkdir(exist_ok=True)
     df.to_parquet(fp)
@@ -60,7 +69,14 @@ def write_parquet(df: pd.DataFrame, fp: Path | str) -> None:
 
 
 def read_tiff(src_fp: Path | str) -> npt.NDArray:
-    """Read tiff file."""
+    """Read TIFF file, squeezing singleton dimensions.
+
+    Args:
+        src_fp: Path to TIFF file.
+
+    Returns:
+        Numpy array with squeezed dimensions.
+    """
     arr = tifffile.imread(src_fp)
     for _ in np.arange(len(arr.shape)):
         arr = np.squeeze(arr)
@@ -68,7 +84,12 @@ def read_tiff(src_fp: Path | str) -> npt.NDArray:
 
 
 def write_tiff(arr: npt.NDArray, dst_fp: Path | str) -> None:
-    """Write to tiff file."""
+    """Write array to TIFF file, creating parent directories.
+
+    Args:
+        arr: Numpy array to save.
+        dst_fp: Output file path.
+    """
     dst_fp = Path(dst_fp)
     dst_fp.parent.mkdir(exist_ok=True)
     tifffile.imwrite(dst_fp, arr)

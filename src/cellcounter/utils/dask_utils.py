@@ -2,12 +2,39 @@ import contextlib
 from collections.abc import Generator
 from pathlib import Path
 
+import dask
 import dask.array as da
 import pandas as pd
 from dask.distributed import Client, SpecCluster
 
 from cellcounter.constants import Coords
+from cellcounter.constants.paths import CACHE_DIR
 from cellcounter.funcs.io_funcs import silent_remove
+
+
+def setup_dask_configs() -> None:
+    """Sets up dask with good configs.
+
+    Run upon importing this library.
+    """
+    # Setting Dask configuration
+    dask.config.set(
+        {
+            # "distributed.scheduler.active-memory-manager.measure": "managed",
+            # "distributed.worker.memory.rebalance.measure": "managed",
+            # "distributed.worker.memory.spill": False,
+            # "distributed.worker.memory.pause": False,
+            # "distributed.worker.memory.terminate": False,
+            "temporary-directory": str(CACHE_DIR),
+            "array.rechunk.method": "p2p",
+            # Prevent task fusion (which can cause large memory blowouts)
+            "optimization.fuse.active": False,
+            "distributed.worker.memory.target": False,
+            "distributed.worker.memory.spill": False,
+            "distributed.worker.memory.pause": 0.80,
+            "distributed.worker.memory.terminate": 0.95,
+        }
+    )
 
 
 def coords2block(df: pd.DataFrame, block_info: dict) -> pd.DataFrame:
