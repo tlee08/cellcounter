@@ -1,21 +1,15 @@
 import contextlib
-import functools
-import os
 from collections.abc import Callable
-from curses.ascii import SP
-from multiprocessing import current_process
 from pathlib import Path
-from typing import Any
 
 import dask
 import dask.array
 import dask.array as da
 import dask.dataframe as dd
 import numpy as np
-import numpy.typing as npt
 import pandas as pd
 from dask import compute
-from dask.distributed import Client, SpecCluster, get_worker
+from dask.distributed import Client, SpecCluster
 
 from cellcounter.constants import Coords
 from cellcounter.utils.io_utils import silent_remove
@@ -109,7 +103,7 @@ def coords2block(df: pd.DataFrame, block_info: dict) -> pd.DataFrame:
     """Converts the coords to a block, given the block info.
 
     The block info is from Dask, in the map_blocks function
-    (and other relevant functions like map_overlap).
+    (and other relevant functions like map_block).
     The block info is required so relevant block offsets are used.
     """
     # Getting block info

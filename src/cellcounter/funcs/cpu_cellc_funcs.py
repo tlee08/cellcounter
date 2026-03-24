@@ -414,6 +414,7 @@ class CpuCellcFuncs:
         labels, coords_flat = cls.xp.unique(maxima_labels[mask], return_index=True)
         z, y, x = cls.xp.unravel_index(coords_flat, maxima_labels.shape)
         # Build cells DataFrame
+        logger.info(cells_df)
         cells_df = (
             pd.DataFrame(
                 {
@@ -423,9 +424,11 @@ class CpuCellcFuncs:
                 },
                 index=pd.Index(cls.cp2np(labels).astype(np.uint32), name=CELL_IDX_NAME),
             )
-            .drop(index=0)  # Remove background
-            .astype(np.uint16)
+            # .drop(index=0)  # Remove background
+            # .astype(np.uint16)
         )
+        logger.info(cells_df)
+        cells_df.drop(index=0).astype(np.uint16)
         cells_df[CellColumns.COUNT.value] = 1
         # Get volume at each maxima position
         cells_df[CellColumns.VOLUME.value] = cls.cp2np(

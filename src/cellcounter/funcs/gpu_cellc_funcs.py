@@ -38,14 +38,12 @@ class GpuCellcFuncs(CpuCellcFuncs):
         GPU block of work.
         """
         # Also removing ALL references to the arguments
-        logger.debug("Removing all cp arrays in program (global and local)")
         all_vars = {**globals(), **locals()}
         var_keys = set(all_vars.keys())
         for k in var_keys:
             if isinstance(all_vars[k], cp.ndarray):
                 logger.debug("REMOVING: %s", k)
                 exec("del k")
-        logger.debug("Clearing CUDA memory")
         cp.get_default_memory_pool().free_all_blocks()
         cp.get_default_pinned_memory_pool().free_all_blocks()
 

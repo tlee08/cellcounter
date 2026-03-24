@@ -1,8 +1,10 @@
+import functools
 import importlib.util
 import inspect
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from enum import EnumType
 from importlib.util import find_spec
+from pathlib import Path
 from typing import Any
 
 
@@ -40,7 +42,7 @@ def import_extra_error_func(extra_dep_name: str):
 
 
 def enum2list(my_enum: EnumType) -> list[Any]:
-    return [e.value for e in my_enum]  # type: ignore
+    return [e.value for e in my_enum]  # ty:ignore[unresolved-attribute]
 
 
 def const2iter(x: Any, n: int) -> Iterable[Any]:
@@ -54,7 +56,7 @@ def const2list(x: Any, n: int) -> list[Any]:
     return [x for _ in range(n)]
 
 
-def dictlists2listdicts(my_dict):
+def dictlists2listdicts(my_dict: dict[str, list[Any]]) -> list[dict[str, Any]]:
     """Converts a dict of lists to a list of dicts."""
     # Asserting that all values (lists) have same size
     n = len(list(my_dict.values())[0])
@@ -64,7 +66,7 @@ def dictlists2listdicts(my_dict):
     return [{k: v[i] for k, v in my_dict.items()} for i in range(n)]
 
 
-def listdicts2dictlists(my_list):
+def listdicts2dictlists(my_list: list[dict[str, Any]]) -> dict[str, list[Any]]:
     """Converts a list of dicts to a dict of lists."""
     # Asserting that each dict has the same keys
     keys = my_list[0].keys()

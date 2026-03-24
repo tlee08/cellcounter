@@ -32,7 +32,6 @@ if __name__ == "__main__":
         # "mask_fill",
         # "mask_outline",
         # "mask_reg",
-        "overlap",
         "bgrm",
         "dog",
         "adaptv",

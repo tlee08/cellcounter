@@ -1,16 +1,16 @@
+import functools
 import logging
 import re
 import shutil
-from collections import defaultdict
 from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 import dask
 import dask.array as da
 import numpy as np
 import pandas as pd
 import tifffile
-import zarr
 from dask.distributed import LocalCluster, SpecCluster
 from natsort import natsorted
 from scipy import ndimage
@@ -130,7 +130,7 @@ class Pipeline:
         return cls._gpu_cluster()
 
     @classmethod
-    def set_gpu(cls, enabled: bool = True) -> None:  # noqa: FBT001, FBT002
+    def set_gpu(cls, *, enabled: bool = True) -> None:
         """Set GPU cluster."""
         if enabled:
             cls._gpu_cluster = LocalCUDACluster
@@ -141,6 +141,56 @@ class Pipeline:
                 threads_per_worker=cls.heavy_threads_per_worker,
             )
             cls.cellc_funcs = CpuCellcFuncs
+
+    #############################################
+    # Protected Helper Funcs
+    #############################################
+
+    @staticmethod
+    def _get_pfm(proj_dir: Path | str, *, tuning: bool = False) -> ProjFpModel:
+        return ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
+
+    @staticmethod
+    def _check_overwrite(*fp_attrs: str) -> Callable:
+        """Decorator to check if output files exist before running a pipeline step.
+
+        Args:
+            *fp_attrs: Names of ProjFpModel attributes to check for existence.
+
+        Example:
+            @_check_overwrite("bgrm", "dog")
+            def cellc1(cls, proj_dir, *, overwrite=False, tuning=False): ...
+        """
+
+        def decorator(func: Callable) -> Callable:
+            @functools.wraps(func)
+            def wrapper(
+                proj_dir: Path | str,
+                *args,
+                overwrite: bool = False,
+                tuning: bool = False,
+                **kwargs,
+            ) -> Any:
+                # Check if file exists
+                if not overwrite:
+                    pfm = Pipeline._get_pfm(proj_dir, tuning=tuning)
+                    for attr in fp_attrs:
+                        fp = getattr(pfm, attr)
+                        if fp.exists():
+                            logger.warning(file_exists_msg(fp))
+                            return None
+                # Run func
+                return func(
+                    proj_dir,
+                    *args,
+                    overwrite=overwrite,
+                    tuning=tuning,
+                    **kwargs,
+                )
+
+            return wrapper
+
+        return decorator
 
     #############################################
     # GET LIST OF IMAGES
@@ -168,7 +218,7 @@ class Pipeline:
 
         Finally, returns the ConfigParamsModel object.
         """
-        pfm = ProjFpModel(proj_dir)
+        pfm = cls._get_pfm(proj_dir, tuning=False)
         logger.debug("Making all the project sub-directories")
         logger.debug("Reading/creating params json")
         try:
@@ -196,13 +246,13 @@ class Pipeline:
 
     @classmethod
     def tiff2zarr(
-        cls, proj_dir: Path | str, in_fp: Path | str, overwrite: bool = False
+        cls, proj_dir: Path | str, in_fp: Path | str, *, overwrite: bool = False
     ) -> None:
         """_summary_.
 
         Parameters:
         -----------
-        pfm : ProjFpModel
+        proj_dir : Path | str
             _description_
         in_fp : str
             _description_
@@ -215,7 +265,7 @@ class Pipeline:
             _description_
         """
         in_fp = Path(in_fp)
-        pfm = ProjFpModel(proj_dir)
+        pfm = cls._get_pfm(proj_dir, tuning=False)
         if not overwrite:
             for fp in (pfm.raw,):
                 if fp.exists():
@@ -256,9 +306,9 @@ class Pipeline:
     #############################################
 
     @classmethod
-    def reg_ref_prepare(cls, proj_dir: Path | str, overwrite: bool = False) -> None:
+    def reg_ref_prepare(cls, proj_dir: Path | str, *, overwrite: bool = False) -> None:
         """Step."""
-        pfm = ProjFpModel(proj_dir)
+        pfm = cls._get_pfm(proj_dir, tuning=False)
         if not overwrite:
             for fp in (pfm.ref, pfm.annot, pfm.map, pfm.affine, pfm.bspline):
                 if fp.exists():
@@ -298,8 +348,8 @@ class Pipeline:
         return
 
     @classmethod
-    def reg_img_rough(cls, proj_dir: Path | str, overwrite: bool = False) -> None:
-        pfm = ProjFpModel(proj_dir)
+    def reg_img_rough(cls, proj_dir: Path | str, *, overwrite: bool = False) -> None:
+        pfm = cls._get_pfm(proj_dir, tuning=False)
         if not overwrite and pfm.downsmpl1.exists():
             logger.warning(file_exists_msg(pfm.downsmpl1))
             return
@@ -319,8 +369,8 @@ class Pipeline:
             return
 
     @classmethod
-    def reg_img_fine(cls, proj_dir: Path | str, overwrite: bool = False) -> None:
-        pfm = ProjFpModel(proj_dir)
+    def reg_img_fine(cls, proj_dir: Path | str, *, overwrite: bool = False) -> None:
+        pfm = cls._get_pfm(proj_dir, tuning=False)
         if not overwrite:
             for fp in (pfm.downsmpl2,):
                 if fp.exists():
@@ -338,8 +388,8 @@ class Pipeline:
         ArrIOFuncs.write_tiff(downsmpl2_arr, pfm.downsmpl2)
 
     @classmethod
-    def reg_img_trim(cls, proj_dir: Path | str, overwrite: bool = False) -> None:
-        pfm = ProjFpModel(proj_dir)
+    def reg_img_trim(cls, proj_dir: Path | str, *, overwrite: bool = False) -> None:
+        pfm = cls._get_pfm(proj_dir, tuning=False)
         if not overwrite:
             for fp in (pfm.trimmed,):
                 if fp.exists():
@@ -360,8 +410,8 @@ class Pipeline:
         return
 
     @classmethod
-    def reg_img_bound(cls, proj_dir: Path | str, overwrite: bool = False) -> None:
-        pfm = ProjFpModel(proj_dir)
+    def reg_img_bound(cls, proj_dir: Path | str, *, overwrite: bool = False) -> None:
+        pfm = cls._get_pfm(proj_dir, tuning=False)
         if not overwrite:
             for fp in (pfm.bounded,):
                 if fp.exists():
@@ -394,8 +444,8 @@ class Pipeline:
         return
 
     @classmethod
-    def reg_elastix(cls, proj_dir: Path | str, overwrite: bool = False) -> None:
-        pfm = ProjFpModel(proj_dir)
+    def reg_elastix(cls, proj_dir: Path | str, *, overwrite: bool = False) -> None:
+        pfm = cls._get_pfm(proj_dir, tuning=False)
         if not overwrite:
             for fp in (pfm.regresult,):
                 if fp.exists():
@@ -416,13 +466,13 @@ class Pipeline:
     #############################################
 
     @classmethod
-    def make_mask(cls, proj_dir: Path | str, overwrite: bool = False) -> None:
+    def make_mask(cls, proj_dir: Path | str, *, overwrite: bool = False) -> None:
         """Makes mask of actual image in reference space.
 
         Also stores # and proportion of existent voxels
         for each region.
         """
-        pfm = ProjFpModel(proj_dir)
+        pfm = cls._get_pfm(proj_dir, tuning=False)
         if not overwrite:
             for fp in (pfm.mask_fill, pfm.mask_outline, pfm.mask_reg, pfm.mask_df):
                 if fp.exists():
@@ -524,11 +574,11 @@ class Pipeline:
     #############################################
 
     @classmethod
-    def make_tuning_arr(cls, proj_dir: Path | str, overwrite: bool = False) -> None:
+    def make_tuning_arr(cls, proj_dir: Path | str, *, overwrite: bool = False) -> None:
         """Crop raw zarr to make a smaller zarr for tuning the cell counting pipeline."""
         logger.debug("Converting/ensuring pfm is production filepaths (copy)")
-        pfm = ProjFpModel(proj_dir)
-        pfm_tuning = ProjFpModelTuning(proj_dir)
+        pfm = cls._get_pfm(proj_dir, tuning=False)
+        pfm_tuning = cls._get_pfm(proj_dir, tuning=True)
         logger.debug("Reading config params")
         configs = ConfigParamsModel.read_file(pfm.config_params)
         with cluster_process(cls.busy_cluster()):
@@ -614,7 +664,7 @@ class Pipeline:
 
     @classmethod
     def cellc1(
-        cls, proj_dir: Path | str, overwrite: bool = False, tuning: bool = False
+        cls, proj_dir: Path | str, *, overwrite: bool = False, tuning: bool = False
     ) -> None:
         """Cell counting pipeline - Step 1: Top-hat filter (background subtraction).
 
@@ -626,7 +676,7 @@ class Pipeline:
         Returns:
             None
         """
-        pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
+        pfm = cls._get_pfm(proj_dir, tuning=tuning)
         if not overwrite:
             for fp in (pfm.bgrm,):
                 if fp.exists():
@@ -649,7 +699,7 @@ class Pipeline:
 
     @classmethod
     def cellc2(
-        cls, proj_dir: Path | str, overwrite: bool = False, tuning: bool = False
+        cls, proj_dir: Path | str, *, overwrite: bool = False, tuning: bool = False
     ) -> None:
         """Cell counting pipeline - Step 2: Difference of Gaussians (edge detection).
 
@@ -661,7 +711,7 @@ class Pipeline:
         Returns:
             None
         """
-        pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
+        pfm = cls._get_pfm(proj_dir, tuning=tuning)
         if not overwrite:
             for fp in (pfm.dog,):
                 if fp.exists():
@@ -685,7 +735,7 @@ class Pipeline:
 
     @classmethod
     def cellc3(
-        cls, proj_dir: Path | str, overwrite: bool = False, tuning: bool = False
+        cls, proj_dir: Path | str, *, overwrite: bool = False, tuning: bool = False
     ) -> None:
         """Cell counting pipeline - Step 3: Gaussian subtraction with large sigma for adaptive thresholding.
 
@@ -697,7 +747,7 @@ class Pipeline:
         Returns:
             None
         """
-        pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
+        pfm = cls._get_pfm(proj_dir, tuning=tuning)
         if not overwrite:
             for fp in (pfm.adaptv,):
                 if fp.exists():
@@ -720,7 +770,7 @@ class Pipeline:
 
     @classmethod
     def cellc4(
-        cls, proj_dir: Path | str, overwrite: bool = False, tuning: bool = False
+        cls, proj_dir: Path | str, *, overwrite: bool = False, tuning: bool = False
     ) -> None:
         """Cell counting pipeline - Step 4: Manual thresholding (or mean thresholding with standard deviation offset).
 
@@ -732,7 +782,7 @@ class Pipeline:
         Returns:
             None
         """
-        pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
+        pfm = cls._get_pfm(proj_dir, tuning=tuning)
         if not overwrite:
             for fp in (pfm.threshd,):
                 if fp.exists():
@@ -755,7 +805,7 @@ class Pipeline:
 
     @classmethod
     def cellc5(
-        cls, proj_dir: Path | str, overwrite: bool = False, tuning: bool = False
+        cls, proj_dir: Path | str, *, overwrite: bool = False, tuning: bool = False
     ) -> None:
         """Cell counting pipeline - Step 5a: Label contiguous regions with globally unique labels.
 
@@ -767,7 +817,7 @@ class Pipeline:
         Returns:
             None
         """
-        pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
+        pfm = cls._get_pfm(proj_dir, tuning=tuning)
         if not overwrite:
             for fp in (pfm.threshd_labels,):
                 if fp.exists():
@@ -792,7 +842,7 @@ class Pipeline:
 
     @classmethod
     def cellc6(
-        cls, proj_dir: Path | str, overwrite: bool = False, tuning: bool = False
+        cls, proj_dir: Path | str, *, overwrite: bool = False, tuning: bool = False
     ) -> None:
         """Cell counting pipeline - Step 5b: Compute contiguous sizes using union-find.
 
@@ -804,7 +854,7 @@ class Pipeline:
         Returns:
             None
         """
-        pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
+        pfm = cls._get_pfm(proj_dir, tuning=tuning)
         if not overwrite:
             for fp in (pfm.threshd_volumes,):
                 if fp.exists():
@@ -819,7 +869,7 @@ class Pipeline:
 
     @classmethod
     def cellc7(
-        cls, proj_dir: Path | str, overwrite: bool = False, tuning: bool = False
+        cls, proj_dir: Path | str, *, overwrite: bool = False, tuning: bool = False
     ) -> None:
         """Cell counting pipeline - Step 6: Filter out large objects (likely outlines, not cells).
 
@@ -831,7 +881,7 @@ class Pipeline:
         Returns:
             None
         """
-        pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
+        pfm = cls._get_pfm(proj_dir, tuning=tuning)
         if not overwrite:
             for fp in (pfm.threshd_filt,):
                 if fp.exists():
@@ -854,7 +904,7 @@ class Pipeline:
 
     @classmethod
     def cellc8(
-        cls, proj_dir: Path | str, overwrite: bool = False, tuning: bool = False
+        cls, proj_dir: Path | str, *, overwrite: bool = False, tuning: bool = False
     ) -> None:
         """Cell counting pipeline - Step 7: Get maxima mask of raw image with thresholded-filtered mask.
 
@@ -866,7 +916,7 @@ class Pipeline:
         Returns:
             None
         """
-        pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
+        pfm = cls._get_pfm(proj_dir, tuning=tuning)
         if not overwrite:
             for fp in (pfm.maxima,):
                 if fp.exists():
@@ -890,7 +940,7 @@ class Pipeline:
 
     @classmethod
     def cellc9(
-        cls, proj_dir: Path | str, overwrite: bool = False, tuning: bool = False
+        cls, proj_dir: Path | str, *, overwrite: bool = False, tuning: bool = False
     ) -> None:
         """Cell counting pipeline - Step 8: Convert maxima mask to uniquely labelled points.
 
@@ -903,7 +953,7 @@ class Pipeline:
             None
         """
         # TODO: Check that the results of cellc10 and cellc7b, cellc8a, cellc10a are the same (df)
-        pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
+        pfm = cls._get_pfm(proj_dir, tuning=tuning)
         if not overwrite:
             for fp in (pfm.maxima_labels,):
                 if fp.exists():
@@ -926,7 +976,7 @@ class Pipeline:
 
     @classmethod
     def cellc10(
-        cls, proj_dir: Path | str, overwrite: bool = False, tuning: bool = False
+        cls, proj_dir: Path | str, *, overwrite: bool = False, tuning: bool = False
     ) -> None:
         """Cell counting pipeline - Step 9: Watershed segmentation labels with maxima labels and thresholded-filtered mask.
 
@@ -938,7 +988,7 @@ class Pipeline:
         Returns:
             None
         """
-        pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
+        pfm = cls._get_pfm(proj_dir, tuning=tuning)
         if not overwrite:
             for fp in (pfm.maxima_labels,):
                 if fp.exists():
@@ -960,13 +1010,13 @@ class Pipeline:
 
     @classmethod
     def cellc11(
-        cls, proj_dir: Path | str, overwrite: bool = False, tuning: bool = False
+        cls, proj_dir: Path | str, *, overwrite: bool = False, tuning: bool = False
     ) -> None:
         """Cell counting pipeline - Step 10.
 
         Convert watershed labels to watershed segmentation volumes.
         """
-        pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
+        pfm = cls._get_pfm(proj_dir, tuning=tuning)
         if not overwrite:
             for fp in (pfm.maxima_labels,):
                 if fp.exists():
@@ -982,14 +1032,14 @@ class Pipeline:
 
     @classmethod
     def cellc12(
-        cls, proj_dir: Path | str, overwrite: bool = False, tuning: bool = False
+        cls, proj_dir: Path | str, *, overwrite: bool = False, tuning: bool = False
     ) -> None:
         """Cell counting pipeline - Step 11.
 
         Filter out large watershed objects
         (sets large volume values to 0, effectively filtering from segmentation image).
         """
-        pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
+        pfm = cls._get_pfm(proj_dir, tuning=tuning)
         if not overwrite:
             for fp in (pfm.wshed_filt,):
                 if fp.exists():
@@ -1012,7 +1062,7 @@ class Pipeline:
 
     @classmethod
     def cellc13(
-        cls, proj_dir: Path | str, overwrite: bool = False, tuning: bool = False
+        cls, proj_dir: Path | str, *, overwrite: bool = False, tuning: bool = False
     ) -> None:
         """Cell counting pipeline - Step 12.
 
@@ -1023,7 +1073,7 @@ class Pipeline:
         Also allows GPU processing.
         """
         # TODO: intermediate save as a dask parquet folder - useful for distributed processing
-        pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
+        pfm = cls._get_pfm(proj_dir, tuning=tuning)
         if not overwrite:
             for fp in (pfm.cells_raw_df,):
                 if fp.exists():
@@ -1040,7 +1090,7 @@ class Pipeline:
             # Declaring processing instructions
             # Getting maxima coords and cell measures in table
             cells_df = block2coords(
-                GpuCellcFuncs.get_cells,
+                cls.cellc_funcs.get_cells,
                 raw_arr,
                 maxima_labels_arr,
                 wshed_labels_arr,
@@ -1067,7 +1117,7 @@ class Pipeline:
 
     @classmethod
     def transform_coords(
-        cls, proj_dir: Path | str, overwrite: bool = False, tuning: bool = False
+        cls, proj_dir: Path | str, *, overwrite: bool = False, tuning: bool = False
     ) -> None:
         """Transform cell coordinates to reference atlas space and save as a parquet file.
 
@@ -1082,7 +1132,7 @@ class Pipeline:
         Notes:
             Saves the cells_trfm dataframe as pandas parquet.
         """
-        pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
+        pfm = cls._get_pfm(proj_dir, tuning=tuning)
         if not overwrite:
             for fp in (pfm.cells_trfm_df,):
                 if fp.exists():
@@ -1132,7 +1182,7 @@ class Pipeline:
 
     @classmethod
     def cell_mapping(
-        cls, proj_dir: Path | str, overwrite: bool = False, tuning: bool = False
+        cls, proj_dir: Path | str, *, overwrite: bool = False, tuning: bool = False
     ) -> None:
         """Map transformed cell coordinates to region IDs and names in the reference atlas.
 
@@ -1147,7 +1197,7 @@ class Pipeline:
         Notes:
             Saves the cells dataframe as pandas parquet.
         """
-        pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
+        pfm = cls._get_pfm(proj_dir, tuning=tuning)
         if not overwrite:
             for fp in (pfm.cells_df,):
                 if fp.exists():
@@ -1208,7 +1258,7 @@ class Pipeline:
 
     @classmethod
     def group_cells(
-        cls, proj_dir: Path | str, overwrite: bool = False, tuning: bool = False
+        cls, proj_dir: Path | str, *, overwrite: bool = False, tuning: bool = False
     ) -> None:
         """Group cells by region name and aggregate total cell volume and cell count for each region.
 
@@ -1223,7 +1273,7 @@ class Pipeline:
         Notes:
             Saves the cells_agg dataframe as pandas parquet.
         """
-        pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
+        pfm = cls._get_pfm(proj_dir, tuning=tuning)
         if not overwrite:
             for fp in (pfm.cells_agg_df,):
                 if fp.exists():
@@ -1259,7 +1309,7 @@ class Pipeline:
 
     @classmethod
     def cells2csv(
-        cls, proj_dir: Path | str, overwrite: bool = False, tuning: bool = False
+        cls, proj_dir: Path | str, *, overwrite: bool = False, tuning: bool = False
     ) -> None:
         """Save the aggregated cell dataframe to a CSV file.
 
@@ -1271,7 +1321,7 @@ class Pipeline:
         Returns:
             None
         """
-        pfm = ProjFpModelTuning(proj_dir) if tuning else ProjFpModel(proj_dir)
+        pfm = cls._get_pfm(proj_dir, tuning=tuning)
         if not overwrite:
             for fp in (pfm.cells_agg_csv,):
                 if fp.exists():
@@ -1289,14 +1339,17 @@ class Pipeline:
     #############################################
 
     @classmethod
-    def clean_proj(cls, proj_dir: Path | str, tuning: bool = False) -> None:
+    def clean_proj(cls, proj_dir: Path | str) -> None:
         """Clean the project directory by removing large files.
 
         Namely all files in cellcount subdirectory.
         """
-        pfm = ProjFpModel(proj_dir) if not tuning else ProjFpModelTuning(proj_dir)
         # Removing cellcount subdirectory
+        pfm = cls._get_pfm(proj_dir, tuning=False)
         silent_remove(pfm.root_dir / pfm.cellcount_sdir)
+        # Removing tuning cellcount subdirectory
+        pfm_tuning = cls._get_pfm(proj_dir, tuning=True)
+        silent_remove(pfm_tuning.root_dir / pfm_tuning.cellcount_sdir)
         logger.info("Project %s cleaned.", proj_dir)
 
     #############################################
@@ -1306,7 +1359,7 @@ class Pipeline:
     @classmethod
     def rechunk(cls, proj_dir: Path | str, src_fp: str, dst_fp: str) -> None:
         """Rechunk a zarr file based on the project config's chunksize."""
-        pfm = ProjFpModel(proj_dir)
+        pfm = cls._get_pfm(proj_dir, tuning=False)
         configs = ConfigParamsModel.read_file(pfm.config_params)
         with cluster_process(cls.busy_cluster()):
             # Read
@@ -1322,11 +1375,9 @@ class Pipeline:
 
     @classmethod
     def run_pipeline(
-        cls, in_fp: str, proj_dir: Path | str, overwrite: bool = False, **kwargs
+        cls, in_fp: str, proj_dir: Path | str, *, overwrite: bool = False, **kwargs
     ) -> None:
-        """
-        Running all pipelines in order.
-        """
+        """Running all pipelines in order."""
         # Updating project configs
         cls.update_configs(proj_dir, **kwargs)
         # tiff to zarr

@@ -29,13 +29,8 @@ Repository = "https://github.com/tlee08/cellcounter"
 Documentation = "https://tlee08.github.io/cellcounter"
 
 [project.optional-dependencies]
-elastix = [
-    "simpleitk-simpleelastix>=3.0.0a1.post183",
-]
-gpu = [
-    "cupy-cuda13x>=14.0.1",
-    "dask-cuda>=26.2.0",
-]
+elastix = ["simpleitk-simpleelastix>=3.0.0a1.post183"]
+gpu = ["cupy-cuda13x>=14.0.1", "dask-cuda>=26.2.0"]
 
 [dependency-groups]
 dev = [
@@ -47,9 +42,7 @@ dev = [
 ]
 
 [tool.uv]
-exclude-dependencies = [
-    "pynvml"
-]
+exclude-dependencies = ["pynvml"]
 
 [project.scripts]
 cellcounter-init = "cellcounter.scripts.init:main"
@@ -59,3 +52,22 @@ cellcounter-make-project = "cellcounter.scripts.make_project:main"
 [build-system]
 requires = ["uv_build>=0.10.11,<0.11.0"]
 build-backend = "uv_build"
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "T201",
+    "BLE001",
+    "RET504",
+    "TRY300",
+    "TC003",
+    "TC001",
+    "TC002",
+    "COM812",
+]
+fixable = ["ALL"]
+unfixable = []
+
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"

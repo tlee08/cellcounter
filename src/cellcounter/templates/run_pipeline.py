@@ -48,7 +48,6 @@ if __name__ == "__main__":
                 tuning_z_trim=(700, 800, None),
                 tuning_y_trim=(1000, 3000, None),
                 tuning_x_trim=(1000, 3000, None),
-                # OVERLAP
                 # CELL COUNTING
                 tophat_sigma=10,
                 dog_sigma1=1,
