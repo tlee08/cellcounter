@@ -41,6 +41,7 @@ _GPU_METHODS = {
 
 # Methods that need GPU memory clearing only (already convert to numpy internally)
 _GPU_METHODS_NO_CONVERT = {
+    "_spherical_footprint",
     "mask2label",
     "get_boundary_pairs",
     "get_label_sizemap",

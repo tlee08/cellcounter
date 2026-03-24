@@ -402,7 +402,7 @@ class CpuCellcFuncs:
         block = self.xp.asarray(block)
         logger.debug("Finding local maxima with spherical radius %d", radius)
         footprint = self._spherical_footprint(radius)
-        max_arr = self.xdimage.minimum_filter(block, footprint=footprint)
+        max_arr = self.xdimage.maximum_filter(block, footprint=footprint)
         logger.debug("Identifying points where arr == max_arr")
         res_block = block == max_arr
         if mask_block is not None:
