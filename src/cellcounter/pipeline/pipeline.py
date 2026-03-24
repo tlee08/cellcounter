@@ -4,7 +4,7 @@ import re
 import shutil
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import Any, Self
 
 import dask
 import dask.array as da
@@ -165,6 +165,7 @@ class Pipeline:
         def decorator(func: Callable) -> Callable:
             @functools.wraps(func)
             def wrapper(
+                cls: Self,
                 proj_dir: Path | str,
                 *args,
                 overwrite: bool = False,
@@ -181,6 +182,7 @@ class Pipeline:
                             return None
                 # Run func
                 return func(
+                    cls,
                     proj_dir,
                     *args,
                     overwrite=overwrite,
