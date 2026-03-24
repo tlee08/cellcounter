@@ -174,7 +174,7 @@ class Pipeline(AbstractPipeline):
     #############################################
 
     def rechunk_raw(self) -> None:
-        """Rechunk a zarr file."""
+        """Rechunk the raw zarr."""
         with cluster_process(self.busy_cluster()):
             zarr_arr = da.from_zarr(self.pfm.raw)
             temp_fp = CACHE_DIR / "rechunk_temp.zarr"
