@@ -1,3 +1,4 @@
+import logging
 import os
 from enum import Enum
 
@@ -10,11 +11,10 @@ from dask.distributed import LocalCluster
 from cellcounter.funcs.arr_io_funcs import ArrIOFuncs
 from cellcounter.utils.dask_utils import cluster_process
 from cellcounter.utils.io_utils import async_read_files_run
-from cellcounter.utils.logger import init_logger_file
 from cellcounter.utils.misc_utils import dictlists2listdicts
 from cellcounter.utils.proj_org_utils import ProjFpModel, ProjFpModelTuning
 
-logger = init_logger_file(__name__)
+logger = logging.getLogger(__name__)
 
 VRANGE = "vrange"
 CMAP = "cmap"

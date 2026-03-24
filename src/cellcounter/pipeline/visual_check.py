@@ -1,3 +1,4 @@
+import logging
 import os
 
 import dask.array as da
@@ -11,10 +12,9 @@ from cellcounter.funcs.visual_check_funcs_tiff import VisualCheckFuncsTiff
 from cellcounter.models.proj_config import ConfigParamsModel
 from cellcounter.utils.dask_utils import cluster_process
 from cellcounter.utils.diagnostics_utils import file_exists_msg
-from cellcounter.utils.logger import init_logger_file
 from cellcounter.utils.proj_org_utils import ProjFpModel, ProjFpModelTuning
 
-logger = init_logger_file(__name__)
+logger = logging.getLogger(__name__)
 
 
 class VisualCheck:

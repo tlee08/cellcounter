@@ -1,3 +1,4 @@
+import logging
 import os
 from enum import Enum
 
@@ -14,17 +15,16 @@ from cellcounter.constants import (
 from cellcounter.funcs.map_funcs import (
     MapFuncs,
 )
-from cellcounter.pipeline.pipeline import Pipeline
 from cellcounter.models.proj_config import ConfigParamsModel
+from cellcounter.pipeline.pipeline import Pipeline
 from cellcounter.utils.io_utils import read_json, sanitise_smb_df
-from cellcounter.utils.logger import init_logger
 from cellcounter.utils.misc_utils import enum2list
 from cellcounter.utils.proj_org_utils import ProjFpModel
 
 # TODO: move to pipeline and refactor
 
 COMBINED_FP = "combined_df"
-logger = init_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class CombinedColumns(Enum):

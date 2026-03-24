@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 import pandas as pd
 
@@ -7,12 +9,11 @@ from cellcounter.constants import (
     AnnotExtraColumns,
     SpecialRegions,
 )
-from cellcounter.utils.logger import init_logger_file
+
+logger = logging.getLogger(__name__)
 
 
 class MapFuncs:
-    logging = init_logger_file(__name__)
-
     @classmethod
     def annot_dict2df(cls, data_dict: dict) -> pd.DataFrame:
         """

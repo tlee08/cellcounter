@@ -1,3 +1,4 @@
+import logging
 import re
 import shutil
 from collections import defaultdict
@@ -45,7 +46,6 @@ from cellcounter.utils.io_utils import (
     silent_remove,
     write_parquet,
 )
-from cellcounter.utils.logger import init_logger_file
 from cellcounter.utils.misc_utils import enum2list, import_extra_error_func
 from cellcounter.utils.proj_org_utils import (
     ProjFpModel,
@@ -54,7 +54,7 @@ from cellcounter.utils.proj_org_utils import (
 )
 from cellcounter.utils.union_find import UnionFind
 
-logger = init_logger_file(__name__)
+logger = logging.getLogger(__name__)
 
 
 # Optional dependency: gpu (with dask-cuda)

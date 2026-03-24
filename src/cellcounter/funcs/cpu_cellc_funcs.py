@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
@@ -5,12 +7,13 @@ from scipy import ndimage as sc_ndimage
 from skimage.segmentation import watershed
 
 from cellcounter.constants import CELL_IDX_NAME, CellColumns, Coords
-from cellcounter.utils.logger import init_logger_file
 
-logger = init_logger_file(__name__)
+logger = logging.getLogger(__name__)
 
 
 class CpuCellcFuncs:
+    """CPU cell counting funcs."""
+
     xp = np
     xdimage = sc_ndimage
 

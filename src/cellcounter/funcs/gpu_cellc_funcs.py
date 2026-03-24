@@ -1,13 +1,13 @@
 import functools
+import logging
 
 import numpy.typing as npt
 
 from cellcounter.constants import GPU_ENABLED
 from cellcounter.funcs.cpu_cellc_funcs import CpuCellcFuncs
-from cellcounter.utils.logger import init_logger_file
 from cellcounter.utils.misc_utils import import_extra_error_func
 
-logger = init_logger_file(__name__)
+logger = logging.getLogger(__name__)
 
 # Optional dependency: gpu
 if GPU_ENABLED:
@@ -18,6 +18,11 @@ else:
 
 
 class GpuCellcFuncs(CpuCellcFuncs):
+    """GPU cell counting funcs.
+
+    Leverages CPU logic in numpy and GPU porting with cupy.
+    """
+
     xp = cp
     xdimage = cp_ndimage
 
@@ -26,14 +31,19 @@ class GpuCellcFuncs(CpuCellcFuncs):
     ###################################################################################################
 
     @classmethod
-    def _clear_cuda_mem(cls):
+    def _clear_cuda_mem(cls) -> None:
+        """Clears ALL current cupy array and frees GPU memory.
+
+        To avoid GPU memory buildup, you MUST run this after a
+        GPU block of work.
+        """
         # Also removing ALL references to the arguments
         logger.debug("Removing all cp arrays in program (global and local)")
         all_vars = {**globals(), **locals()}
         var_keys = set(all_vars.keys())
         for k in var_keys:
             if isinstance(all_vars[k], cp.ndarray):
-                logger.debug(f"REMOVING: {k}")
+                logger.debug("REMOVING: %s", k)
                 exec("del k")
         logger.debug("Clearing CUDA memory")
         cp.get_default_memory_pool().free_all_blocks()
@@ -41,6 +51,11 @@ class GpuCellcFuncs(CpuCellcFuncs):
 
     @classmethod
     def _clear_cuda_mem_dec(cls, func):
+        """Decorator helper function to clean GPU CUDA memory for `func`.
+
+        Runs `cls._clear_cuda_mem` before and after `func`.
+        """
+
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             cls._clear_cuda_mem()

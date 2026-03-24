@@ -1,3 +1,4 @@
+import logging
 import os
 import re
 from pathlib import Path
@@ -9,10 +10,9 @@ import pandas as pd
 from cellcounter.constants import CACHE_DIR, ELASTIX_ENABLED, Coords
 from cellcounter.funcs.arr_io_funcs import ArrIOFuncs
 from cellcounter.utils.io_utils import silent_remove
-from cellcounter.utils.logger import init_logger_file
 from cellcounter.utils.misc_utils import import_extra_error_func
 
-logger = init_logger_file(__name__)
+logger = logging.getLogger(__name__)
 
 # Optional dependency: elastix
 if ELASTIX_ENABLED:
