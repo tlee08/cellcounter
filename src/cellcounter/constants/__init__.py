@@ -14,7 +14,7 @@ from cellcounter.constants.annotations import (
     SpecialRegions,
 )
 from cellcounter.constants.cells import CELL_AGG_MAPPINGS, CELL_IDX_NAME, CellColumns
-from cellcounter.constants.config import DASK_CUDA_ENABLED, GPU_ENABLED
+from cellcounter.constants.config import CUPY_ENABLED, DASK_CUDA_ENABLED
 from cellcounter.constants.coords import Coords
 from cellcounter.constants.masks import MASK_VOLUME, MaskColumns
 from cellcounter.constants.paths import ATLAS_DIR, CACHE_DIR
