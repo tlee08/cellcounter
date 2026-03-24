@@ -9,10 +9,10 @@ from dask.distributed import LocalCluster
 from cellcounter.funcs.viewer_funcs import ViewerFuncs
 from cellcounter.funcs.visual_check_funcs_dask import VisualCheckFuncsDask
 from cellcounter.funcs.visual_check_funcs_tiff import VisualCheckFuncsTiff
-from cellcounter.models.proj_config import ConfigParamsModel
+from cellcounter.models.proj_config import ProjConfig
 from cellcounter.utils.dask_utils import cluster_process
 from cellcounter.utils.diagnostics_utils import file_exists_msg
-from cellcounter.utils.proj_org_utils import ProjFpModel, ProjFpModelTuning
+from cellcounter.models.proj_fp import ProjFp, ProjTuningFp
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +61,7 @@ class VisualCheck:
                     logger.warning(file_exists_msg(fp))
                     return
         with cluster_process(cls.cluster()):
-            configs = ConfigParamsModel.read_file(pfm.config_params)
+            configs = ProjConfig.read_file(pfm.config_params)
             VisualCheckFuncsDask.coords2heatmap(
                 coords=pd.read_parquet(pfm.cells_raw_df),
                 shape=da.from_zarr(pfm.raw).shape,
@@ -95,7 +95,7 @@ class VisualCheck:
                 if os.path.exists(fp):
                     logger.warning(file_exists_msg(fp))
                     return
-        configs = ConfigParamsModel.read_file(pfm.config_params)
+        configs = ProjConfig.read_file(pfm.config_params)
         VisualCheckFuncsTiff.coords2heatmap(
             coords=pd.read_parquet(pfm.cells_trfm_df),
             shape=tifffile.imread(pfm.ref).shape,
@@ -130,7 +130,7 @@ class VisualCheck:
                 if os.path.exists(fp):
                     logger.warning(file_exists_msg(fp))
                     return
-        configs = ConfigParamsModel.read_file(pfm.config_params)
+        configs = ProjConfig.read_file(pfm.config_params)
         z_trim = slice(None)
         y_trim = slice(None)
         x_trim = slice(None)

@@ -12,7 +12,8 @@ from cellcounter.funcs.arr_io_funcs import ArrIOFuncs
 from cellcounter.utils.dask_utils import cluster_process
 from cellcounter.utils.io_utils import async_read_files_run
 from cellcounter.utils.misc_utils import dictlists2listdicts
-from cellcounter.utils.proj_org_utils import ProjFpModel, ProjFpModelTuning
+
+from cellcounter.models.proj_fp import ProjFp, ProjTuningFp
 
 logger = logging.getLogger(__name__)
 

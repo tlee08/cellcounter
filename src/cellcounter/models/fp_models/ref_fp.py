@@ -1,61 +1,15 @@
-import inspect
-from abc import ABC
+import functools
+import logging
+from collections.abc import Callable
 from pathlib import Path
-from typing import Self
+from typing import Any
 
-# ALSO, WAY overcomplicated with ObservedAttr
-# Just use properties, even if it is a bit more verbose
+from cellcounter.models.fp_models.abstract_fp import AbstractFp
 
-# TODO: implement diagnostics message for ecah indiv specimen (i.e. PFM)
-
-
-class FpModel(ABC):
-    """Abstract filepath model."""
-
-    root_dir: Path
-    subdirs_ls: list[str]
-
-    def copy(self) -> Self:
-        """Deepcopy the filepath model instance."""
-        # Getting the class constructor parameters
-        params_ls = list(dict(inspect.signature(self.__init__).parameters).keys())
-        # Constructing an identical model with the corresponding parameter attributes
-        return self.__init__(**{param: getattr(self, param) for param in params_ls})
-
-    def make_subdirs(self) -> None:
-        """Make project directories from all subdirs in."""
-        for subdir in self.subdirs_ls:
-            if subdir is not None:
-                (self.root_dir / subdir).mkdir(exist_ok=True)
-
-    def export2dict(self) -> dict:
-        """Returns a dict of all the FpModel attributes."""
-        export_dict = {}
-        # For each attribute in the model
-        for attr in dir(self):
-            # Skipping private attributes
-            if attr.startswith("_"):
-                continue
-            # If the attribute is a str, add it to the export dict
-            if isinstance(getattr(self, attr), str):
-                export_dict[attr] = getattr(self, attr)
-        # Returning
-        return export_dict
-
-    @staticmethod
-    def raise_not_implemented_err(attr_name: str) -> None:
-        """Raise error if attribute is not implemented."""
-        raise NotImplementedError(
-            (
-                "filepath, %s is not implemented.\n"
-                "Activate this by calling "
-                "'set_implement' or explicitly edit this model.",
-            ),
-            attr_name,
-        )
+logger = logging.getLogger(__name__)
 
 
-class RefFpModel(FpModel):
+class RefFp(AbstractFp):
     """Refernce filepath model."""
 
     def __init__(
@@ -121,7 +75,7 @@ class RefFpModel(FpModel):
         return self.root_dir / self.elastix_sdir / "align_bspline.txt"
 
 
-class ProjFpModel(FpModel):
+class ProjFp(AbstractFp):
     """Project filepath model."""
 
     def __init__(self, root_dir: Path | str) -> None:
@@ -372,7 +326,7 @@ class ProjFpModel(FpModel):
         return self.root_dir / self.visual_sdir / "comb_heatmap.tif"
 
 
-class ProjFpModelTuning(ProjFpModel):
+class ProjTuningFp(ProjFp):
     """Project filepath TUNING model."""
 
     def __init__(self, root_dir: Path | str) -> None:
@@ -382,3 +336,62 @@ class ProjFpModelTuning(ProjFpModel):
         self.cellcount_sdir = f"{self.cellcount_sdir}_tuning"
         self.analysis_sdir = f"{self.analysis_sdir}_tuning"
         self.visual_sdir = f"{self.visual_sdir}_tuning"
+
+
+#############################################
+# Helper Funcs for handling project filepaths
+#############################################
+
+
+@staticmethod
+def get_proj_fm(proj_dir: Path | str, *, tuning: bool = False) -> ProjFp:
+    return ProjTuningFp(proj_dir) if tuning else ProjFp(proj_dir)
+
+
+@staticmethod
+def check_overwrite(*fp_attrs: str) -> Callable:
+    """Decorator to check if output files exist before running a pipeline step.
+
+    Args:
+        *fp_attrs: Names of ProjFp attributes to check for existence.
+
+    Example:
+        @_check_overwrite("bgrm", "dog")
+        def cellc1(cls, proj_dir, *, overwrite=False, tuning=False): ...
+    """
+
+    def decorator(func: Callable) -> Callable:
+        @functools.wraps(func)
+        def wrapper(
+            proj_dir: Path | str,
+            *args,
+            overwrite: bool = False,
+            tuning: bool = False,
+            **kwargs,
+        ) -> Any:
+            # Check if file exists
+            if not overwrite:
+                pfm = get_proj_fm(proj_dir, tuning=tuning)
+                for attr in fp_attrs:
+                    fp = getattr(pfm, attr)
+                    if fp.exists():
+                        fp_str = f", {fp}, " if fp else " "
+                        warning_msg = (
+                            f"WARNING: Output file{fp_str}already exists - "
+                            "not overwriting file.\n"
+                            "To overwrite, specify overwrite=True`.\n"
+                        )
+                        logger.warning(warning_msg)
+                        return None
+            # Run func
+            return func(
+                proj_dir,
+                *args,
+                overwrite=overwrite,
+                tuning=tuning,
+                **kwargs,
+            )
+
+        return wrapper
+
+    return decorator

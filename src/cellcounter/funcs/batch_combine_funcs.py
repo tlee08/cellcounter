@@ -15,11 +15,10 @@ from cellcounter.constants import (
 from cellcounter.funcs.map_funcs import (
     MapFuncs,
 )
-from cellcounter.models.proj_config import ConfigParamsModel
+from cellcounter.models.proj_config import ProjConfig
 from cellcounter.pipeline.pipeline import Pipeline
 from cellcounter.utils.io_utils import read_json, sanitise_smb_df
 from cellcounter.utils.misc_utils import enum2list
-from cellcounter.utils.proj_org_utils import ProjFpModel
 
 # TODO: move to pipeline and refactor
 
@@ -177,7 +176,7 @@ class BatchCombineFuncs:
             pfm = ProjFpModel(proj_dir)
             try:
                 # If proj has config_params file, then add to list of projs to combine
-                ConfigParamsModel.model_validate(read_json(pfm.config_params))
+                ProjConfig.model_validate(read_json(pfm.config_params))
                 proj_dir_ls.append(proj_dir)
             except FileNotFoundError:
                 pass

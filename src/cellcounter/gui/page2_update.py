@@ -1,6 +1,7 @@
+from collections.abc import Callable
 from enum import Enum, EnumType
 from types import NoneType, UnionType
-from typing import Any, Callable, Optional, Union, get_args, get_origin
+from typing import Any, Optional, Union, get_args, get_origin
 
 import streamlit as st
 from pydantic import BaseModel
@@ -14,7 +15,7 @@ from cellcounter.gui.gui_funcs import (
     load_configs,
     page_decorator,
 )
-from cellcounter.models.proj_config import ConfigParamsModel
+from cellcounter.models.proj_config import ProjConfig
 from cellcounter.pipeline.pipeline import Pipeline
 from cellcounter.utils.misc_utils import const2list, dictlists2listdicts, enum2list
 
@@ -43,8 +44,7 @@ SUBLABEL_NAMES_MAP = {
 
 
 class ConfigsUpdater:
-    """
-    There's containers and columns, but returns
+    """There's containers and columns, but returns
     the inputted values in the end
     (i.e. containers not returned).
     """
@@ -241,19 +241,17 @@ class ConfigsUpdater:
     def type2updater(cls, my_type: type) -> Callable:
         if issubclass(my_type, Enum):
             return lambda **kwargs: cls.enum_input(my_enum=my_type, **kwargs)
-        elif my_type is int:
+        if my_type is int:
             return cls.int_input
-        elif my_type is float:
+        if my_type is float:
             return cls.float_input
-        elif my_type is str:
+        if my_type is str:
             return cls.str_input
-        else:
-            raise NotImplementedError(f"Type {my_type} not implemented")
+        raise NotImplementedError(f"Type {my_type} not implemented")
 
     @staticmethod
     def get_type_and_nullable(my_type):
-        """
-        Returns tuple of:
+        """Returns tuple of:
         - The non-nullable type
         - Whether the type is nullable
         """
@@ -276,8 +274,7 @@ class ConfigsUpdater:
         field_name: str,
         **kwargs,
     ):
-        """
-        Builds a streamlit value updater widget for a given pydantic field.
+        """Builds a streamlit value updater widget for a given pydantic field.
 
         The output is saved to the pydantic_instance object AND the session state.
         Session state values are saved as:
@@ -331,7 +328,7 @@ class ConfigsUpdater:
         field_name: str,
         **kwargs,
     ):
-        sublabels = SUBLABEL_NAMES_MAP.get(field_name, None)
+        sublabels = SUBLABEL_NAMES_MAP.get(field_name)
         cls.field2updater(
             pydantic_instance=pydantic_instance,
             field_name=field_name,
@@ -342,8 +339,7 @@ class ConfigsUpdater:
 
 @staticmethod
 def configs_reset_func():
-    """
-    For each config parameter, resets the value to the value from disk.
+    """For each config parameter, resets the value to the value from disk.
 
     Also updates the session state variable that are dependent on this value:
     - `{label}`: the value
@@ -351,7 +347,7 @@ def configs_reset_func():
     """
     # Loading and getting configs from disk
     load_configs()
-    configs: ConfigParamsModel = st.session_state[CONFIGS]
+    configs: ProjConfig = st.session_state[CONFIGS]
     # For each field, setting the value to the value from disk
     for label, value in configs.model_dump().items():
         if isinstance(value, tuple):
@@ -367,12 +363,11 @@ def configs_reset_func():
 
 
 def configs_save_func():
-    """
-    Saving configs from session state to project directory.
+    """Saving configs from session state to project directory.
 
     NOTE: does not catch errors
     """
-    configs: ConfigParamsModel = st.session_state[CONFIGS]
+    configs: ProjConfig = st.session_state[CONFIGS]
     proj_dir = st.session_state[PROJ_DIR]
     pfm = Pipeline.get_pfm(proj_dir)
     fp = pfm.config_params
@@ -381,8 +376,7 @@ def configs_save_func():
 
 @page_decorator()
 def page2_configs():
-    """
-    Displays and allows editing of configuration parameters for the project.
+    """Displays and allows editing of configuration parameters for the project.
     This function uses Streamlit to create an interactive GUI for editing various
     configuration parameters stored in the session state. The parameters are grouped
     into different categories such as Reference, Raw, Registration, Mask,
@@ -396,19 +390,19 @@ def page2_configs():
     4. Provides a button to save the updated configuration parameters.
     The configuration parameters are instances of the `ConfigParamsModel` class.
 
-    Note
+    Note:
     ----
         The function assumes that `ConfigsUpdater` and `ConfigParamsModel` are
         defined elsewhere in the codebase.
 
-    Raises
+    Raises:
     ------
         ValidationError: If the configuration parameters do not pass validation.
     """
     # Initialising session state variables
 
     # Recalling session state variables
-    configs: ConfigParamsModel = st.session_state[CONFIGS]
+    configs: ProjConfig = st.session_state[CONFIGS]
 
     st.write("# Edit Configs")
     with st.expander("Reference"):
@@ -461,7 +455,7 @@ def page2_configs():
 
     # Checking configs and updating in session_state
     # NOTE: an error can occur with the validation here
-    configs = ConfigParamsModel.model_validate(configs)
+    configs = ProjConfig.model_validate(configs)
     st.session_state[CONFIGS] = configs
 
     # Showing updated configs

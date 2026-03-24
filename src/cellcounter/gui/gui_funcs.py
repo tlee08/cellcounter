@@ -4,7 +4,7 @@ from typing import Any
 
 import streamlit as st
 
-from cellcounter.models.proj_config import ConfigParamsModel
+from cellcounter.models.proj_config import ProjConfig
 from cellcounter.pipeline.pipeline import Pipeline
 from cellcounter.utils.io_utils import read_json
 
@@ -33,22 +33,19 @@ class ProjDirStatus(Enum):
 
 
 def init_var(name: str, default: Any):
-    """
-    Initialising session state variable with default value if not already set.
-    """
+    """Initialising session state variable with default value if not already set."""
     st.session_state[name] = st.session_state.get(name, default)
 
 
 def load_configs():
-    """
-    Loading in configs to session state from project directory.
+    """Loading in configs to session state from project directory.
 
     NOTE: does not catch errors
     """
     proj_dir = st.session_state[PROJ_DIR]
     pfm = Pipeline.get_pfm(proj_dir)
     fp = pfm.config_params
-    st.session_state[CONFIGS] = ConfigParamsModel.model_validate(read_json(fp))
+    st.session_state[CONFIGS] = ProjConfig.model_validate(read_json(fp))
 
 
 #####################################################################
@@ -82,7 +79,7 @@ def page_decorator(check_proj_dir=True):
                 st.error(
                     "Project is not initialised.\n\nPlease set or create a project directory."
                 )
-                return
+                return None
             return func(*args, **kwargs)
 
         return wrapper

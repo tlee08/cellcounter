@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import numpy as np
 
 DIAGNOSTICS_SUCCESS_MESSAGES = (
@@ -27,12 +25,3 @@ DIAGNOSTICS_SUCCESS_MESSAGES = (
 def success_msg() -> str:
     """Return a random positive message!"""
     return np.random.choice(DIAGNOSTICS_SUCCESS_MESSAGES)
-
-
-def file_exists_msg(fp: Path | str | None = None) -> str:
-    """Return a warning message."""
-    fp_str = f", {fp}, " if fp else " "
-    return (
-        f"WARNING: Output file{fp_str}already exists - not overwriting file.\n"
-        "To overwrite, specify overwrite=True`.\n"
-    )

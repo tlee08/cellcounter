@@ -400,8 +400,30 @@ class CpuCellcFuncs:
         maxima_labels_block: npt.NDArray,
         wshed_labels_block: npt.NDArray,
         wshed_filt_block: npt.NDArray,
+        z_offset: int = 0,
+        y_offset: int = 0,
+        x_offset: int = 0,
     ) -> pd.DataFrame:
-        """Get cells from maxima labels and watershed segmentation."""
+        """Get cells from maxima labels and watershed segmentation.
+
+        Parameters:
+        -----------
+        raw_block : npt.NDArray
+            Raw intensity values
+        maxima_labels_block : npt.NDArray
+            Labels for each maxima point
+        wshed_labels_block : npt.NDArray
+            Watershed segmentation labels
+        wshed_filt_block : npt.NDArray
+            Filtered watershed volumes
+        z_off, y_off, x_off : int
+            Block offsets for global coordinates
+
+        Returns:
+        --------
+        pd.DataFrame
+            DataFrame with cell coordinates (offset to global space), volumes, and intensities
+        """
         assert raw_block.shape == maxima_labels_block.shape
         assert raw_block.shape == wshed_filt_block.shape
         # Convert to xp arrays (GPU-aware)
@@ -413,16 +435,15 @@ class CpuCellcFuncs:
         # Get maxima positions (first occurrence of each label)
         labels, coords_flat = cls.xp.unique(maxima_labels[mask], return_index=True)
         z, y, x = cls.xp.unravel_index(coords_flat, maxima_labels.shape)
-        # Build cells DataFrame
+        # Build cells DataFrame with offset coordinates
         cells_df = pd.DataFrame(
             {
-                Coords.Z.value: cls.cp2np(z),
-                Coords.Y.value: cls.cp2np(y),
-                Coords.X.value: cls.cp2np(x),
+                Coords.Z.value: cls.cp2np(z) + z_offset,
+                Coords.Y.value: cls.cp2np(y) + y_offset,
+                Coords.X.value: cls.cp2np(x) + x_offset,
             },
             index=pd.Index(cls.cp2np(labels).astype(np.uint32), name=CELL_IDX_NAME),
         ).astype(np.uint16)
-        logger.info(cells_df)
         if cells_df.shape[0] > 0:
             # Without if statement, throws error if no cells
             # Remove background
@@ -431,9 +452,9 @@ class CpuCellcFuncs:
         # Get volume at each maxima position
         cells_df[CellColumns.VOLUME.value] = cls.cp2np(
             wshed_filt[
-                cells_df[Coords.Z.value],
-                cells_df[Coords.Y.value],
-                cells_df[Coords.X.value],
+                cells_df[Coords.Z.value] - z_offset,
+                cells_df[Coords.Y.value] - y_offset,
+                cells_df[Coords.X.value] - x_offset,
             ]
         )
         # Filter out cells with 0 volume

@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 import numpy as np
 import numpy.typing as npt
@@ -40,7 +41,7 @@ class VisualCheckFuncsTiff:
         return arr
 
     @classmethod
-    def make_mmap(cls, shape: tuple, out_fp: str) -> np.ndarray:
+    def make_mmap(cls, shape: tuple[int, ...], out_fp: Path | str) -> np.ndarray:
         # Initialising spatial array
         arr = np.memmap(
             out_fp,
@@ -59,7 +60,7 @@ class VisualCheckFuncsTiff:
         cls,
         coords: pd.DataFrame,
         shape: tuple[int, ...],
-        out_fp: str,
+        out_fp: Path | str,
     ):
         """Converts list of coordinates to spatial array single points.
 
@@ -86,7 +87,7 @@ class VisualCheckFuncsTiff:
         cls,
         coords: pd.DataFrame,
         shape: tuple[int, ...],
-        out_fp: str,
+        out_fp: Path | str,
         radius: int,
     ):
         """Converts list of coordinates to spatial array as voxels.
@@ -132,7 +133,7 @@ class VisualCheckFuncsTiff:
         silent_remove(temp_fp)
 
     @classmethod
-    def coords2regions(cls, coords, shape, out_fp):
+    def coords2regions(cls, coords, shape: tuple[int, ...], out_fp: Path | str):
         """Converts list of coordinates to spatial array.
 
         Params:

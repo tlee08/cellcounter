@@ -31,13 +31,12 @@ class MapVersions(Enum):
     CM_ANNOTATIONS = "CM_annotations"
 
 
-class ConfigParamsModel(BaseModel):
+class ProjConfig(BaseModel):
     """Pydantic model for registration parameters."""
 
     # NOTE: can set extra as "forbid" to prevent extra keys
     model_config = ConfigDict(
         extra="ignore",
-        # arbitrary_types_allowed=True,
         validate_default=True,
         use_enum_values=True,
     )
@@ -113,6 +112,7 @@ class ConfigParamsModel(BaseModel):
         return model
 
     def write_file(self, fp: Path | str) -> None:
+        """Write file."""
         fp = Path(fp)
         fp.parent.mkdir(exist_ok=True)
         with fp.open(mode="w") as f:
