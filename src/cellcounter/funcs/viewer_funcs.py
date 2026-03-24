@@ -76,8 +76,8 @@ def read_img(fp: Path | str, trimmer: None | tuple[slice, ...] = None) -> npt.ND
         if trimmer is not None:
             arr = arr[*trimmer]
         return arr
-    error_msg = "Only .zarr and .tif files are supported."
-    raise NotImplementedError(error_msg)
+    err_msg = "Only .zarr and .tif files are supported."
+    raise NotImplementedError(err_msg)
 
 
 def view_arrs(fp_ls: list[str], trimmer: tuple[slice, ...], **kwargs) -> None:

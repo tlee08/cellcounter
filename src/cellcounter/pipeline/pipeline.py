@@ -1,6 +1,3 @@
-from cellcounter.funcs.elastix_funcs import registration, transformation_coords
-from cellcounter.funcs.reg_funcs import reorient, downsmpl_rough, downsmpl_fine
-from cellcounter.funcs.map_funcs import annot_fp2df, df_map_ids, combine_nested_regions
 import logging
 import re
 import shutil
@@ -19,12 +16,22 @@ from natsort import natsorted
 from cellcounter.constants import (
     ANNOT_COLUMNS_FINAL,
     CELL_AGG_MAPPINGS,
+    ELASTIX_ENABLED,
     TRFM,
     AnnotColumns,
     CellColumns,
-    Coords, ELASTIX_ENABLED,
+    Coords,
 )
-from cellcounter.funcs.io_funcs import silent_remove, write_parquet, tiffs2zarr, btiff2zarr, write_tiff, 
+from cellcounter.funcs.elastix_funcs import registration, transformation_coords
+from cellcounter.funcs.io_funcs import (
+    btiff2zarr,
+    silent_remove,
+    tiffs2zarr,
+    write_parquet,
+    write_tiff,
+)
+from cellcounter.funcs.map_funcs import annot_fp2df, combine_nested_regions, df_map_ids
+from cellcounter.funcs.reg_funcs import downsmpl_fine, downsmpl_rough, reorient
 from cellcounter.models.fp_models import check_overwrite, get_proj_fm
 from cellcounter.models.fp_models.ref_fp import RefFp
 from cellcounter.pipeline.abstract_pipeline import AbstractPipeline
@@ -46,12 +53,6 @@ else:
         "Warning Elastix functionality not installed and unavailable.\n"
         'Can install with `pip install "cellcounter[elastix]"`'
     )
-
-
-
-
-
-
 
 
 class Pipeline(AbstractPipeline):
@@ -187,7 +188,8 @@ class Pipeline(AbstractPipeline):
                     chunks=self.config.zarr_chunksize,
                 )
             else:
-                raise ValueError(f'Input file path, "{in_fp}" does not exist.')
+                err_msg = f'Input file path, "{in_fp}" does not exist.'
+                raise ValueError(err_msg)
 
     #############################################
     # REGISTRATION PIPELINE FUNCS
@@ -566,8 +568,6 @@ class Pipeline(AbstractPipeline):
             annot_df = annot_fp2df(self.pfm.map)
             cells_df = df_map_ids(cells_df, annot_df)
             write_parquet(cells_df, self.pfm.cells_df)
-
-
 
     @check_overwrite("cells_agg_df")
     def group_cells(self, *, overwrite: bool = False) -> None:
