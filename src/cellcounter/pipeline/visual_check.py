@@ -4,6 +4,8 @@ Generates visualization arrays (points, heatmaps, combined images)
 for verifying registration and cell counting results in Napari.
 """
 
+import logging
+
 import dask.array as da
 import pandas as pd
 import tifffile

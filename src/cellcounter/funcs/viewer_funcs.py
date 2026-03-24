@@ -6,6 +6,8 @@ Provides:
 - view_arrs_from_pfm(): Convenience wrapper using project filepath model
 - combine_arrs(): Stack arrays into multi-channel TIFF for viewing
 """
+
+import logging
 from enum import Enum
 from pathlib import Path
 

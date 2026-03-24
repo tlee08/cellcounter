@@ -6,6 +6,7 @@ Handles:
 - Recursive region aggregation for nested structures
 - Mapping cell coordinates to region IDs
 """
+
 import logging
 from pathlib import Path
 

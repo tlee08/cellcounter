@@ -7,9 +7,6 @@ from cellcounter.gui.page4_pipeline import page4_pipeline
 from cellcounter.gui.page5_view import page5_view
 from cellcounter.gui.page6_combine import page6_combine
 
-# logging.basicConfig(level=logging.INFO)
-
-
 #####################################################################
 # Streamlit application
 #####################################################################

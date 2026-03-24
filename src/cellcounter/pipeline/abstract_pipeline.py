@@ -5,6 +5,8 @@ Provides the AbstractPipeline base class that handles:
 - Dask cluster creation (heavy, busy, GPU clusters)
 - Config and filepath model access
 """
+
+import logging
 from abc import ABC
 from collections.abc import Callable
 from pathlib import Path

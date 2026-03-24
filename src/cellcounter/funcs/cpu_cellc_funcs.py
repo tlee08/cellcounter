@@ -5,6 +5,8 @@ for 3D microscopy images. Backend (numpy/cupy) is injected at runtime,
 enabling GPU acceleration without code duplication.
 """
 
+import logging
+
 import numpy as np
 import numpy.typing as npt
 import pandas as pd

@@ -4,6 +4,8 @@ Combines cell counting results from multiple specimens into a single
 DataFrame with MultiIndex columns (specimen, measure). Validates that
 all experiments use the same atlas reference for consistency.
 """
+
+import logging
 from enum import Enum
 from pathlib import Path
 
@@ -120,7 +122,6 @@ class BatchCombineFuncs:
         # Get all experiments
         for _proj_dir in proj_dir_ls:
             proj_dir = Path(_proj_dir)
-            # Logging which file is being processed
             logger.info("Running: %s", proj_dir)
             # Filenames
             pfm = ProjFp(proj_dir)

@@ -8,6 +8,7 @@ Coordinates the full workflow:
 All pipeline methods use @check_overwrite decorator for file safety.
 """
 
+import logging
 import re
 import shutil
 from pathlib import Path
