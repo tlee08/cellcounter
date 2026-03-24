@@ -23,6 +23,7 @@ T = TypeVar("T")
 
 # Methods that need GPU memory clearing + numpy conversion
 _GPU_METHODS = {
+    "_spherical_footprint",
     "tophat_filt",
     "dog_filt",
     "gauss_blur_filt",
@@ -41,7 +42,6 @@ _GPU_METHODS = {
 
 # Methods that need GPU memory clearing only (already convert to numpy internally)
 _GPU_METHODS_NO_CONVERT = {
-    "_spherical_footprint",
     "mask2label",
     "get_boundary_pairs",
     "get_label_sizemap",
