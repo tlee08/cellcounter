@@ -414,7 +414,6 @@ class CpuCellcFuncs:
         labels, coords_flat = cls.xp.unique(maxima_labels[mask], return_index=True)
         z, y, x = cls.xp.unravel_index(coords_flat, maxima_labels.shape)
         # Build cells DataFrame
-        logger.info(cells_df)
         cells_df = (
             pd.DataFrame(
                 {
