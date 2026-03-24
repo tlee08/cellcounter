@@ -75,6 +75,10 @@ class AbstractPipeline(ABC):
         """Project configuration (cached on pfm)."""
         return self._pfm.config
 
+    def update_config(self, **updates) -> None:
+        """Update configs."""
+        ProjConfig.ensure(self._pfm.config_fp, **updates)
+
     def heavy_cluster(self) -> SpecCluster:
         """Make heavy cluster (few workers, high RAM)."""
         return LocalCluster(

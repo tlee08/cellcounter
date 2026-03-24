@@ -122,3 +122,24 @@ class ProjConfig(BaseModel):
         fp.parent.mkdir(exist_ok=True)
         with fp.open(mode="w") as f:
             f.write(self.model_dump_json(indent=2))
+
+    @classmethod
+    def ensure(cls, config_fp: Path | str, **updates) -> Self:
+        """Load config from file, creating default if needed, and apply updates.
+
+        Args:
+            config_fp: Path to config file.
+            **updates: Fields to update in the config.
+
+        Returns:
+            The loaded or created config.
+        """
+        config_fp = Path(config_fp)
+        try:
+            config = cls.read_file(config_fp)
+        except FileNotFoundError:
+            config = cls()
+        if updates:
+            config = config.model_validate(config.model_copy(update=updates))
+            config.write_file(config_fp)
+        return config

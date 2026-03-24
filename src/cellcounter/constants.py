@@ -108,7 +108,7 @@ DASK_CUDA_ENABLED = package_is_importable("dask_cuda")
 # Checking whether gpu extra dependency (CuPy) is installed
 GPU_ENABLED = package_is_importable("cupy")
 # Checking whether elastix extra dependency is installed
-ELASTIX_ENABLED = package_is_importable("SimpleITK")
+ELASTIX_ENABLED = package_is_importable("itk")
 
 # Setting Dask configuration
 dask.config.set(

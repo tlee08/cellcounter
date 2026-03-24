@@ -142,36 +142,6 @@ class Pipeline(AbstractPipeline):
         return natsorted([fp for fp in imgs_dir.iterdir() if (imgs_dir / fp).is_dir()])
 
     #############################################
-    # UPDATE CONFIGS
-    #############################################
-
-    @staticmethod
-    def update_configs(proj_dir: Path | str, **kwargs) -> ProjConfig:
-        """Create or update project configuration."""
-        pfm = get_proj_fm(proj_dir, tuning=False)
-        logger.debug("Making all the project sub-directories")
-        logger.debug("Reading/creating params json")
-        try:
-            configs = ProjConfig.read_file(pfm.config_fp)
-            logger.debug("The configs file exists so using this file.")
-        except FileNotFoundError:
-            logger.debug("The configs file does NOT exists.")
-            configs = ProjConfig()
-            logger.debug("Saving newly created configs file.")
-            configs.write_file(pfm.config_fp)
-        if kwargs:
-            logger.debug("kwargs is not empty. They are: %s", kwargs)
-            configs_new = configs.model_validate(configs.model_copy(update=kwargs))
-            if configs_new != configs:
-                logger.debug(
-                    "New configs are different from old configs. Overwriting to file."
-                )
-                configs_new.write_file(pfm.config_fp)
-            configs = configs_new
-        logger.debug("Returning the configs file")
-        return configs
-
-    #############################################
     # CONVERT TIFF TO ZARR
     #############################################
 

@@ -1,6 +1,7 @@
 import logging
 import os
 from enum import Enum
+from pathlib import Path
 
 import pandas as pd
 from natsort import natsorted
@@ -15,6 +16,7 @@ from cellcounter.constants import (
 from cellcounter.funcs.map_funcs import (
     MapFuncs,
 )
+from cellcounter.models.fp_models.proj_fp import ProjFp
 from cellcounter.models.proj_config import ProjConfig
 from cellcounter.pipeline.pipeline import Pipeline
 from cellcounter.utils.io_utils import read_json
@@ -161,8 +163,8 @@ class BatchCombineFuncs:
     @classmethod
     def combine_root_pipeline(
         cls,
-        root_dir: str,
-        out_dir: str,
+        root_dir: Path | str,
+        out_dir: Path | str,
         overwrite: bool = False,
     ):
         # Get all experiments in root_dir (any dir with a configs file)
@@ -171,7 +173,7 @@ class BatchCombineFuncs:
         proj_dir_ls = []
         for exp in natsorted(os.listdir(root_dir)):
             proj_dir = os.path.join(root_dir, exp)
-            pfm = ProjFpModel(proj_dir)
+            pfm = ProjFp(proj_dir)
             try:
                 # If proj has config_params file, then add to list of projs to combine
                 ProjConfig.model_validate(read_json(pfm.config_params))

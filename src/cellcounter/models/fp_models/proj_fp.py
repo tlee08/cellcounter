@@ -1,4 +1,3 @@
-import functools
 import logging
 from pathlib import Path
 
@@ -38,7 +37,7 @@ class ProjFp(AbstractFp):
         """config_params."""
         return self.root_dir / "config_params.json"
 
-    @functools.cached_property
+    @property
     def config(self) -> ProjConfig:
         """Cached project configuration."""
         return ProjConfig.read_file(self.config_fp)

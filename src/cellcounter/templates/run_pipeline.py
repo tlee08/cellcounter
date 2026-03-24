@@ -1,12 +1,12 @@
-import os
+from pathlib import Path
 
 from cellcounter import BatchCombineFuncs, Pipeline, VisualCheck
 
 if __name__ == "__main__":
     # =========================================
     # CHANGE FOLDER PATHS HERE
-    stitched_imgs_dir = "/path/to/tiff_imgs_folder"
-    analysis_root_dir = "/path/to/analysis_outputs_folder"
+    stitched_imgs_dir = Path("/path/to/tiff_imgs_folder")
+    analysis_root_dir = Path("/path/to/analysis_outputs_folder")
     # CHANGE WHETHER TO OVERWRITE EXISTING FILES
     overwrite = True
 
@@ -21,13 +21,14 @@ if __name__ == "__main__":
     for img_name in imgs_ls:
         print(f"Running: {img_name}")
         try:
-            in_fp = os.path.join(stitched_imgs_dir, img_name)
-            analysis_img_dir = os.path.join(analysis_root_dir, img_name)
+            in_fp = stitched_imgs_dir / img_name
+            analysis_img_dir = analysis_root_dir / img_name
+
+            # Create pipeline instance for this project
+            pipeline = Pipeline(analysis_img_dir)
 
             # BULK UPDATE CONFIGS HERE
-            # COMMENT OUT IF YOU DON'T WANT TO UPDATE THE CONFIGS FROM THE SCRIPT
-            Pipeline.update_configs(
-                analysis_img_dir,
+            pipeline.update_config(
                 # REGISTRATION
                 ref_orient_ls=(-2, 3, 1),
                 ref_z_trim=(None, None, None),
@@ -67,9 +68,6 @@ if __name__ == "__main__":
                 combine_cellc_y_trim=(None, None, None),
                 combine_cellc_x_trim=(None, None, None),
             )
-
-            # Create pipeline instance for this project
-            pipeline = Pipeline(analysis_img_dir)
 
             # Making zarr from tiff file(s)
             # COMMENT OUT AFTER FIRST RUN (ONLY NEEDED INITIALLY AND VERY SLOW)
@@ -135,5 +133,5 @@ if __name__ == "__main__":
             print(f"Error in {img_name}: {e}")
     # Combining all experiment dataframes
     BatchCombineFuncs.combine_root_pipeline(
-        analysis_root_dir, os.path.dirname(analysis_root_dir), overwrite=True
+        analysis_root_dir, analysis_root_dir.parent, overwrite=True
     )
