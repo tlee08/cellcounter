@@ -128,8 +128,8 @@ class Pipeline(AbstractPipeline):
             if pair_arr_ls
             else np.empty((2, 0), dtype=np.uint64)
         )
-        print(pairs_arr)
-        print(pairs_arr.shape)
+        logger.info(pairs_arr)
+        logger.info(pairs_arr.shape)
         logger.debug("Cross-boundary pairs found: %d", len(pairs_arr))
         uf = UnionFind()
         for a, b in pairs_arr.T:
