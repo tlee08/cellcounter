@@ -137,7 +137,7 @@ class Pipeline(AbstractPipeline):
         ]
         label_counts_ls = [dask.compute(i) for i in delayed_ls]
         print(label_counts_ls)
-        label_counts = np.concatenate(label_counts_ls, axis=1)
+        label_counts = np.concatenate(label_counts_ls, axis=0)
         print(label_counts)
         print(label_counts.shape)
         labels = np.concatenate([i[0] for i in label_counts])
