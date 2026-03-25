@@ -382,7 +382,7 @@ class CpuCellcFuncs:
         self,
         block: npt.NDArray,
         radius: int = 5,
-        mask_block: None | npt.NDArray = None,
+        mask_block: npt.NDArray | None = None,
     ) -> npt.NDArray:
         """Find local maxima using spherical neighborhood.
 
@@ -407,6 +407,8 @@ class CpuCellcFuncs:
         if mask_block is not None:
             logger.debug("Mask provided. Maxima only in mask regions considered.")
             mask_block = (self.xp.asarray(mask_block) > 0).astype(self.xp.uint8)
+            print(res_block.shape)
+            print(mask_block.shape)
             res_block = (res_block * mask_block).astype(self.xp.uint8)
         return res_block
 
