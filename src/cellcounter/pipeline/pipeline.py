@@ -123,7 +123,7 @@ class Pipeline(AbstractPipeline):
             for i in label_overlap.to_delayed().ravel()
         ]
         pair_arr_ls = [dask.compute(i) for i in delayed_ls]
-        pairs_arr = np.hstack(pair_arr_ls)
+        pairs_arr = np.concatenate(pair_arr_ls, axis=1)
         print(pairs_arr)
         print(pairs_arr.shape)
         logger.debug("Cross-boundary pairs found: %d", len(pairs_arr))
@@ -137,7 +137,7 @@ class Pipeline(AbstractPipeline):
         ]
         label_counts_ls = [dask.compute(i) for i in delayed_ls]
         print(label_counts_ls)
-        label_counts = np.concatenate(label_counts_ls, axis=0)
+        label_counts = np.concatenate(label_counts_ls, axis=1)
         print(label_counts)
         print(label_counts.shape)
         labels = np.concatenate([i[0] for i in label_counts])
