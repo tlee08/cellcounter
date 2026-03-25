@@ -128,7 +128,7 @@ class Pipeline(AbstractPipeline):
         print(pairs_arr.shape)
         logger.debug("Cross-boundary pairs found: %d", len(pairs_arr))
         uf = UnionFind()
-        for a, b in pairs_arr:
+        for a, b in pairs_arr.T:
             uf.union(int(a), int(b))
         logger.debug("Aggregating voxels per label...")
         delayed_ls = [
