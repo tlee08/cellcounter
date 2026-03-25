@@ -33,7 +33,7 @@ class VisualCheck(AbstractPipeline):
                 coords=pd.read_parquet(self.pfm.cells_raw_df),
                 shape=da.from_zarr(self.pfm.raw).shape,
                 out_fp=self.pfm.points_raw,
-                chunks=self.pfm.config.chunks,
+                chunks=self.pfm.config.chunks.to_ls(),
             )
 
     @_check_overwrite("heatmap_raw")
@@ -45,7 +45,7 @@ class VisualCheck(AbstractPipeline):
                 shape=da.from_zarr(self.pfm.raw).shape,
                 out_fp=self.pfm.heatmap_raw,
                 radius=self.config.visual_check.heatmap_raw_radius,
-                chunks=self.pfm.config.chunks,
+                chunks=self.pfm.config.chunks.to_ls(),
             )
 
     @_check_overwrite("points_trfm")
