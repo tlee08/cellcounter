@@ -39,7 +39,7 @@ class ProjFp(AbstractFp):
 
     @property
     def config(self) -> ProjConfig:
-        """Cached project configuration."""
+        """Project configuration (reads from disk each time)."""
         return ProjConfig.read_file(self.config_fp)
 
     @property
