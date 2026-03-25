@@ -14,10 +14,10 @@ from cellcounter.models.proj_config.dims_config import DimsConfig, DimsSliceConf
 class RegistrationConfig(BaseModel):
     """Image registration parameters."""
 
-    ref_orientation: DimsConfig[int] = DimsConfig.from_ls(1, 2, 3)
+    ref_orientation: DimsConfig[int] = DimsConfig.from_tuple(1, 2, 3)
     ref_trim: DimsSliceConfig = DimsSliceConfig()
-    downsample_rough: DimsConfig[PositiveInt] = DimsConfig.from_ls(3, 6, 6)
-    downsample_fine: DimsConfig[PositiveFloat] = DimsConfig.from_ls(1.0, 0.6, 0.6)
+    downsample_rough: DimsConfig[PositiveInt] = DimsConfig.from_tuple(3, 6, 6)
+    downsample_fine: DimsConfig[PositiveFloat] = DimsConfig.from_tuple(1.0, 0.6, 0.6)
     reg_trim: DimsSliceConfig = DimsSliceConfig()
     lower_bound: NonNegativeInt = 100
     lower_bound_mapto: NonNegativeInt = 0

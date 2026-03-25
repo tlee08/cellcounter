@@ -28,7 +28,7 @@ class ProjConfig(BaseModel):
     )
 
     # Zarr storage
-    chunks: DimsConfig[PositiveInt] = DimsConfig.from_ls(500, 500, 500)
+    chunks: DimsConfig[PositiveInt] = DimsConfig.from_tuple(500, 500, 500)
 
     # Tuning crop (subset for parameter exploration)
     tuning_trim: DimsSliceConfig = DimsSliceConfig(

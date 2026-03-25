@@ -11,11 +11,11 @@ class DimsConfig[T](BaseModel):
     x: T
 
     @classmethod
-    def from_ls(cls, z: T, y: T, x: T) -> Self:
+    def from_tuple(cls, z: T, y: T, x: T) -> Self:
         """Load into struct from list."""
         return cls(z=z, y=y, x=x)
 
-    def to_ls(self) -> tuple[T, T, T]:
+    def to_tuple(self) -> tuple[T, T, T]:
         """Return tuple in (z, y, x) form."""
         return (self.z, self.y, self.x)
 

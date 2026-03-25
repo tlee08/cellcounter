@@ -197,14 +197,14 @@ class Pipeline(AbstractPipeline):
                         ),
                     ),
                     dst_fp=self.pfm.raw,
-                    chunks=self.config.chunks.to_ls(),
+                    chunks=self.config.chunks.to_tuple(),
                 )
             elif in_fp.is_file():
                 logger.debug("in_fp (%s) is a file", in_fp)
                 btiff2zarr(
                     src_fp=in_fp,
                     dst_fp=self.pfm.raw,
-                    chunks=self.config.chunks.to_ls(),
+                    chunks=self.config.chunks.to_tuple(),
                 )
             else:
                 err_msg = f'Input file path, "{in_fp}" does not exist.'
@@ -222,7 +222,7 @@ class Pipeline(AbstractPipeline):
         with cluster_process(self.busy_cluster()):
             zarr_arr = da.from_zarr(self.pfm.raw)
             temp_fp = self.pfm.raw.with_suffix(".rechunk_temp.zarr")
-            zarr_rechunked = zarr_arr.rechunk(self.config.chunks.to_ls())
+            zarr_rechunked = zarr_arr.rechunk(self.config.chunks.to_tuple())
             disk_cache(zarr_rechunked, temp_fp)
             silent_remove(self.pfm.raw)
             shutil.move(temp_fp, self.pfm.raw)
@@ -247,7 +247,7 @@ class Pipeline(AbstractPipeline):
         for fp_i, fp_o in [(rfm.ref, self.pfm.ref), (rfm.annot, self.pfm.annot)]:
             arr = tifffile.imread(fp_i)
             arr = self.cellc_funcs.reorient(
-                arr, self.config.registration.ref_orientation.to_ls()
+                arr, self.config.registration.ref_orientation.to_tuple()
             )
             arr = arr[
                 self.config.registration.ref_trim.z.to_slice(),
@@ -344,7 +344,7 @@ class Pipeline(AbstractPipeline):
                 self.config.tuning_trim.y.to_slice(),
                 self.config.tuning_trim.x.to_slice(),
             ]
-            raw_arr = raw_arr.rechunk(self.config.chunks.to_ls())
+            raw_arr = raw_arr.rechunk(self.config.chunks.to_tuple())
             disk_cache(raw_arr, pfm_tuning.raw)
 
     #############################################
@@ -399,7 +399,7 @@ class Pipeline(AbstractPipeline):
     @_check_overwrite("threshd_labels")
     def label_thresholded(self, *, overwrite: bool = False) -> None:
         """Step 5: Label contiguous regions in thresholded image."""
-        max_labels = int(np.ceil(np.prod(self.config.chunks.to_ls())) / 2) + 1
+        max_labels = int(np.ceil(np.prod(self.config.chunks.to_tuple())) / 2) + 1
         with cluster_process(self.gpu_cluster()):
             result = da.map_blocks(
                 self.cellc_funcs.mask2label,
@@ -444,7 +444,7 @@ class Pipeline(AbstractPipeline):
     @_check_overwrite("maxima_labels")
     def label_maxima(self, *, overwrite: bool = False) -> None:
         """Step 9: Label maxima points."""
-        max_labels = int(np.ceil(np.prod(self.config.chunks.to_ls())) / 2) + 1
+        max_labels = int(np.ceil(np.prod(self.config.chunks.to_tuple())) / 2) + 1
         with cluster_process(self.gpu_cluster()):
             result = da.map_blocks(
                 self.cellc_funcs.mask2label,
@@ -543,18 +543,18 @@ class Pipeline(AbstractPipeline):
             cells_df = cells_df[enum2list(Coords)]
 
             cells_df = cells_df / np.array(
-                self.config.registration.downsample_rough.to_ls(),
+                self.config.registration.downsample_rough.to_tuple(),
             )
             cells_df = cells_df * np.array(
-                self.config.registration.downsample_fine.to_ls(),
+                self.config.registration.downsample_fine.to_tuple(),
             )
             cells_df = cells_df - np.array(
                 [
-                    s[0] or 0
+                    s.start or 0
                     for s in (
-                        self.config.registration.reg_trim.z.to_tuple(),
-                        self.config.registration.reg_trim.y.to_tuple(),
-                        self.config.registration.reg_trim.x.to_tuple(),
+                        self.config.registration.reg_trim.z.to_slice(),
+                        self.config.registration.reg_trim.y.to_slice(),
+                        self.config.registration.reg_trim.x.to_slice(),
                     )
                 ],
             )
