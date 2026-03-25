@@ -10,16 +10,15 @@ if __name__ == "__main__":
     analysis_root_dir = "/path/to/analysis_outputs_folder"
     # CHANGE WHETHER TO OVERWRITE EXISTING FILES
     overwrite = True
-
-    # Convert to PosixPath
-    stitched_imgs_dir = Path(stitched_imgs_dir)
-    analysis_root_dir = Path(analysis_root_dir)
-
     # THIS NEXT LINE RUNS ALL IMAGES IN THE INPUT FOLDER
     imgs_ls = Pipeline.get_imgs_ls(stitched_imgs_dir)
     # THIS LINE RUNS ONLY THE IMAGES IN THE LIST BELOW
     # imgs_ls = ["example_img"]
     # =========================================
+
+    # Convert to PosixPath
+    stitched_imgs_dir = Path(stitched_imgs_dir)
+    analysis_root_dir = Path(analysis_root_dir)
 
     assert stitched_imgs_dir != analysis_root_dir
 

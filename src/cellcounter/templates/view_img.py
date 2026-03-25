@@ -7,8 +7,11 @@ from cellcounter.utils.viewer import view_images
 if __name__ == "__main__":
     # =========================================
     # CHANGE PROJECT PATH HERE
-    proj_dir = Path("/path/to/project")
+    proj_dir = "/path/to/project"
     # =========================================
+
+    # Convert to PosixPath
+    stitched_imgs_dir = Path(proj_dir)
 
     view_images(
         proj_dir=proj_dir,
