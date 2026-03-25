@@ -460,8 +460,8 @@ class Pipeline(AbstractPipeline):
             result = da.map_blocks(
                 self.cellc_funcs.wshed_segm,
                 da.from_zarr(self.pfm.raw),
-                maxima_block=da.from_zarr(self.pfm.maxima_labels),
-                mask_block=da.from_zarr(self.pfm.threshd_filt),
+                da.from_zarr(self.pfm.maxima_labels),
+                da.from_zarr(self.pfm.threshd_filt),
             )
             disk_cache(result, self.pfm.wshed_labels)
 
