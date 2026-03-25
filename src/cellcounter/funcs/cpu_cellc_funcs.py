@@ -381,8 +381,8 @@ class CpuCellcFuncs:
     def get_local_maxima(
         self,
         block: npt.NDArray,
-        radius: int = 5,
         mask_block: npt.NDArray | None = None,
+        radius: int = 5,
     ) -> npt.NDArray:
         """Find local maxima using spherical neighborhood.
 

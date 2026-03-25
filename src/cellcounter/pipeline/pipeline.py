@@ -436,8 +436,8 @@ class Pipeline(AbstractPipeline):
             result = da.map_blocks(
                 self.cellc_funcs.get_local_maxima,
                 da.from_zarr(self.pfm.raw),
+                da.from_zarr(self.pfm.threshd_filt),
                 radius=self.pfm.config.cell_counting.maxima_radius,
-                mask_block=da.from_zarr(self.pfm.threshd_filt),
             )
             disk_cache(result, self.pfm.maxima)
 
