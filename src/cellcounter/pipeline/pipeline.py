@@ -136,6 +136,7 @@ class Pipeline(AbstractPipeline):
             for i in label_arr.to_delayed().ravel()
         ]
         label_counts = [dask.compute(i) for i in delayed_ls]
+        print(label_counts)
         labels = np.concatenate([i[0] for i in label_counts])
         counts = np.concatenate([i[1] for i in label_counts])
         logger.debug("Unique labels (foreground): %d", len(labels))
