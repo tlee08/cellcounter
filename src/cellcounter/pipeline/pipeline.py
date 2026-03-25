@@ -132,28 +132,28 @@ class Pipeline(AbstractPipeline):
         print("891371823712381231278312789jadhaasldkjadl;kas")
         print(pairs_arr)
         print(pairs_arr.shape)
-        # logger.debug("Cross-boundary pairs found: %d", len(pairs_arr))
-        # uf = UnionFind()
-        # for a, b in pairs_arr.T:
-        #     uf.union(int(a), int(b))
-        # logger.debug("Aggregating voxels per label...")
-        # delayed_ls = [
-        #     dask.delayed(self.cellc_funcs.get_label_sizemap)(i)
-        #     for i in label_arr.to_delayed().ravel()
-        # ]
-        # label_counts = [dask.compute(i) for i in delayed_ls]
-        # labels = np.concatenate([i[0] for i in label_counts])
-        # counts = np.concatenate([i[1] for i in label_counts])
-        # logger.debug("Unique labels (foreground): %d", len(labels))
-        # uf.build_lookup_table(labels, counts)
-        # logger.debug("Writing output array...")
-        # return da.map_blocks(
-        #     self.cellc_funcs.map_values_to_arr,
-        #     label_arr,
-        #     ids=uf.sorted_keys,
-        #     values=uf.sorted_sizes,
-        #     dtype=np.uint64,
-        # )
+        logger.debug("Cross-boundary pairs found: %d", len(pairs_arr))
+        uf = UnionFind()
+        for a, b in pairs_arr.T:
+            uf.union(int(a), int(b))
+        logger.debug("Aggregating voxels per label...")
+        delayed_ls = [
+            dask.delayed(self.cellc_funcs.get_label_sizemap)(i)
+            for i in label_arr.to_delayed().ravel()
+        ]
+        label_counts = [dask.compute(i) for i in delayed_ls]
+        labels = np.concatenate([i[0] for i in label_counts])
+        counts = np.concatenate([i[1] for i in label_counts])
+        logger.debug("Unique labels (foreground): %d", len(labels))
+        uf.build_lookup_table(labels, counts)
+        logger.debug("Writing output array...")
+        return da.map_blocks(
+            self.cellc_funcs.map_values_to_arr,
+            label_arr,
+            ids=uf.sorted_keys,
+            values=uf.sorted_sizes,
+            dtype=np.uint64,
+        )
 
     #############################################
     # STATIC UTILITIES
