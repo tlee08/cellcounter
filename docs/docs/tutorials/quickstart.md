@@ -6,13 +6,19 @@ Process your first microscopy image from TIFF to cell counts.
 
 ```mermaid
 flowchart LR
-    A[Input TIFF] --> B[Pipeline]
-    B --> C[Cell Counts CSV]
+    A[TIFF Images] --> B[Registration]
+    A --> C[Cell Detection]
+    C --> D[Region Mapping]
+    B --> D
+    D --> E[Results]
 
-    B --> D[Registration]
-    D --> E[Cell Detection]
-    E --> F[Region Mapping]
+    style A fill:#e1f5fe
+    style E fill:#c8e6c9
 ```
+
+## 0. Install this Software
+
+See installation instructions [here](./installation.md)
 
 ## 1. Create a Project
 
@@ -76,7 +82,7 @@ pipeline.reg_img_rough()
 Results are saved to `cells_agg.csv`:
 
 | region_id | region_name | cell_count | avg_intensity |
-|-----------|-------------|------------|---------------|
+| --------- | ----------- | ---------- | ------------- |
 | 1         | isocortex   | 1523       | 245.3         |
 | 2         | hippocampus | 892        | 198.7         |
 
@@ -84,47 +90,42 @@ Results are saved to `cells_agg.csv`:
 
 ### Registration (7 steps)
 
-| Step | Method | Description |
-|------|--------|-------------|
-| 1 | `tiff2zarr` | Convert TIFF to chunked Zarr |
-| 2 | `reg_ref_prepare` | Prepare reference atlas |
-| 3 | `reg_img_rough` | Integer-stride downsampling |
-| 4 | `reg_img_fine` | Gaussian zoom downsampling |
-| 5 | `reg_img_trim` | Trim to region of interest |
-| 6 | `reg_img_bound` | Apply intensity bounds |
-| 7 | `reg_elastix` | Elastix registration |
+| Step | Method            | Description                  |
+| ---- | ----------------- | ---------------------------- |
+| 1    | `tiff2zarr`       | Convert TIFF to chunked Zarr |
+| 2    | `reg_ref_prepare` | Prepare reference atlas      |
+| 3    | `reg_img_rough`   | Integer-stride downsampling  |
+| 4    | `reg_img_fine`    | Gaussian zoom downsampling   |
+| 5    | `reg_img_trim`    | Trim to region of interest   |
+| 6    | `reg_img_bound`   | Apply intensity bounds       |
+| 7    | `reg_elastix`     | Elastix registration         |
 
 ### Cell Counting
 
-```python
-# 13 steps: filtering → thresholding → watershed → filtering
-STEPS_CELL_COUNTING = (
-    "tophat_filter",           # 1. Background subtraction
-    "dog_filter",              # 2. Difference of Gaussians
-    "adaptive_threshold_prep", # 3. Gaussian subtraction
-    "threshold",               # 4. Manual thresholding
-    "label_thresholded",       # 5. Label contiguous regions
-    "compute_thresholded_volumes", # 6. Union-find volumes
-    "filter_thresholded",      # 7. Size filtering
-    "detect_maxima",           # 8. Local maxima detection
-    "label_maxima",            # 9. Label maxima
-    "watershed",               # 10. Watershed segmentation
-    "compute_watershed_volumes", # 11. Watershed volumes
-    "filter_watershed",        # 12. Size filtering
-    "save_cells_table",        # 13. Extract cell measurements
-)
-```
+| Step | Method                      | Description                   |
+| ---- | --------------------------- | ----------------------------- |
+| 1    | tophat_filter               | 1. Background subtraction     |
+| 2    | dog_filter                  | 2. Difference of Gaussians    |
+| 3    | adaptive_threshold_prep     | 3. Gaussian subtraction       |
+| 4    | threshold                   | 4. Manual thresholding        |
+| 5    | label_thresholded           | 5. Label contiguous regions   |
+| 6    | compute_thresholded_volumes | 6. Union-find volumes         |
+| 7    | filter_thresholded          | 7. Size filtering             |
+| 8    | detect_maxima               | 8. Local maxima detection     |
+| 9    | label_maxima                | 9. Label maxima               |
+| 10   | watershed                   | 10. Watershed segmentation    |
+| 11   | compute_watershed_volumes   | 11. Watershed volumes         |
+| 12   | filter_watershed            | 12. Size filtering            |
+| 13   | save_cells_table            | 13. Extract cell measurements |
 
 ### Mapping
 
-```python
-STEPS_MAPPING = (
-    "transform_coords",  # Transform to atlas space
-    "cell_mapping",      # Assign region IDs
-    "group_cells",       # Aggregate by region
-    "cells2csv",         # Export results
-)
-```
+| Step | Method           | Description              |
+| ---- | ---------------- | ------------------------ |
+| 1    | transform_coords | Transform to atlas space |
+| 2    | cell_mapping     | Assign region IDs        |
+| 3    | group_cells      | Aggregate by region      |
+| 4    | cells2csv        | Export results           |
 
 ## GPU vs CPU Mode
 

@@ -15,7 +15,11 @@ stitched_imgs/
 ├── mouse_02/
 │   └── ...
 └── mouse_03/
+```
 
+And your data will be saved in the following structure:
+
+```
 analysis_outputs/
 ├── mouse_01/
 │   ├── config.json
@@ -29,7 +33,7 @@ analysis_outputs/
 Create a script based on the template:
 
 ```python
-from pathlib import Path
+<from pathlib import Path
 from cellcounter import Pipeline, VisualCheck
 from cellcounter.funcs.batch_combine_funcs import combine_root
 
@@ -73,7 +77,7 @@ for img_name in imgs_ls:
         print(f"Error in {img_name}: {e}")
 
 # Combine results across all experiments
-combine_root(analysis_root_dir, analysis_root_dir.parent)
+combine_root(analysis_root_dir, analysis_root_dir.parent)>
 ```
 
 ## Step-by-Step Control

@@ -5,9 +5,10 @@ Automated cFos cell counting and brain region mapping for whole-brain microscopy
 ```mermaid
 flowchart LR
     A[TIFF Images] --> B[Registration]
-    B --> C[Cell Detection]
+    A --> C[Cell Detection]
     C --> D[Region Mapping]
-    D --> E[CSV Results]
+    B --> D
+    D --> E[Results]
 
     style A fill:#e1f5fe
     style E fill:#c8e6c9
@@ -43,36 +44,36 @@ uv run cellcounter-make-project
 
 <div class="grid cards" markdown>
 
--   :material-rocket-launch:{ .lg .middle } __Getting Started__
+- :material-rocket-launch:{ .lg .middle } **Getting Started**
 
-    ---
+  ***
 
-    Install and run your first analysis
+  Install and run your first analysis
 
-    [:octicons-arrow-right-24: Installation](tutorials/installation.md)
+  [:octicons-arrow-right-24: Installation](tutorials/installation.md)
 
--   :material-book-open-variant:{ .lg .middle } __Tutorials__
+- :material-book-open-variant:{ .lg .middle } **Tutorials**
 
-    ---
+  ***
 
-    Learn the workflow step by step
+  Learn the workflow step by step
 
-    [:octicons-arrow-right-24: Quick Start](tutorials/quickstart.md)
+  [:octicons-arrow-right-24: Quick Start](tutorials/quickstart.md)
 
--   :material-tools:{ .lg .middle } __How-To Guides__
+- :material-tools:{ .lg .middle } **How-To Guides**
 
-    ---
+  ***
 
-    Solve specific problems
+  Solve specific problems
 
-    [:octicons-arrow-right-24: Batch Processing](how-to/batch.md)
+  [:octicons-arrow-right-24: Batch Processing](how-to/batch.md)
 
--   :material-code-braces:{ .lg .middle } __API Reference__
+- :material-code-braces:{ .lg .middle } **API Reference**
 
-    ---
+  ***
 
-    Browse the code documentation
+  Browse the code documentation
 
-    [:octicons-arrow-right-24: Pipeline API](reference/pipeline.md)
+  [:octicons-arrow-right-24: Pipeline API](reference/pipeline.md)
 
 </div>
