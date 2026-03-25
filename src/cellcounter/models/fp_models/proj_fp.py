@@ -213,21 +213,6 @@ class ProjFp(AbstractFp):
         return self.root_dir / self.analysis_sdir / "5_cells_agg.csv"
 
     @property
-    def threshd_final(self) -> Path:
-        """Threshd_final."""
-        return self.root_dir / self.visual_sdir / "threshd.zarr"
-
-    @property
-    def maxima_final(self) -> Path:
-        """Maxima_final."""
-        return self.root_dir / self.visual_sdir / "maxima.zarr"
-
-    @property
-    def wshed_final(self) -> Path:
-        """Wshed_final."""
-        return self.root_dir / self.visual_sdir / "wshed.zarr"
-
-    @property
     def points_raw(self) -> Path:
         """Points_raw."""
         return self.root_dir / self.visual_sdir / "points_raw.zarr"

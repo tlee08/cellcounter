@@ -86,7 +86,7 @@ class VisualCheck(AbstractPipeline):
             y_trim = self.config.combine.cellcount_trim.y.to_slice()
             x_trim = self.config.combine.cellcount_trim.x.to_slice()
         combine_arrs(
-            fp_in_ls=(self.pfm.raw, self.pfm.threshd_final, self.pfm.wshed_final),
+            fp_in_ls=(self.pfm.raw, self.pfm.threshd_filt, self.pfm.wshed_filt),
             fp_out=self.pfm.comb_cellc,
             trimmer=(z_trim, y_trim, x_trim),
         )
