@@ -1,3 +1,5 @@
+"""Run pipeline."""
+
 from pathlib import Path
 
 from cellcounter import Pipeline, VisualCheck
