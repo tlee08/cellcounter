@@ -123,12 +123,14 @@ class Pipeline(AbstractPipeline):
             for i in label_overlap.to_delayed().ravel()
         ]
         pair_arr_ls = [dask.compute(i) for i in delayed_ls]
-        pairs_arr = np.concatenate(pair_arr_ls, axis=0)
+        pairs_arr = (
+            np.concatenate(pair_arr_ls, axis=0) if pair_arr_ls else np.empty((0, 2))
+        )
         print(pairs_arr)
         print(pairs_arr.shape)
         logger.debug("Cross-boundary pairs found: %d", len(pairs_arr))
         uf = UnionFind()
-        for a, b in pairs_arr.T:
+        for a, b in pairs_arr:
             uf.union(int(a), int(b))
         logger.debug("Aggregating voxels per label...")
         delayed_ls = [
@@ -136,12 +138,15 @@ class Pipeline(AbstractPipeline):
             for i in label_arr.to_delayed().ravel()
         ]
         label_counts_ls = [dask.compute(i) for i in delayed_ls]
-        print(label_counts_ls)
-        label_counts = np.concatenate(label_counts_ls, axis=1)
+        label_counts = (
+            np.concatenate(label_counts_ls, axis=0)
+            if label_counts_ls
+            else np.empty((0, 2))
+        )
         print(label_counts)
         print(label_counts.shape)
-        labels = np.concatenate([i[0] for i in label_counts])
-        counts = np.concatenate([i[1] for i in label_counts])
+        labels = label_counts[:, 0]
+        counts = label_counts[:, 1]
         logger.debug("Unique labels (foreground): %d", len(labels))
         uf.build_lookup_table(labels, counts)
         logger.debug("Writing output array...")

@@ -277,7 +277,7 @@ class CpuCellcFuncs:
         Returns:
         --------
         npt.NDArray
-            Array of shape (2, N) with adjacent label pairs
+            Array of shape (N, 2) with adjacent label pairs
         """
         block = self.xp.asarray(block)
         pairs = set()
@@ -297,10 +297,9 @@ class CpuCellcFuncs:
                     hi = self.xp.maximum(a[mask], b[mask])
                     pairs.update(zip(lo.tolist(), hi.tolist(), strict=True))
         if pairs:
-            print(np.array(list(pairs)).T.shape)
-            return np.array(list(pairs).T)
-        print(np.empty((2, 0)).shape)
-        return np.empty((2, 0))
+            # Each row is [label_a, label_b]
+            return np.array(list(pairs))
+        return np.empty((0, 2))
 
     def get_label_sizemap(self, block: npt.NDArray) -> tuple[npt.NDArray, npt.NDArray]:
         """Get a dict of label_val : contiguous_size.
@@ -313,16 +312,16 @@ class CpuCellcFuncs:
         Returns:
         --------
         npt.NDArray
-            Array of shape (2, N) representing ids and counts
+            Array of shape (N, 2) with ids and counts pairs
         """
         block = self.xp.asarray(block)
         logger.debug("Getting vector of ids and volumes (not incl. 0)")
         mask = block > 0
         labels_fg = block[mask]
         ids, counts = self.xp.unique(labels_fg, return_counts=True)
-        # Return ids and corresponding counts (as np array)
-        print(self.xp.vstack((ids, counts)).shape)
-        return self.xp.vstack((ids, counts))
+        # Each row is [id_i, count_i]
+        print(self.xp.column_stack((ids, counts)).shape)
+        return self.xp.column_stack((ids, counts))
 
     def map_values_to_arr(
         self,
