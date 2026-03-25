@@ -46,7 +46,6 @@ exclude-dependencies = ["pynvml"]
 
 [project.scripts]
 cellcounter-init = "cellcounter.scripts.init:main"
-cellcounter-project-gui = "cellcounter.scripts.project_gui:run_script"
 cellcounter-make-project = "cellcounter.scripts.make_project:main"
 
 [build-system]

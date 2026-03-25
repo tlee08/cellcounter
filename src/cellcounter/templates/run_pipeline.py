@@ -1,6 +1,7 @@
 from pathlib import Path
 
-from cellcounter import BatchCombineFuncs, Pipeline, VisualCheck
+from cellcounter import Pipeline, VisualCheck
+from cellcounter.funcs.batch_combine_funcs import combine_root
 
 if __name__ == "__main__":
     # =========================================
@@ -152,6 +153,4 @@ if __name__ == "__main__":
         except Exception as e:
             print(f"Error in {img_name}: {e}")
     # Combining all experiment dataframes
-    BatchCombineFuncs.combine_root_pipeline(
-        analysis_root_dir, analysis_root_dir.parent, overwrite=True
-    )
+    combine_root(analysis_root_dir, analysis_root_dir.parent, overwrite=True)

@@ -1,8 +1,13 @@
 """Multi-experiment aggregation utilities.
 
 Combines cell counting results from multiple specimens into a single
-DataFrame with MultiIndex columns (specimen, measure). Validates that
-all experiments use the same atlas reference for consistency.
+DataFrame with MultiIndex columns (specimen, measure).
+
+Output structure:
+- **Index**: Brain region IDs (from atlas annotation)
+- **Columns**: MultiIndex with (specimen, measure) levels
+    - "annotations" specimen contains region metadata (name, acronym, etc.)
+    - Each project specimen contains cell measurements (count, volume, etc.)
 """
 
 import logging
@@ -15,13 +20,11 @@ from cellcounter.constants import (
     ANNOT_COLUMNS_FINAL,
     AnnotColumns,
     CellColumns,
-    MaskColumns,
     SpecialRegions,
 )
 from cellcounter.constants.annotations import CombinedColumns
 from cellcounter.funcs.map_funcs import annot_df_get_parents, annot_fp2df
 from cellcounter.models.fp_models.proj_fp import ProjFp
-from cellcounter.pipeline.pipeline import Pipeline
 from cellcounter.utils.misc_utils import enum2list
 
 logger = logging.getLogger(__name__)
@@ -29,175 +32,187 @@ logger = logging.getLogger(__name__)
 COMBINED_FP = "combined_df"
 
 
-class BatchCombineFuncs:
-    """Utilities for combining cell counting results across experiments.
+class AtlasMismatchError(Exception):
+    """Raised when projects use different atlas references."""
 
-    Aggregates results from multiple specimens into a single DataFrame
-    with MultiIndex columns (specimen, measure) for cross-experiment analysis.
+
+class MissingDataError(Exception):
+    """Raised when required project data files are missing."""
+
+
+def _get_reference_config(pfm: ProjFp) -> tuple:
+    """Extract atlas reference config tuple for comparison."""
+    return (
+        pfm.config.reference.atlas_dir,
+        pfm.config.reference.ref_version,
+        pfm.config.reference.annot_version,
+        pfm.config.reference.map_version,
+    )
+
+
+def _validate_project(pfm: ProjFp, reference_config: tuple) -> None:
+    """Validate project has required files and matches reference atlas."""
+    if not pfm.cells_agg_df.exists():
+        raise MissingDataError(f"Missing cells_agg_df for {pfm.root_dir}")
+
+    project_config = _get_reference_config(pfm)
+    if project_config != reference_config:
+        raise AtlasMismatchError(
+            f"Atlas mismatch for {pfm.root_dir}.\n"
+            f"Expected: {reference_config}\n"
+            f"Got: {project_config}"
+        )
+
+
+def _load_cells_agg(pfm: ProjFp) -> pd.DataFrame:
+    """Load cell aggregation data for a single project."""
+    df = pd.read_parquet(pfm.cells_agg_df)
+    return df[enum2list(CellColumns)]
+
+
+def _build_annotation_base(pfm: ProjFp) -> pd.DataFrame:
+    """Build annotation columns with special regions."""
+    annot_df = annot_fp2df(pfm.map)
+    annot_df = annot_df_get_parents(annot_df)
+
+    # Add special regions for cells outside atlas
+    annot_df.loc[-1] = pd.Series(
+        {AnnotColumns.NAME.value: SpecialRegions.INVALID.value}
+    )
+    annot_df.loc[0] = pd.Series(
+        {AnnotColumns.NAME.value: SpecialRegions.UNIVERSE.value}
+    )
+
+    annot_df = annot_df[ANNOT_COLUMNS_FINAL]
+
+    # Wrap in MultiIndex with "annotations" as specimen name
+    return pd.concat(
+        [annot_df],
+        keys=["annotations"],
+        names=[CombinedColumns.SPECIMEN.value],
+        axis=1,
+    )
+
+
+def _wrap_specimen_columns(df: pd.DataFrame, specimen_name: str) -> pd.DataFrame:
+    """Wrap DataFrame columns in MultiIndex with specimen name."""
+    return pd.concat(
+        [df],
+        keys=[specimen_name],
+        names=[CombinedColumns.SPECIMEN.value],
+        axis=1,
+    )
+
+
+def combine_projects(
+    proj_dir_ls: list[Path | str],
+    out_dir: Path | str,
+    *,
+    overwrite: bool = False,
+) -> None:
+    """Combine results from a list of project directories.
+
+    Args:
+        proj_dir_ls: List of project directory paths.
+        out_dir: Output directory for combined results.
+        overwrite: If True, overwrite existing output files.
+
+    Raises:
+        AtlasMismatchError: If projects use different atlas references.
+        MissingDataError: If required data files are missing.
     """
+    if not proj_dir_ls:
+        raise ValueError("proj_dir_ls is empty")
 
-    @classmethod
-    def combine_ls_pipeline(
-        cls,
-        proj_dir_ls: list[Path | str],
-        out_dir: Path | str,
-        *,
-        overwrite: bool = False,
-    ) -> None:
-        """Combine results from a list of project directories.
+    out_dir = Path(out_dir)
+    out_parquet = out_dir / f"{COMBINED_FP}.parquet"
+    out_csv = out_dir / f"{COMBINED_FP}.csv"
 
-        Args:
-            proj_dir_ls: List of project directory paths.
-            out_dir: Output directory for combined results.
-            overwrite: If True, overwrite existing output files.
-        """
-        # Checking should overwrite
-        # If overwrite is False and out_fp_parquet exists, then skip
-        out_dir = Path(out_dir)
-        out_fp_parquet = out_dir / f"{COMBINED_FP}.parquet"
-        out_fp_csv = out_dir / f"{COMBINED_FP}.csv"
-        if not overwrite and out_fp_parquet.exists():
-            logger.info("Skipping as %s already exists.", out_fp_parquet)
-            return
+    if not overwrite and out_parquet.exists():
+        logger.info("Skipping as %s already exists.", out_parquet)
+        return
 
-        # Asserting that proj_dir_ls is not empty
-        assert len(proj_dir_ls) > 0, "proj_dir_ls is empty"
-        # Assertions for each project directory
-        pfm0 = ProjFp(proj_dir_ls[0])
-        configs0 = pfm0.config
-        atlas_dir0 = configs0.atlas_dir
-        ref_v0 = configs0.ref_version
-        annot_v0 = configs0.annot_version
-        map_v0 = configs0.map_version
-        for _proj_dir in proj_dir_ls:
-            proj_dir = Path(_proj_dir)
-            pipeline = Pipeline(proj_dir)
-            # Getting project info
-            pfm = pipeline.pfm
-            configs = pfm.config
-            atlas_dir = configs.atlas_dir
-            ref_v = configs.ref_version
-            annot_v = configs.annot_version
-            map_v = configs.map_version
-            # Asserting that all projects have cells_agg and mask_df files
-            assert pfm.cells_agg_df.exists(), f"Missing cells_agg_df for {proj_dir}"
-            assert pfm.mask_df.exists(), f"Missing mask_df for {proj_dir}"
-            # Asserting that all projects are using the same origin for reference atlas
-            # to verify the same regions are being used
-            assert atlas_dir0 == atlas_dir, (
-                f"In configs file, there mismatch for {proj_dir} and {proj_dir}.\n"
-                f'atlas_dir values "{atlas_dir0}" and "{atlas_dir}" are not equal'
-            )
-            assert ref_v0 == ref_v, (
-                f"In configs file, there mismatch for {proj_dir} and {proj_dir}.\n"
-                f'ref_v values "{ref_v0}" and "{ref_v}" are not equal'
-            )
-            assert annot_v0 == annot_v, (
-                f"In configs file, there mismatch for {proj_dir} and {proj_dir}.\n"
-                f'annot_v values "{annot_v0}" and "{annot_v}" are not equal'
-            )
-            assert map_v0 == map_v, (
-                f"In configs file, there mismatch for {proj_dir} and {proj_dir}.\n"
-                f'map_v values "{map_v0}" and "{map_v}" are not equal'
-            )
-        # Making combined_agg_df
-        # Starting with annot_df (asserted all the same so using first)
-        total_df = annot_fp2df(pfm0.map)
-        # Adding parent columns to annot_df
-        total_df = annot_df_get_parents(total_df)
-        # Adding special rows (e.g. "universe")
-        # TODO: this is neither clean nor modular
-        total_df.loc[-1] = pd.Series(
-            {AnnotColumns.NAME.value: SpecialRegions.INVALID.value}
+    # Use first project as reference for atlas validation
+    pfm_ref = ProjFp(proj_dir_ls[0])
+    reference_config = _get_reference_config(pfm_ref)
+
+    # Validate all projects
+    for proj_dir in proj_dir_ls:
+        _validate_project(ProjFp(proj_dir), reference_config)
+
+    # Build annotation base (region metadata)
+    combined_df = _build_annotation_base(pfm_ref)
+
+    # Merge each project's cell data
+    for proj_dir in proj_dir_ls:
+        proj_dir = Path(proj_dir)
+        logger.info("Processing: %s", proj_dir.name)
+
+        pfm = ProjFp(proj_dir)
+        cells_df = _load_cells_agg(pfm)
+        cells_df = _wrap_specimen_columns(cells_df, str(proj_dir))
+
+        combined_df = combined_df.merge(
+            cells_df,
+            left_index=True,
+            right_index=True,
+            how="outer",
         )
-        total_df.loc[0] = pd.Series(
-            {AnnotColumns.NAME.value: SpecialRegions.UNIVERSE.value}
-        )
-        # total_df.loc[np.nan] = pd.Series(
-        # Keeping only the required columns
-        total_df = total_df[ANNOT_COLUMNS_FINAL]
-        # Making columns a multindex with levels ("annotations", annot columns)
-        total_df = pd.concat(
-            [total_df],
-            keys=["annotations"],
-            names=[CombinedColumns.SPECIMEN.value],
-            axis=1,
-        )
-        # Get all experiments
-        for _proj_dir in proj_dir_ls:
-            proj_dir = Path(_proj_dir)
-            logger.info("Running: %s", proj_dir)
-            # Filenames
-            pfm = ProjFp(proj_dir)
-            # CELL_AGG_DF
-            # Reading experiment's cells_agg dataframe
-            cells_agg_df = pd.read_parquet(pfm.cells_agg_df)
-            # Keeping only the required columns (not annot columns)
-            cells_agg_df = cells_agg_df[enum2list(CellColumns)]
-            # MASK_DF
-            # Reading experiment's mask_counts dataframe
-            mask_df = pd.read_parquet(pfm.mask_df)
-            # Keeping only the required columns
-            mask_df = mask_df[enum2list(MaskColumns)]
-            # Merging cells_agg_df with mask_df to combine columns
-            exp_df = cells_agg_df.merge(
-                right=mask_df,
-                left_index=True,
-                right_index=True,
-                how="outer",
-            )
-            # Making columns a multindex with levels (specimen name, cell agg columns)
-            exp_df = pd.concat(
-                [exp_df],
-                keys=[proj_dir],
-                names=[CombinedColumns.SPECIMEN.value],
-                axis=1,
-            )
-            # Merging with comb_agg_df (ID is index for both dfs)
-            total_df = total_df.merge(
-                right=exp_df,
-                left_index=True,
-                right_index=True,
-                how="outer",
-            )
-        # Setting column MultiIndex's level names
-        total_df.columns = total_df.columns.set_names(enum2list(CombinedColumns))
-        # Saving to disk (parquet and csv)
-        total_df.to_parquet(out_fp_parquet)
-        total_df.to_csv(out_fp_csv)
 
-    @classmethod
-    def combine_root_pipeline(
-        cls,
-        root_dir: Path | str,
-        out_dir: Path | str,
-        *,
-        overwrite: bool = False,
-    ) -> None:
-        """Combine results from all projects in a root directory.
+    # Set column MultiIndex names
+    combined_df.columns = combined_df.columns.set_names(enum2list(CombinedColumns))
 
-        Automatically discovers project directories (those with config files)
-        and combines their results.
+    # Save outputs
+    combined_df.to_parquet(out_parquet)
+    combined_df.to_csv(out_csv)
+    logger.info("Saved combined results to %s", out_dir)
 
-        Args:
-            root_dir: Root directory containing project subdirectories.
-            out_dir: Output directory for combined results.
-            overwrite: If True, overwrite existing output files.
-        """
-        # Get all experiments in root_dir (any dir with a configs file)
-        # NOTE: not using the cells_agg and mask file to check for valid projects
-        # so we can catch any projects that are missing these files
-        root_dir = Path(root_dir)
-        out_dir = Path(root_dir)
-        proj_dir_ls = []
-        for exp in natsorted(root_dir.iterdir()):
-            proj_dir = root_dir / exp
-            pfm = ProjFp(proj_dir)
-            try:
-                # If proj has config_params file, then add to list of projs to combine
-                assert pfm.config
-                proj_dir_ls.append(proj_dir)
-            except FileNotFoundError:
-                pass
-        # Running combine pipeline
-        cls.combine_ls_pipeline(proj_dir_ls, out_dir, overwrite=overwrite)
+
+def discover_projects(root_dir: Path | str) -> list[Path]:
+    """Discover all valid project directories in a root directory.
+
+    A valid project has a config file.
+
+    Args:
+        root_dir: Root directory to search for projects.
+
+    Returns:
+        List of project directory paths, naturally sorted.
+    """
+    root_dir = Path(root_dir)
+    projects = []
+
+    for entry in natsorted(root_dir.iterdir()):
+        if entry.is_dir():
+            pfm = ProjFp(entry)
+            if pfm.config_fp.exists():
+                projects.append(entry)
+
+    return projects
+
+
+def combine_root(
+    root_dir: Path | str,
+    out_dir: Path | str | None = None,
+    *,
+    overwrite: bool = False,
+) -> None:
+    """Combine results from all projects in a root directory.
+
+    Automatically discovers project directories (those with config files)
+    and combines their results.
+
+    Args:
+        root_dir: Root directory containing project subdirectories.
+        out_dir: Output directory for combined results. Defaults to root_dir.
+        overwrite: If True, overwrite existing output files.
+    """
+    root_dir = Path(root_dir)
+    out_dir = Path(out_dir) if out_dir else root_dir
+
+    proj_dir_ls = discover_projects(root_dir)
+    if not proj_dir_ls:
+        logger.warning("No projects found in %s", root_dir)
+        return
+
+    combine_projects(proj_dir_ls, out_dir, overwrite=overwrite)

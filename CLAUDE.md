@@ -11,17 +11,17 @@ Automated cFos cell counting for neuroscience research. Process whole-brain micr
 ```
 src/cellcounter/
 ├── pipeline/
-│   ├── abstract_pipeline.py  # Base class with GPU/CPU switching
+│   ├── abstract_pipeline.py  # Base class with GPU/CPU switching, @_check_overwrite
 │   ├── pipeline.py           # Pipeline orchestrator (registration → cell counting → mapping)
 │   └── visual_check.py       # Visual QC tools
 ├── models/
 │   ├── proj_config.py        # Pydantic config model (all tunable parameters)
-│   └── fp_models/            # Filepath models for project structure
+│   └── fp_models/            # Filepath models, get_proj_fm() factory
 ├── funcs/
-│   ├── cpu_cellc_funcs.py    # CPU cell counting ops
-│   ├── gpu_cellc_funcs.py    # GPU cell counting ops (cupy)
+│   ├── cpu_cellc_funcs.py    # CPU cell counting ops (injectable xp backend)
+│   ├── gpu_cellc_funcs.py    # GPU wrapper via dynamic method wrapping
 │   ├── reg_funcs.py          # Image registration
-│   ├── map_funcs.py          # Coordinate mapping to atlas regions
+│   ├── map_funcs.py          # Region mapping + get_cells() extraction
 │   ├── elastix_funcs.py      # Elastix registration wrappers
 │   ├── io_funcs.py           # File I/O operations
 │   ├── viewer_funcs.py       # Napari viewer utilities
@@ -49,8 +49,11 @@ TIFF → Zarr → Registration (elastix) → Cell Detection → Region Mapping �
 - **ProjConfig**: Pydantic model with all parameters. Read/write via JSON. Access via `pipeline.config`.
 - **ProjFp**: Filepath model with cached config. Use `get_proj_fm(proj_dir, tuning=True/False)`.
 - **GPU/CPU switching**: `pipeline.set_gpu(enabled=True/False)` for runtime mode switching. GPU (cupy) is strongly recommended for large images (~90GB) - CPU mode may run out of memory or stall.
+- **GPU wrapper pattern**: `GpuCellcFuncs` inherits from `CpuCellcFuncs` and dynamically wraps methods:
+  - `_GPU_METHODS`: Methods returning cupy arrays → auto-convert to numpy
+  - `_GPU_METHODS_NO_CONVERT`: Methods already returning numpy internally
 - **Dask clusters**: `gpu_cluster()`, `heavy_cluster()`, `busy_cluster()` - context manager via `cluster_process()`.
-- **Overwrite guard**: `@check_overwrite("attr1", "attr2")` decorator on pipeline methods.
+- **Overwrite guard**: `@_check_overwrite("attr1", "attr2")` decorator on pipeline methods (defined in `abstract_pipeline.py`).
 
 ## Commands
 
@@ -74,7 +77,8 @@ uv run cellcounter-project-gui   # Launch GUI
 - **Ruff** for linting (config in pyproject.toml)
 - **Pydantic v2** for data validation
 - **Google-style docstrings**
-- **GPU code**: Inherit from `CpuCellcFuncs`, override with cupy operations
+- **Injectable backend**: `CpuCellcFuncs(xp=np, xdimage=scipy.ndimage)` - same code works for CPU and GPU
+- **Array operations in funcs/**: Methods that return arrays stay in `cpu_cellc_funcs.py`. DataFrame-producing logic (like `get_cells`) goes in `map_funcs.py`.
 
 ## Current State
 
@@ -83,7 +87,3 @@ Working pipeline for cell counting.
 **Known issues:**
 - Large images (~90GB) may run out of memory or stall during `compute_thresholded_volumes` step
 - GPU mode is strongly recommended for production use
-
-**Completed:**
-- Instance-based config injection via `AbstractPipeline`
-- Runtime GPU/CPU switching with `set_gpu()`

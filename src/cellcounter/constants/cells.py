@@ -4,6 +4,8 @@ CELL_IDX_NAME = "label"
 
 
 class CellColumns(Enum):
+    """Cell columns."""
+
     COUNT = "count"
     VOLUME = "volume"
     SUM_INTENSITY = "sum_intensity"

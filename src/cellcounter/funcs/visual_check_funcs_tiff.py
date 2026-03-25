@@ -137,7 +137,9 @@ def coords2heatmap(
     silent_remove(temp_fp)
 
 
-def coords2regions(coords, shape: tuple[int, ...], out_fp: Path | str) -> None:
+def coords2regions(
+    coords: pd.DataFrame, shape: tuple[int, ...], out_fp: Path | str
+) -> None:
     """Converts list of coordinates to spatial array.
 
     Params:
@@ -154,7 +156,7 @@ def coords2regions(coords, shape: tuple[int, ...], out_fp: Path | str) -> None:
     arr = make_mmap(shape, temp_fp)
 
     # Adding coords to image with np.apply_along_axis
-    def f(coord) -> None:
+    def f(coord: npt.NDArray) -> None:
         # Plotting coord to image. Including only coords within the image's bounds
         if np.all((coord >= 0) & (coord < shape)):
             z, y, x, _id = coord

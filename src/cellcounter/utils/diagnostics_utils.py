@@ -1,5 +1,7 @@
 import numpy as np
 
+rng = np.random.default_rng()
+
 DIAGNOSTICS_SUCCESS_MESSAGES = (
     "Success! Success! Success!!",
     "Done and DONE!!",
@@ -24,4 +26,4 @@ DIAGNOSTICS_SUCCESS_MESSAGES = (
 
 def success_msg() -> str:
     """Return a random positive message!"""
-    return np.random.choice(DIAGNOSTICS_SUCCESS_MESSAGES)
+    return rng.choice(DIAGNOSTICS_SUCCESS_MESSAGES)

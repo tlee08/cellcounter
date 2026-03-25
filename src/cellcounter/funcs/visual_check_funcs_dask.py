@@ -25,6 +25,7 @@ from cellcounter.utils.dask_utils import coords2block, disk_cache
 def coords2points_workers(
     arr: npt.NDArray, coords: pd.DataFrame, block_info: dict | None = None
 ) -> npt.NDArray:
+    """Coords to points worker."""
     arr = arr.copy()
     # Offsetting coords with chunk space
     if block_info is not None:
@@ -48,7 +49,7 @@ def coords2points_workers(
         coords.groupby([Coords.Z.value, Coords.Y.value, Coords.X.value])
         .size()
         .reset_index(name="counts")
-    )  # type: ignore
+    )
     # Incrementing the coords inCoords.Y.valuee array
     if coords.shape[0] > 0:
         arr[
@@ -66,6 +67,7 @@ def coords2sphere_workers(
     r: int,
     block_info: dict | None = None,
 ) -> npt.NDArray:
+    """Sphere worker."""
     # Offsetting coords with chunk space
     if block_info:
         coords = coords2block(coords, block_info)
@@ -183,7 +185,7 @@ def coords2regions(
     arr = da.zeros(shape, chunks=chunks, dtype=np.uint8)
 
     # Adding coords to image with np.apply_along_axis
-    def f(coord) -> None:
+    def f(coord: npt.NDArray) -> None:
         # Plotting coord to image. Including only coords within the image's bounds
         if np.all((coord >= 0) & (coord < shape)):
             z, y, x, _id = coord
