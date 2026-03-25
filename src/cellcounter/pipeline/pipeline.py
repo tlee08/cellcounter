@@ -122,7 +122,6 @@ class Pipeline(AbstractPipeline):
             dask.delayed(self.cellc_funcs.get_boundary_pairs)(i)
             for i in label_overlap.to_delayed().ravel()
         ]
-        # pair_arr_ls = dask.compute(delayed_ls)
         pair_arr_ls = [dask.compute(i)[0] for i in delayed_ls]
         pairs_arr = (
             np.concatenate(pair_arr_ls, axis=0) if pair_arr_ls else np.empty((0, 2))
@@ -136,7 +135,6 @@ class Pipeline(AbstractPipeline):
             dask.delayed(self.cellc_funcs.get_label_sizemap)(i)
             for i in label_arr.to_delayed().ravel()
         ]
-        # label_counts_ls = dask.compute(delayed_ls)
         label_counts_ls = [dask.compute(i)[0] for i in delayed_ls]
         label_counts = (
             np.concatenate(label_counts_ls, axis=0)
