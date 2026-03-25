@@ -245,3 +245,36 @@ def read_niftygz(fp: str) -> np.typing.NDArray:
     """
     img = nib.load(fp)
     return np.array(img.dataobj)
+
+
+#############################################
+# Array combination
+#############################################
+
+
+def combine_arrs(
+    fp_in_ls: tuple[Path | str, ...],
+    fp_out: Path | str,
+    trimmer: tuple[slice, ...] | None = None,
+) -> npt.NDArray:
+    """Stack multiple arrays into multi-channel TIFF.
+
+    Args:
+        fp_in_ls: Tuple of input file paths (.tif or .zarr).
+        fp_out: Output TIFF file path.
+        trimmer: Optional tuple of slices to extract region of interest.
+
+    Returns:
+        Stacked array with shape (z, y, x, channels).
+    """
+    from cellcounter.utils.viewer import read_img
+
+    dtype = np.uint16
+    arr_ls = []
+    for fp in fp_in_ls:
+        arr = read_img(fp, trimmer)
+        arr = arr.round(0).clip(0, 2**16 - 1).astype(dtype)
+        arr_ls.append(arr)
+    arr = np.stack(arr_ls, axis=-1, dtype=dtype)
+    write_tiff(arr, fp_out)
+    return arr

@@ -32,12 +32,23 @@ logger = logging.getLogger(__name__)
 COMBINED_FP = "combined_df"
 
 
-class AtlasMismatchError(Exception):
-    """Raised when projects use different atlas references."""
-
-
-class MissingDataError(Exception):
-    """Raised when required project data files are missing."""
+def _build_annotation_base(pfm: ProjFp) -> pd.DataFrame:
+    """Build annotation columns with special regions."""
+    annot_df = annot_fp2df(pfm.map)
+    annot_df = annot_df_get_parents(annot_df)
+    annot_df.loc[-1] = pd.Series(
+        {AnnotColumns.NAME.value: SpecialRegions.INVALID.value}
+    )
+    annot_df.loc[0] = pd.Series(
+        {AnnotColumns.NAME.value: SpecialRegions.UNIVERSE.value}
+    )
+    annot_df = annot_df[ANNOT_COLUMNS_FINAL]
+    return pd.concat(
+        [annot_df],
+        keys=["annotations"],
+        names=[CombinedColumns.SPECIMEN.value],
+        axis=1,
+    )
 
 
 def _get_reference_config(pfm: ProjFp) -> tuple:
@@ -53,55 +64,22 @@ def _get_reference_config(pfm: ProjFp) -> tuple:
 def _validate_project(pfm: ProjFp, reference_config: tuple) -> None:
     """Validate project has required files and matches reference atlas."""
     if not pfm.cells_agg_df.exists():
-        raise MissingDataError(f"Missing cells_agg_df for {pfm.root_dir}")
-
-    project_config = _get_reference_config(pfm)
-    if project_config != reference_config:
-        raise AtlasMismatchError(
+        msg = f"Missing cells_agg_df for {pfm.root_dir}"
+        raise FileNotFoundError(msg)
+    config = _get_reference_config(pfm)
+    if config != reference_config:
+        msg = (
             f"Atlas mismatch for {pfm.root_dir}.\n"
             f"Expected: {reference_config}\n"
-            f"Got: {project_config}"
+            f"Got: {config}"
         )
+        raise ValueError(msg)
 
 
 def _load_cells_agg(pfm: ProjFp) -> pd.DataFrame:
     """Load cell aggregation data for a single project."""
     df = pd.read_parquet(pfm.cells_agg_df)
     return df[enum2list(CellColumns)]
-
-
-def _build_annotation_base(pfm: ProjFp) -> pd.DataFrame:
-    """Build annotation columns with special regions."""
-    annot_df = annot_fp2df(pfm.map)
-    annot_df = annot_df_get_parents(annot_df)
-
-    # Add special regions for cells outside atlas
-    annot_df.loc[-1] = pd.Series(
-        {AnnotColumns.NAME.value: SpecialRegions.INVALID.value}
-    )
-    annot_df.loc[0] = pd.Series(
-        {AnnotColumns.NAME.value: SpecialRegions.UNIVERSE.value}
-    )
-
-    annot_df = annot_df[ANNOT_COLUMNS_FINAL]
-
-    # Wrap in MultiIndex with "annotations" as specimen name
-    return pd.concat(
-        [annot_df],
-        keys=["annotations"],
-        names=[CombinedColumns.SPECIMEN.value],
-        axis=1,
-    )
-
-
-def _wrap_specimen_columns(df: pd.DataFrame, specimen_name: str) -> pd.DataFrame:
-    """Wrap DataFrame columns in MultiIndex with specimen name."""
-    return pd.concat(
-        [df],
-        keys=[specimen_name],
-        names=[CombinedColumns.SPECIMEN.value],
-        axis=1,
-    )
 
 
 def combine_projects(
@@ -118,58 +96,48 @@ def combine_projects(
         overwrite: If True, overwrite existing output files.
 
     Raises:
-        AtlasMismatchError: If projects use different atlas references.
-        MissingDataError: If required data files are missing.
+        ValueError: If projects use different atlas references.
+        FileNotFound: If required data files are missing.
     """
     if not proj_dir_ls:
-        raise ValueError("proj_dir_ls is empty")
-
+        msg = "proj_dir_ls is empty"
+        raise ValueError(msg)
     out_dir = Path(out_dir)
     out_parquet = out_dir / f"{COMBINED_FP}.parquet"
     out_csv = out_dir / f"{COMBINED_FP}.csv"
-
     if not overwrite and out_parquet.exists():
         logger.info("Skipping as %s already exists.", out_parquet)
         return
-
-    # Use first project as reference for atlas validation
     pfm_ref = ProjFp(proj_dir_ls[0])
     reference_config = _get_reference_config(pfm_ref)
-
-    # Validate all projects
     for proj_dir in proj_dir_ls:
         _validate_project(ProjFp(proj_dir), reference_config)
-
-    # Build annotation base (region metadata)
     combined_df = _build_annotation_base(pfm_ref)
-
-    # Merge each project's cell data
-    for proj_dir in proj_dir_ls:
-        proj_dir = Path(proj_dir)
+    for proj_dir_raw in proj_dir_ls:
+        proj_dir = Path(proj_dir_raw)
         logger.info("Processing: %s", proj_dir.name)
-
         pfm = ProjFp(proj_dir)
         cells_df = _load_cells_agg(pfm)
-        cells_df = _wrap_specimen_columns(cells_df, str(proj_dir))
-
+        cells_df = pd.concat(
+            [cells_df],
+            keys=[str(proj_dir)],
+            names=[CombinedColumns.SPECIMEN.value],
+            axis=1,
+        )
         combined_df = combined_df.merge(
             cells_df,
             left_index=True,
             right_index=True,
             how="outer",
         )
-
-    # Set column MultiIndex names
     combined_df.columns = combined_df.columns.set_names(enum2list(CombinedColumns))
-
-    # Save outputs
     combined_df.to_parquet(out_parquet)
     combined_df.to_csv(out_csv)
     logger.info("Saved combined results to %s", out_dir)
 
 
 def discover_projects(root_dir: Path | str) -> list[Path]:
-    """Discover all valid project directories in a root directory.
+    """Discover valid project directories in a root directory.
 
     A valid project has a config file.
 
@@ -181,13 +149,11 @@ def discover_projects(root_dir: Path | str) -> list[Path]:
     """
     root_dir = Path(root_dir)
     projects = []
-
     for entry in natsorted(root_dir.iterdir()):
         if entry.is_dir():
             pfm = ProjFp(entry)
             if pfm.config_fp.exists():
                 projects.append(entry)
-
     return projects
 
 
@@ -209,10 +175,8 @@ def combine_root(
     """
     root_dir = Path(root_dir)
     out_dir = Path(out_dir) if out_dir else root_dir
-
     proj_dir_ls = discover_projects(root_dir)
     if not proj_dir_ls:
         logger.warning("No projects found in %s", root_dir)
         return
-
     combine_projects(proj_dir_ls, out_dir, overwrite=overwrite)
