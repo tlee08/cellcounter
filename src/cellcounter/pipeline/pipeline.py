@@ -122,14 +122,16 @@ class Pipeline(AbstractPipeline):
             dask.delayed(self.cellc_funcs.get_boundary_pairs)(i)
             for i in label_overlap.to_delayed().ravel()
         ]
+        print("aasjlsadal;kdaskl;dasdkl;asdkl;asdkl;adalk")
         pair_arr_ls = [dask.compute(i) for i in delayed_ls]
         pairs_arr = (
             np.concatenate([p for p in pair_arr_ls if len(p) > 0], axis=0)
             if pair_arr_ls
             else np.empty((2, 0), dtype=np.uint64)
         )
-        logger.info(pairs_arr)
-        logger.info(pairs_arr.shape)
+        print("891371823712381231278312789jadhaasldkjadl;kas")
+        print(pairs_arr)
+        print(pairs_arr.shape)
         logger.debug("Cross-boundary pairs found: %d", len(pairs_arr))
         uf = UnionFind()
         for a, b in pairs_arr.T:
