@@ -123,14 +123,8 @@ class Pipeline(AbstractPipeline):
             for i in label_overlap.to_delayed().ravel()
         ]
         pair_arr_ls = [dask.compute(i) for i in delayed_ls]
-        print(pair_arr_ls)
-        pairs_arr = (
-            np.concatenate([p for p in pair_arr_ls if len(p) > 0], axis=0)
-            if pair_arr_ls
-            else np.empty((2, 0), dtype=np.uint64)
-        )
+        pairs_arr = np.concatenate(pair_arr_ls, axis=0)
         print(pairs_arr)
-        print(np.array(pairs_arr))
         print(pairs_arr.shape)
         logger.debug("Cross-boundary pairs found: %d", len(pairs_arr))
         uf = UnionFind()
