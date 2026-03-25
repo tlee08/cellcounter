@@ -250,9 +250,9 @@ class Pipeline(AbstractPipeline):
                 arr, self.config.registration.ref_orientation.to_ls()
             )
             arr = arr[
-                slice(*self.config.registration.ref_trim.z.to_tuple()),
-                slice(*self.config.registration.ref_trim.y.to_tuple()),
-                slice(*self.config.registration.ref_trim.x.to_tuple()),
+                self.config.registration.ref_trim.z.to_slice(),
+                self.config.registration.ref_trim.y.to_slice(),
+                self.config.registration.ref_trim.x.to_slice(),
             ]
             write_tiff(arr, fp_o)
         shutil.copyfile(rfm.map, self.pfm.map)
@@ -295,9 +295,9 @@ class Pipeline(AbstractPipeline):
         """Trim downsampled image to region of interest."""
         downsmpl2_arr = tifffile.imread(self.pfm.downsmpl2)
         trimmed_arr = downsmpl2_arr[
-            slice(*self.config.registration.reg_trim.z.to_tuple()),
-            slice(*self.config.registration.reg_trim.y.to_tuple()),
-            slice(*self.config.registration.reg_trim.x.to_tuple()),
+            self.config.registration.reg_trim.z.to_slice(),
+            self.config.registration.reg_trim.y.to_slice(),
+            self.config.registration.reg_trim.x.to_slice(),
         ]
         write_tiff(trimmed_arr, self.pfm.trimmed)
 
@@ -339,9 +339,9 @@ class Pipeline(AbstractPipeline):
         with cluster_process(self.busy_cluster()):
             raw_arr = da.from_zarr(pfm_prod.raw)
             raw_arr = raw_arr[
-                slice(*self.config.tuning_trim.z.to_tuple()),
-                slice(*self.config.tuning_trim.y.to_tuple()),
-                slice(*self.config.tuning_trim.x.to_tuple()),
+                self.config.tuning_trim.z.to_slice(),
+                self.config.tuning_trim.y.to_slice(),
+                self.config.tuning_trim.x.to_slice(),
             ]
             raw_arr = raw_arr.rechunk(self.config.chunks.to_ls())
             disk_cache(raw_arr, self.pfm.raw)

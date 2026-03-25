@@ -27,9 +27,9 @@ class SliceConfig(BaseModel):
     stop: int | None = None
     step: int | None = None
 
-    def to_tuple(self) -> tuple[int | None, int | None, int | None]:
-        """Convert to tuple for use with slice()."""
-        return (self.start, self.stop, self.step)
+    def to_slice(self) -> slice:
+        """Return slice object."""
+        return slice(self.start, self.stop, self.step)
 
 
 class DimsSliceConfig(DimsConfig):
