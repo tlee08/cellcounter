@@ -297,10 +297,10 @@ class CpuCellcFuncs:
                     hi = self.xp.maximum(a[mask], b[mask])
                     pairs.update(zip(lo.tolist(), hi.tolist(), strict=True))
         if pairs:
-            print(np.array(list(pairs)).T.shape)
-            return np.array(list(pairs)).T
-        print(np.empty((2, 0)).shape)
-        return np.empty((2, 0))
+            print(np.array(list(pairs)).shape)
+            return np.array(list(pairs))
+        print(np.empty((0, 2)).shape)
+        return np.empty((0, 2))
 
     def get_label_sizemap(self, block: npt.NDArray) -> tuple[npt.NDArray, npt.NDArray]:
         """Get a dict of label_val : contiguous_size."""
@@ -310,8 +310,8 @@ class CpuCellcFuncs:
         labels_fg = block[mask]
         ids, counts = self.xp.unique(labels_fg, return_counts=True)
         # Return ids and corresponding counts (as np array)
-        print(self.xp.vstack((ids, counts)).shape)
-        return self.xp.vstack((ids, counts))
+        print(self.xp.hstack((ids, counts)).shape)
+        return self.xp.hstack((ids, counts))
 
     def map_values_to_arr(
         self,
