@@ -292,12 +292,10 @@ class CpuCellcFuncs:
                 a = block[tuple(sl_a)].ravel()
                 b = block[tuple(sl_b)].ravel()
                 mask = (a > 0) & (b > 0) & (a != b)
-                print(mask.sum())
                 if mask.any():
                     lo = self.xp.minimum(a[mask], b[mask])
                     hi = self.xp.maximum(a[mask], b[mask])
                     pairs.update(zip(lo.tolist(), hi.tolist(), strict=True))
-        print(pairs)
         if pairs:
             return np.array(list(pairs)).T
         return np.empty((2, 0))
