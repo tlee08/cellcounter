@@ -336,6 +336,7 @@ class Pipeline(AbstractPipeline):
     def make_tuning_arr(self, *, overwrite: bool = False) -> None:
         """Crop raw zarr to make a smaller zarr for tuning."""
         pfm_prod = get_proj_fm(self.pfm.root_dir, tuning=False)
+        pfm_tuning = get_proj_fm(self.pfm.root_dir, tuning=True)
         with cluster_process(self.busy_cluster()):
             raw_arr = da.from_zarr(pfm_prod.raw)
             raw_arr = raw_arr[
@@ -344,7 +345,7 @@ class Pipeline(AbstractPipeline):
                 self.config.tuning_trim.x.to_slice(),
             ]
             raw_arr = raw_arr.rechunk(self.config.chunks.to_ls())
-            disk_cache(raw_arr, self.pfm.raw)
+            disk_cache(raw_arr, pfm_tuning.raw)
 
     #############################################
     # CELL COUNTING PIPELINE FUNCS
