@@ -298,9 +298,7 @@ class CpuCellcFuncs:
                     pairs.update(zip(lo.tolist(), hi.tolist(), strict=True))
         if pairs:
             # Each row is [label_a, label_b]
-            print(np.array(list(pairs)).shape)
             return np.array(list(pairs))
-        print(np.empty((0, 2)).shape)
         return np.empty((0, 2))
 
     def get_label_sizemap(self, block: npt.NDArray) -> tuple[npt.NDArray, npt.NDArray]:
@@ -322,7 +320,6 @@ class CpuCellcFuncs:
         labels_fg = block[mask]
         ids, counts = self.xp.unique(labels_fg, return_counts=True)
         # Each row is [id_i, count_i]
-        print(self.xp.column_stack((ids, counts)).shape)
         return self.xp.column_stack((ids, counts))
 
     def map_values_to_arr(

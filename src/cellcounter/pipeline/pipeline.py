@@ -126,8 +126,6 @@ class Pipeline(AbstractPipeline):
         pairs_arr = (
             np.concatenate(pair_arr_ls, axis=0) if pair_arr_ls else np.empty((0, 2))
         )
-        print("A", pairs_arr)
-        print("B", pairs_arr.shape)
         logger.debug("Cross-boundary pairs found: %d", len(pairs_arr))
         uf = UnionFind()
         for a, b in pairs_arr:
@@ -143,8 +141,6 @@ class Pipeline(AbstractPipeline):
             if label_counts_ls
             else np.empty((0, 2))
         )
-        print("C", label_counts)
-        print("C", label_counts.shape)
         labels = label_counts[:, 0]
         counts = label_counts[:, 1]
         logger.debug("Unique labels (foreground): %d", len(labels))
