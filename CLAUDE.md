@@ -24,10 +24,9 @@ src/cellcounter/
 │   ├── map_funcs.py          # Region mapping + get_cells() extraction
 │   ├── elastix_funcs.py      # Elastix registration wrappers
 │   ├── io_funcs.py           # File I/O operations
-│   ├── viewer_funcs.py       # Napari viewer utilities
 │   └── batch_combine_funcs.py # Batch processing utilities
 ├── constants/                # Enums and constants (coords, cells, masks, etc.)
-├── utils/                    # Utilities (dask, logging, union-find)
+├── utils/                    # Utilities (dask, logging, union-find, viewer)
 ├── scripts/                  # CLI entry points
 ├── gui/                      # Streamlit GUI
 └── templates/                # User-facing script templates

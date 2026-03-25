@@ -1,3 +1,5 @@
+"""ProjConfig pydantic model."""
+
 import json
 from pathlib import Path
 from typing import Self

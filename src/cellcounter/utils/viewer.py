@@ -91,29 +91,32 @@ def view_images(
             e.g., contrast_limits={"bgrm": (0, 5000)}, colormap={"bgrm": "red"}
     """
     pfm = get_proj_fm(proj_dir, tuning=tuning)
-
     # Build file paths and display settings
     fp_ls = [getattr(pfm, name) for name in images]
     names = images
     contrast_limits = []
     colormaps = []
-
     for name in images:
-        defaults = DISPLAY_DEFAULTS.get(name, {"contrast_limits": (0, 10000), "colormap": "gray"})
-        cl = display_overrides.get("contrast_limits", {}).get(name, defaults["contrast_limits"])
+        defaults = DISPLAY_DEFAULTS.get(
+            name, {"contrast_limits": (0, 10000), "colormap": "gray"}
+        )
+        cl = display_overrides.get("contrast_limits", {}).get(
+            name, defaults["contrast_limits"]
+        )
         cm = display_overrides.get("colormap", {}).get(name, defaults["colormap"])
         contrast_limits.append(cl)
         colormaps.append(cm)
-
     # Read arrays in parallel
     arr_ls = async_read_files_run(fp_ls, lambda fp: read_img(fp, trimmer))
-
     # Build napari kwargs per image
     kwargs_ls = [
-        {"name": names[i], "contrast_limits": contrast_limits[i], "colormap": colormaps[i]}
+        {
+            "name": names[i],
+            "contrast_limits": contrast_limits[i],
+            "colormap": colormaps[i],
+        }
         for i in range(len(images))
     ]
-
     # Create viewer and add images
     viewer = napari.Viewer()
     for i, arr in enumerate(arr_ls):

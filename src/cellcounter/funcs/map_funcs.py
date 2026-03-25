@@ -59,7 +59,7 @@ def annot_dict2df(data_dict: dict) -> pd.DataFrame:
         HEMISPHERE_ID, PARENT_STRUCTURE_ID.
     """
 
-    def recursive_gen(annot_dict):
+    def recursive_gen(annot_dict: dict) -> pd.DataFrame:
         # Initialising current region as a df with a single row
         curr_row = pd.DataFrame(
             {i.value: [annot_dict[i.value]] for i in AnnotColumns},
@@ -106,7 +106,6 @@ def annot_df_get_parents(annot_df: pd.DataFrame) -> pd.DataFrame:
         )[[AnnotExtraColumns.PARENT_ACRONYM.value]],
         left_on=AnnotColumns.PARENT_STRUCTURE_ID.value,
         right_index=True,
-        # right_on=AnnotExtraColumns.PARENT_ID.value,
         how="left",
     )
     return annot_df
@@ -166,7 +165,7 @@ def combine_nested_regions(
     cells_agg_df[sum_cols] = cells_agg_df[sum_cols].fillna(0)
 
     # Recursively summing the cells_agg_df columns with each child's and current value
-    def recursive_sum(row_id):
+    def recursive_sum(row_id: int) -> pd.DataFrame:
         # NOTE: updates the cells_agg_df in place
         # BASE CASE: no children - use current values
         # REC CASE: has children - recursively sum children values + current values
@@ -210,7 +209,7 @@ def annot_df2dict(annot_df: pd.DataFrame) -> list:
     annot_df = annot_df_get_children(annot_df)
 
     # Converting to dict
-    def recursive_gen(i):
+    def recursive_gen(i: int) -> dict:
         # Storing info of current region (i.e. row) in dict
         tree = annot_df.loc[i].to_dict()
         # RECURSIVE CASE: has children - recursively get children info
@@ -242,8 +241,7 @@ def df_map_ids(cells_df: pd.DataFrame, annot_df: pd.DataFrame) -> pd.DataFrame:
     """
     # Getting the annotation name for every cell (zyx coord)
     # Left-joining the cells dataframe with the annotation mappings dataframe
-    cells_df = pd.merge(
-        left=cells_df,
+    cells_df = cells_df.merge(
         right=annot_df,
         how="left",
         on=AnnotColumns.ID.value,
@@ -333,7 +331,7 @@ def get_cells(
 
     if cells_df.shape[0] > 0:
         # Remove background label
-        cells_df.drop(index=0, inplace=True, errors="ignore")
+        cells_df = cells_df.drop(index=0, errors="ignore")
 
     cells_df[CellColumns.COUNT.value] = 1
 

@@ -7,7 +7,6 @@ Modules:
 - map_funcs: Atlas region mapping and annotation utilities
 - elastix_funcs: ITK-Elastix registration wrappers
 - io_funcs: File I/O (TIFF, Zarr, Parquet)
-- viewer_funcs: Napari visualization utilities
 - batch_combine_funcs: Multi-experiment aggregation
 - visual_check_funcs_*: Coordinate-to-image conversion for QC
 """
