@@ -297,8 +297,8 @@ class CpuCellcFuncs:
                     hi = self.xp.maximum(a[mask], b[mask])
                     pairs.update(zip(lo.tolist(), hi.tolist(), strict=True))
         if pairs:
-            return np.array(list(pairs))
-        return np.empty((0, 2))
+            return np.array(list(pairs)).T
+        return np.empty((2, 0))
 
     def get_label_sizemap(self, block: npt.NDArray) -> tuple[npt.NDArray, npt.NDArray]:
         """Get a dict of label_val : contiguous_size."""
