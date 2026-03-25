@@ -141,5 +141,5 @@ GPU mode uses CuPy for array operations. Falls back automatically if CUDA unavai
 
 ## Next Steps
 
-- [Configuration Reference](reference/config.md) - All tunable parameters
-- [Visual QC](how-to/visual-check.md) - Quality control tools
+- [Configuration Reference](../reference/config.md) - All tunable parameters
+- [Visual QC](../how-to/visual-check.md) - Quality control tools
