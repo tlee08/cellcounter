@@ -308,6 +308,7 @@ class CpuCellcFuncs:
         labels_fg = block[mask]
         ids, counts = self.xp.unique(labels_fg, return_counts=True)
         # Return ids and corresponding counts (as np array)
+        print(self.xp.vstack((ids, counts)).shape)
         return self.xp.vstack((ids, counts))
 
     def map_values_to_arr(
