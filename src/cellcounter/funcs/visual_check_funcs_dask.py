@@ -14,7 +14,7 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
-from cellcounter.constants import PROC_CHUNKS, AnnotColumns, Coords
+from cellcounter.constants import AnnotColumns, Coords
 from cellcounter.utils.dask_utils import coords2block, disk_cache
 
 #####################################################################

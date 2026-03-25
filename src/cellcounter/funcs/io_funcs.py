@@ -24,8 +24,6 @@ import pandas as pd
 import tifffile
 import zarr
 
-from cellcounter.constants import PROC_CHUNKS
-
 #############################################
 # Regular IO
 #############################################
@@ -153,7 +151,7 @@ def async_read_files_run(fp_ls: list[Path | str], read_func: Callable) -> list:
 def btiff2zarr(
     src_fp: Path | str,
     dst_fp: Path | str,
-    chunks: tuple[int, ...] = PROC_CHUNKS,
+    chunks: tuple[int, ...],
 ) -> None:
     """Convert big TIFF to Zarr format with chunked storage.
 
@@ -185,7 +183,7 @@ def btiff2zarr(
 def tiffs2zarr(
     src_fp_ls: tuple[Path | str, ...],
     dst_fp: Path | str,
-    chunks: tuple[int, ...] = PROC_CHUNKS,
+    chunks: tuple[int, ...],
 ) -> None:
     """Convert stack of TIFF files to single Zarr.
 

@@ -1,10 +1,11 @@
-"""Atlas region mapping and annotation utilities.
+"""Atlas region mapping and cell extraction utilities.
 
 Handles:
 - Parsing Allen Brain Atlas annotation JSON to DataFrame
 - Building parent/child region hierarchies
 - Recursive region aggregation for nested structures
 - Mapping cell coordinates to region IDs
+- Extracting cell data from watershed segmentation
 """
 
 import json
@@ -12,12 +13,16 @@ import logging
 from pathlib import Path
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 
 from cellcounter.constants import (
     ANNOT_COLUMNS_TYPES,
+    CELL_IDX_NAME,
     AnnotColumns,
     AnnotExtraColumns,
+    CellColumns,
+    Coords,
     SpecialRegions,
 )
 
@@ -270,4 +275,92 @@ def df_include_special_ids(cells_df: pd.DataFrame) -> pd.DataFrame:
     # Setting points with no region map name
     # but have a positive ID value as "no label" label
     cells_df.loc[cells_df[name_col].isna(), name_col] = SpecialRegions.NO_LABEL.value
+    return cells_df
+
+
+def _to_numpy(arr: npt.NDArray) -> npt.NDArray:
+    """Convert cupy array to numpy, pass through numpy arrays."""
+    return arr.get() if hasattr(arr, "get") else arr
+
+
+def get_cells(
+    raw_block: npt.NDArray,
+    maxima_labels_block: npt.NDArray,
+    wshed_labels_block: npt.NDArray,
+    wshed_filt_block: npt.NDArray,
+    z_offset: int,
+    y_offset: int,
+    x_offset: int,
+    xp,
+) -> pd.DataFrame:
+    """Extract cells from watershed segmentation to DataFrame.
+
+    Args:
+        raw_block: Raw intensity values.
+        maxima_labels_block: Labels for each maxima point.
+        wshed_labels_block: Watershed segmentation labels.
+        wshed_filt_block: Filtered watershed volumes.
+        z_offset: Z-axis offset for global coordinates.
+        y_offset: Y-axis offset for global coordinates.
+        x_offset: X-axis offset for global coordinates.
+        xp: Array backend (numpy or cupy).
+
+    Returns:
+        DataFrame with cell coordinates, volumes, and intensities.
+    """
+    assert raw_block.shape == maxima_labels_block.shape
+    assert raw_block.shape == wshed_filt_block.shape
+
+    raw = xp.asarray(raw_block)
+    maxima_labels = xp.asarray(maxima_labels_block)
+    wshed_labels = xp.asarray(wshed_labels_block)
+    wshed_filt = xp.asarray(wshed_filt_block)
+    mask = wshed_filt > 0
+
+    # Get maxima positions (first occurrence of each label)
+    labels, coords_flat = xp.unique(maxima_labels[mask], return_index=True)
+    z, y, x = xp.unravel_index(coords_flat, maxima_labels.shape)
+
+    # Build cells DataFrame with offset coordinates
+    cells_df = pd.DataFrame(
+        {
+            Coords.Z.value: _to_numpy(z) + z_offset,
+            Coords.Y.value: _to_numpy(y) + y_offset,
+            Coords.X.value: _to_numpy(x) + x_offset,
+        },
+        index=pd.Index(_to_numpy(labels).astype(np.uint32), name=CELL_IDX_NAME),
+    ).astype(np.uint16)
+
+    if cells_df.shape[0] > 0:
+        # Remove background label
+        cells_df.drop(index=0, inplace=True, errors="ignore")
+
+    cells_df[CellColumns.COUNT.value] = 1
+
+    # Get volume at each maxima position
+    cells_df[CellColumns.VOLUME.value] = _to_numpy(
+        wshed_filt[
+            cells_df[Coords.Z.value] - z_offset,
+            cells_df[Coords.Y.value] - y_offset,
+            cells_df[Coords.X.value] - x_offset,
+        ]
+    )
+
+    # Filter out cells with 0 volume
+    cells_df = cells_df[cells_df[CellColumns.VOLUME.value] > 0]
+
+    # Compute summed intensities per watershed label
+    if cells_df.empty:
+        cells_df[CellColumns.SUM_INTENSITY.value] = 0.0
+        return cells_df
+
+    fg_labels, inverse = xp.unique(wshed_labels[mask].ravel(), return_inverse=True)
+    intensities = xp.bincount(inverse, weights=raw[mask].ravel())
+    label_to_intensity = dict(
+        zip(_to_numpy(fg_labels), _to_numpy(intensities), strict=True)
+    )
+    cells_df[CellColumns.SUM_INTENSITY.value] = cells_df.index.map(
+        label_to_intensity.get
+    ).fillna(0.0)
+
     return cells_df

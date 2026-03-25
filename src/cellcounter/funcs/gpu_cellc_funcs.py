@@ -32,25 +32,22 @@ _GPU_METHODS = {
     "otsu_thresh",
     "mean_thresh",
     "manual_thresh",
-    "_offset_labels_by_block",
     "map_values_to_arr",
     "volume_filter",
+    "get_local_maxima",
     "mask",
     "downsample",
     "reorient",
+    "mask2label",
+    "get_label_sizemap",
 }
 
 # Methods that need GPU memory clearing only (already convert to numpy internally)
 _GPU_METHODS_NO_CONVERT = {
-    "mask2label",
     "get_boundary_pairs",
-    "get_label_sizemap",
     "label2volume",
-    "get_local_maxima",
     "wshed_segm",
-    "wshed_segm_volumes",
     "get_coords",
-    "get_cells",
 }
 
 

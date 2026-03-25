@@ -34,21 +34,21 @@ if __name__ == "__main__":
             # BULK UPDATE CONFIGS HERE
             pipeline.update_config(
                 # RAW
-                zarr_chunksize=(500, 500, 500),
+                chunks={"z": 500, "y": 500, "x": 500},
                 # REGISTRATION
                 ref_orient_ls=(-2, 3, 1),
-                ref_z_trim=(None, None, None),
-                ref_y_trim=(None, None, None),
-                ref_x_trim=(None, None, None),
+                ref_z_trim={"start": None, "stop": None, "step": None},
+                ref_y_trim={"start": None, "stop": None, "step": None},
+                ref_x_trim={"start": None, "stop": None, "step": None},
                 z_rough=3,
                 y_rough=6,
                 x_rough=6,
                 z_fine=1,
                 y_fine=0.6,
                 x_fine=0.6,
-                z_trim=(None, None, None),
-                y_trim=(None, None, None),
-                x_trim=(None, None, None),
+                z_trim={"start": None, "stop": None, "step": None},
+                y_trim={"start": None, "stop": None, "step": None},
+                x_trim={"start": None, "stop": None, "step": None},
                 lower_bound=(100, 0),
                 upper_bound=(5000, 5000),
                 # CELL COUNT TUNING CROP

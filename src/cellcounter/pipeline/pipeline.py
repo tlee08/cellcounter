@@ -38,7 +38,12 @@ from cellcounter.funcs.io_funcs import (
     write_parquet,
     write_tiff,
 )
-from cellcounter.funcs.map_funcs import annot_fp2df, combine_nested_regions, df_map_ids
+from cellcounter.funcs.map_funcs import (
+    annot_fp2df,
+    combine_nested_regions,
+    df_map_ids,
+    get_cells,
+)
 from cellcounter.models.fp_models import check_overwrite, get_proj_fm
 from cellcounter.models.fp_models.ref_fp import RefFp
 from cellcounter.pipeline.abstract_pipeline import AbstractPipeline
@@ -132,9 +137,9 @@ class Pipeline(AbstractPipeline):
             dask.delayed(self.cellc_funcs.get_label_sizemap)(i)
             for i in label_arr.to_delayed().ravel()
         ]
-        label_counts_ls = [dask.compute(i) for i in delayed_ls]
-        labels = np.concatenate([i[0] for i in label_counts_ls])
-        counts = np.concatenate([i[1] for i in label_counts_ls])
+        label_counts = [dask.compute(i) for i in delayed_ls]
+        labels = np.concatenate([i[0] for i in label_counts])
+        counts = np.concatenate([i[1] for i in label_counts])
         logger.debug("Unique labels (foreground): %d", len(labels))
         uf.build_lookup_table(labels, counts)
         logger.debug("Writing output array...")
@@ -189,14 +194,14 @@ class Pipeline(AbstractPipeline):
                         )
                     ),
                     dst_fp=self.pfm.raw,
-                    chunks=self.config.zarr_chunksize,
+                    chunks=self.config.chunks,
                 )
             elif in_fp.is_file():
                 logger.debug("in_fp (%s) is a file", in_fp)
                 btiff2zarr(
                     src_fp=in_fp,
                     dst_fp=self.pfm.raw,
-                    chunks=self.config.zarr_chunksize,
+                    chunks=self.config.chunks,
                 )
             else:
                 err_msg = f'Input file path, "{in_fp}" does not exist.'
@@ -214,7 +219,7 @@ class Pipeline(AbstractPipeline):
         with cluster_process(self.busy_cluster()):
             zarr_arr = da.from_zarr(self.pfm.raw)
             temp_fp = self.pfm.raw.with_suffix(".rechunk_temp.zarr")
-            zarr_rechunked = zarr_arr.rechunk(self.config.zarr_chunksize)
+            zarr_rechunked = zarr_arr.rechunk(self.config.chunks)
             disk_cache(zarr_rechunked, temp_fp)
             silent_remove(self.pfm.raw)
             shutil.move(temp_fp, self.pfm.raw)
@@ -294,22 +299,19 @@ class Pipeline(AbstractPipeline):
 
         Clips intensities to configured range for better registration.
         """
-        assert self.config.lower_bound[0] < self.config.upper_bound[0], (
-            "Error in config parameters: "
-            "lower bound condition must be less than upper bound condition."
-        )
         trimmed_arr = tifffile.imread(self.pfm.trimmed)
         bounded_arr = trimmed_arr.copy()
-        bounded_arr[bounded_arr < self.config.lower_bound[0]] = self.config.lower_bound[
-            1
-        ]
-        bounded_arr[bounded_arr > self.config.upper_bound[0]] = self.config.upper_bound[
-            1
-        ]
+        bounded_arr[bounded_arr < self.config.lower_bound] = (
+            self.config.lower_bound_mapto
+        )
+        bounded_arr[bounded_arr > self.config.upper_bound] = (
+            self.config.upper_bound_mapto
+        )
         write_tiff(bounded_arr, self.pfm.bounded)
 
     @check_overwrite("regresult")
     def reg_elastix(self, *, overwrite: bool = False) -> None:
+        """Register image with elastix and store transformation components."""
         registration(
             fixed_img_fp=self.pfm.bounded,
             moving_img_fp=self.pfm.ref,
@@ -333,7 +335,7 @@ class Pipeline(AbstractPipeline):
                 slice(*self.config.tuning_y_trim),
                 slice(*self.config.tuning_x_trim),
             ]
-            raw_arr = raw_arr.rechunk(self.config.zarr_chunksize)
+            raw_arr = raw_arr.rechunk(self.config.chunks)
             disk_cache(raw_arr, self.pfm.raw)
 
     #############################################
@@ -388,7 +390,7 @@ class Pipeline(AbstractPipeline):
     @check_overwrite("threshd_labels")
     def label_thresholded(self, *, overwrite: bool = False) -> None:
         """Step 5: Label contiguous regions in thresholded image."""
-        max_labels = int(np.ceil(np.prod(self.config.zarr_chunksize)) / 2) + 1
+        max_labels = int(np.ceil(np.prod(self.config.chunks)) / 2) + 1
         with cluster_process(self.gpu_cluster()):
             result = da.map_blocks(
                 self.cellc_funcs.mask2label,
@@ -402,7 +404,7 @@ class Pipeline(AbstractPipeline):
         """Step 6: Compute contiguous sizes using union-find."""
         with cluster_process(self.gpu_cluster()):
             sizes_arr = self._spatial_connect_count(
-                da.from_zarr(self.pfm.threshd_labels),
+                da.from_zarr(self.pfm.threshd_labels)
             )
             disk_cache(sizes_arr, self.pfm.threshd_volumes)
 
@@ -433,7 +435,7 @@ class Pipeline(AbstractPipeline):
     @check_overwrite("maxima_labels")
     def label_maxima(self, *, overwrite: bool = False) -> None:
         """Step 9: Label maxima points."""
-        max_labels = int(np.ceil(np.prod(self.config.zarr_chunksize)) / 2) + 1
+        max_labels = int(np.ceil(np.prod(self.config.chunks)) / 2) + 1
         with cluster_process(self.gpu_cluster()):
             result = da.map_blocks(
                 self.cellc_funcs.mask2label,
@@ -459,9 +461,7 @@ class Pipeline(AbstractPipeline):
         """Step 11: Compute watershed volumes using union-find."""
         with cluster_process(self.heavy_cluster()):
             wshed_labels_arr = da.from_zarr(self.pfm.wshed_labels)
-            wshed_volumes_arr = self._spatial_connect_count(
-                wshed_labels_arr, self.gpu_cluster()
-            )
+            wshed_volumes_arr = self._spatial_connect_count(wshed_labels_arr)
             disk_cache(wshed_volumes_arr, self.pfm.wshed_volumes)
 
     @check_overwrite("wshed_filt")
@@ -500,7 +500,7 @@ class Pipeline(AbstractPipeline):
                     offsets[i][block_coords[i]] for i in range(3)
                 )
                 delayed_results.append(
-                    dask.delayed(self.cellc_funcs.get_cells)(
+                    dask.delayed(get_cells)(
                         raw_blocks[idx],
                         maxima_blocks[idx],
                         wshed_blocks[idx],
@@ -508,6 +508,7 @@ class Pipeline(AbstractPipeline):
                         z_offset,
                         y_offset,
                         x_offset,
+                        self.cellc_funcs.xp,
                     )
                 )
 
@@ -564,9 +565,15 @@ class Pipeline(AbstractPipeline):
             cells_df = pd.read_parquet(self.pfm.cells_raw_df)
             coords_trfm = pd.read_parquet(self.pfm.cells_trfm_df)
             cells_df = cells_df.reset_index(drop=True)
-            cells_df[f"{Coords.Z.value}_{TRFM}"] = coords_trfm[Coords.Z.value].values
-            cells_df[f"{Coords.Y.value}_{TRFM}"] = coords_trfm[Coords.Y.value].values
-            cells_df[f"{Coords.X.value}_{TRFM}"] = coords_trfm[Coords.X.value].values
+            cells_df[f"{Coords.Z.value}_{TRFM}"] = coords_trfm[
+                Coords.Z.value
+            ].to_numpy()
+            cells_df[f"{Coords.Y.value}_{TRFM}"] = coords_trfm[
+                Coords.Y.value
+            ].to_numpy()
+            cells_df[f"{Coords.X.value}_{TRFM}"] = coords_trfm[
+                Coords.X.value
+            ].to_numpy()
 
             annot_arr = tifffile.imread(self.pfm.annot)
             s = annot_arr.shape
@@ -590,7 +597,7 @@ class Pipeline(AbstractPipeline):
                 )
             )
             cells_df[AnnotColumns.ID.value] = pd.Series(
-                annot_arr[*trfm_loc.values.T].astype(np.uint32),
+                annot_arr[*trfm_loc.to_numpy().T].astype(np.uint32),
                 index=trfm_loc.index,
             ).fillna(-1)
 
@@ -649,13 +656,13 @@ class Pipeline(AbstractPipeline):
             steps: Optional list of steps to run. If None, runs full pipeline.
             overwrite: If True, overwrite existing outputs.
         """
-        steps = steps or (
-            ["tiff2zarr"]
-            + list(self.STEPS_REGISTRATION[1:])  # skip tiff2zarr, already added
-            + ["make_tuning_arr"]
-            + list(self.STEPS_CELL_COUNTING)
-            + list(self.STEPS_MAPPING)
-        )
+        steps = steps or [
+            *["tiff2zarr"],
+            *list(self.STEPS_REGISTRATION[1:]),  # skip tiff2zarr, already added
+            *["make_tuning_arr"],
+            *list(self.STEPS_CELL_COUNTING),
+            *list(self.STEPS_MAPPING),
+        ]
 
         for step in steps:
             if step == "tiff2zarr":

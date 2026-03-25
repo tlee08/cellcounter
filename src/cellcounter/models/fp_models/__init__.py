@@ -1,11 +1,13 @@
+"""Filepath models to ensure we follow specific file structure."""
+
 import functools
 import logging
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any
 
 from cellcounter.models.fp_models.proj_fp import ProjFp
 from cellcounter.models.fp_models.proj_tuning_fp import ProjTuningFp
+from cellcounter.pipeline.abstract_pipeline import AbstractPipeline
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +26,9 @@ def check_overwrite(*fp_attrs: str) -> Callable:
 
     def decorator(func: Callable) -> Callable:
         @functools.wraps(func)
-        def wrapper(self, *args, overwrite: bool = False, **kwargs) -> Any:
+        def wrapper(
+            self: AbstractPipeline, *args, overwrite: bool = False, **kwargs
+        ) -> object:
             if not overwrite:
                 for attr in fp_attrs:
                     fp = getattr(self.pfm, attr)

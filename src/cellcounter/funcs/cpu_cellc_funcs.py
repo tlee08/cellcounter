@@ -216,27 +216,6 @@ class CpuCellcFuncs:
         res_block = block >= val
         return res_block.astype(self.xp.uint8)
 
-    def _offset_labels_by_block(
-        self,
-        block: npt.NDArray,
-        block_info: dict | None = None,
-        max_labels_per_chunk: int | None = None,
-    ) -> npt.NDArray:
-        """Offset labels by block."""
-        block = self.xp.asarray(block)
-        if (
-            block_info is not None
-            and block_info[0]
-            and max_labels_per_chunk is not None
-        ):
-            loc = self.xp.asarray(block_info[0]["chunk-location"])
-            grid_shape = block_info[0]["num-chunks"]
-            flat_idx = self.xp.ravel_multi_index(loc, grid_shape)
-            offset = flat_idx * max_labels_per_chunk
-            block[block > 0] += offset.astype(block.dtype)
-            logger.debug("Applied label offset: %s", offset)
-        return block
-
     def mask2label(
         self,
         block: npt.NDArray,
@@ -268,9 +247,17 @@ class CpuCellcFuncs:
         res_block, _ = self.xdimage.label(block)
         res_block = res_block.astype(self.xp.uint64)
         # Add globally unique offset if parameters provided
-        res_block = self._offset_labels_by_block(
-            res_block, block_info, max_labels_per_chunk
-        )
+        if (
+            block_info is not None
+            and block_info[0]
+            and max_labels_per_chunk is not None
+        ):
+            loc = self.xp.asarray(block_info[0]["chunk-location"])
+            grid_shape = block_info[0]["num-chunks"]
+            flat_idx = self.xp.ravel_multi_index(loc, grid_shape)
+            offset = flat_idx * max_labels_per_chunk
+            block[block > 0] += offset.astype(block.dtype)
+            logger.debug("Applied label offset: %s", offset)
         return res_block
 
     def get_boundary_pairs(self, block: npt.NDArray, depth: int = 1) -> npt.NDArray:
@@ -310,8 +297,8 @@ class CpuCellcFuncs:
                     hi = self.xp.maximum(a[mask], b[mask])
                     pairs.update(zip(lo.tolist(), hi.tolist(), strict=True))
         if pairs:
-            return self.cp2np(list(pairs))
-        return self.cp2np(np.empty((0, 2)))
+            return np.array(list(pairs))
+        return np.empty((0, 2))
 
     def get_label_sizemap(self, block: npt.NDArray) -> tuple[npt.NDArray, npt.NDArray]:
         """Get a dict of label_val : contiguous_size."""
@@ -321,7 +308,7 @@ class CpuCellcFuncs:
         labels_fg = block[mask]
         ids, counts = self.xp.unique(labels_fg, return_counts=True)
         # Return ids and corresponding counts (as np array)
-        return self.cp2np(ids), self.cp2np(counts)
+        return self.xp.vstack((ids, counts))
 
     def map_values_to_arr(
         self,
@@ -435,21 +422,6 @@ class CpuCellcFuncs:
         )
         return res_block
 
-    def wshed_segm_volumes(
-        self, raw_block: npt.NDArray, maxima_block: npt.NDArray, mask_block: npt.NDArray
-    ) -> npt.NDArray:
-        """Do watershed segmentation with volumes.
-
-        NOTE: NOT GPU accelerated
-        """
-        # Labelling contiguous maxima with unique labels
-        maxima_block = self.mask2label(maxima_block)
-        # Watershed segmentation
-        wshed_arr = self.wshed_segm(raw_block, maxima_block, mask_block)
-        # Getting volumes of watershed regions
-        res_block = self.label2volume(wshed_arr)
-        return res_block
-
     def get_coords(self, block: npt.NDArray) -> pd.DataFrame:
         """Get coordinates of regions in 3D tensor.
 
@@ -472,93 +444,3 @@ class CpuCellcFuncs:
         df[CellColumns.SUM_INTENSITY.value] = -1  # TODO: placeholder
         # df[CellColumns.MAX_INTENSITY.value] = -1  # TODO: placeholder
         return df
-
-    def get_cells(
-        self,
-        raw_block: npt.NDArray,
-        maxima_labels_block: npt.NDArray,
-        wshed_labels_block: npt.NDArray,
-        wshed_filt_block: npt.NDArray,
-        z_offset: int = 0,
-        y_offset: int = 0,
-        x_offset: int = 0,
-    ) -> pd.DataFrame:
-        """Get cells from maxima labels and watershed segmentation.
-
-        Parameters:
-        -----------
-        raw_block : npt.NDArray
-            Raw intensity values
-        maxima_labels_block : npt.NDArray
-            Labels for each maxima point
-        wshed_labels_block : npt.NDArray
-            Watershed segmentation labels
-        wshed_filt_block : npt.NDArray
-            Filtered watershed volumes
-        z_off, y_off, x_off : int
-            Block offsets for global coordinates
-
-        Returns:
-        --------
-        pd.DataFrame
-            DataFrame with cell coordinates (offset to global space),
-            volumes, and intensities
-        """
-        assert raw_block.shape == maxima_labels_block.shape
-        assert raw_block.shape == wshed_filt_block.shape
-        # Convert to xp arrays (GPU-aware)
-        raw = self.xp.asarray(raw_block)
-        maxima_labels = self.xp.asarray(maxima_labels_block)
-        wshed_labels = self.xp.asarray(wshed_labels_block)
-        wshed_filt = self.xp.asarray(wshed_filt_block)
-        mask = wshed_filt > 0
-        # Get maxima positions (first occurrence of each label)
-        labels, coords_flat = self.xp.unique(maxima_labels[mask], return_index=True)
-        z, y, x = self.xp.unravel_index(coords_flat, maxima_labels.shape)
-        # Build cells DataFrame with offset coordinates
-        cells_df = pd.DataFrame(
-            {
-                Coords.Z.value: self.cp2np(z) + z_offset,
-                Coords.Y.value: self.cp2np(y) + y_offset,
-                Coords.X.value: self.cp2np(x) + x_offset,
-            },
-            index=pd.Index(self.cp2np(labels).astype(np.uint32), name=CELL_IDX_NAME),
-        ).astype(np.uint16)
-        if cells_df.shape[0] > 0:
-            # Without if statement, throws error if no cells
-            # Remove background
-            cells_df.drop(index=0)
-        cells_df[CellColumns.COUNT.value] = 1
-        # Get volume at each maxima position
-        cells_df[CellColumns.VOLUME.value] = self.cp2np(
-            wshed_filt[
-                cells_df[Coords.Z.value] - z_offset,
-                cells_df[Coords.Y.value] - y_offset,
-                cells_df[Coords.X.value] - x_offset,
-            ]
-        )
-        # Filter out cells with 0 volume
-        cells_df = cells_df[cells_df[CellColumns.VOLUME.value] > 0]
-        # Compute summed intensities per watershed label
-        if cells_df.empty:
-            cells_df[CellColumns.SUM_INTENSITY.value] = 0.0
-            return cells_df
-        fg_labels, inverse = self.xp.unique(
-            wshed_labels[mask].ravel(), return_inverse=True
-        )
-        intensities = self.xp.bincount(inverse, weights=raw[mask].ravel())
-        label_to_intensity = dict(
-            zip(self.cp2np(fg_labels), self.cp2np(intensities), strict=True)
-        )
-        cells_df[CellColumns.SUM_INTENSITY.value] = cells_df.index.map(
-            label_to_intensity.get
-        ).fillna(0.0)
-        return cells_df
-
-    @staticmethod
-    def cp2np(arr) -> npt.NDArray:
-        """Convert cupy to numpy array."""
-        try:
-            return arr.get()
-        except Exception:
-            return arr
