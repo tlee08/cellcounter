@@ -1,4 +1,4 @@
-site_name: cellcounter Documentation
+site_name: CellCounter
 site_url: https://tlee08.github.io/cellcounter/
 repo_url: https://github.com/tlee08/cellcounter
 
@@ -6,8 +6,24 @@ theme:
   name: material
   features:
     - content.code.copy
+    - navigation.tabs
+    - navigation.sections
     - toc.follow
-    # - toc.integrate
+  palette:
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to system preference
 
 markdown_extensions:
   # Python Markdown
@@ -44,6 +60,11 @@ markdown_extensions:
   - pymdownx.tasklist:
       custom_checkbox: true
   - pymdownx.tilde
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
 
 plugins:
   - mkdocstrings:
@@ -57,12 +78,9 @@ plugins:
             - https://pandas.pydata.org/docs/objects.inv
             - https://docs.cupy.dev/en/stable/objects.inv
             - https://docs.dask.org/en/stable/objects.inv
-            - https://docs.scipy.org/doc/numpy/objects.inv
-            - https://docs.scipy.org/doc/scipy/objects.inv
           options:
             show_root_heading: true
-            docstring_style: numpy
-            # merge_init_into_class: true
+            docstring_style: google
             modernize_annotations: true
             signature_crossrefs: true
   - search
@@ -71,19 +89,19 @@ plugins:
   - tags
 
 nav:
-  - index.md
-  - Installing and Running:
-      - installation/installing.md
-      - installation/running.md
-      - installation/updating.md
-      - installation/uninstalling.md
+  - Home: index.md
   - Tutorials:
-      - tutorials/tutorial.md
-      - tutorials/pipeline.md
-  - Examples:
-      - examples/single_pipeline.md
-      - examples/batch_pipeline.md
+    - Installation: tutorials/installation.md
+    - Quick Start: tutorials/quickstart.md
+  - How-To Guides:
+    - Batch Processing: how-to/batch.md
+    - Visual QC: how-to/visual-check.md
+    - Configuration: how-to/configuration.md
+  - Explanation:
+    - Architecture: explanation/architecture.md
+    - Cell Detection: explanation/cell-detection.md
   - API Reference:
-      - reference/pipeline_funcs.md
-      - reference/viewer_funcs.md
-      - reference/config_params_model.md
+    - Pipeline: reference/pipeline.md
+    - Visual Check: reference/visual-check.md
+    - Configuration: reference/config.md
+    - Abstract Pipeline: reference/abstract-pipeline.md
