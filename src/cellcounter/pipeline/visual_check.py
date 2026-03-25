@@ -12,8 +12,7 @@ import tifffile
 
 from cellcounter.funcs import visual_check_funcs_dask, visual_check_funcs_tiff
 from cellcounter.funcs.viewer_funcs import combine_arrs
-from cellcounter.models.fp_models import check_overwrite
-from cellcounter.pipeline.abstract_pipeline import AbstractPipeline
+from cellcounter.pipeline.abstract_pipeline import AbstractPipeline, _check_overwrite
 from cellcounter.utils.dask_utils import cluster_process
 
 logger = logging.getLogger(__name__)
@@ -26,7 +25,7 @@ class VisualCheck(AbstractPipeline):
     for verifying registration and cell counting results in Napari.
     """
 
-    @check_overwrite("points_raw")
+    @_check_overwrite("points_raw")
     def coords2points_raw(self, *, overwrite: bool = False) -> None:
         """Generate single-voxel markers at raw cell coordinates."""
         with cluster_process(self.busy_cluster()):
@@ -34,9 +33,10 @@ class VisualCheck(AbstractPipeline):
                 coords=pd.read_parquet(self.pfm.cells_raw_df),
                 shape=da.from_zarr(self.pfm.raw).shape,
                 out_fp=self.pfm.points_raw,
+                chunks=self.pfm.config.chunks,
             )
 
-    @check_overwrite("heatmap_raw")
+    @_check_overwrite("heatmap_raw")
     def coords2heatmap_raw(self, *, overwrite: bool = False) -> None:
         """Generate spherical heatmap at raw cell coordinates."""
         with cluster_process(self.busy_cluster()):
@@ -44,10 +44,11 @@ class VisualCheck(AbstractPipeline):
                 coords=pd.read_parquet(self.pfm.cells_raw_df),
                 shape=da.from_zarr(self.pfm.raw).shape,
                 out_fp=self.pfm.heatmap_raw,
-                radius=self.config.heatmap_raw_radius,
+                radius=self.config.visual_check.heatmap_raw_radius,
+                chunks=self.pfm.config.chunks,
             )
 
-    @check_overwrite("points_trfm")
+    @_check_overwrite("points_trfm")
     def coords2points_trfm(self, *, overwrite: bool = False) -> None:
         """Generate single-voxel markers at transformed cell coordinates."""
         visual_check_funcs_tiff.coords2points(
@@ -56,17 +57,17 @@ class VisualCheck(AbstractPipeline):
             out_fp=self.pfm.points_trfm,
         )
 
-    @check_overwrite("heatmap_trfm")
+    @_check_overwrite("heatmap_trfm")
     def coords2heatmap_trfm(self, *, overwrite: bool = False) -> None:
         """Generate spherical heatmap at transformed cell coordinates."""
         visual_check_funcs_tiff.coords2heatmap(
             coords=pd.read_parquet(self.pfm.cells_trfm_df),
             shape=tifffile.imread(self.pfm.ref).shape,
             out_fp=self.pfm.heatmap_trfm,
-            radius=self.config.heatmap_trfm_radius,
+            radius=self.config.visual_check.heatmap_trfm_radius,
         )
 
-    @check_overwrite("comb_reg")
+    @_check_overwrite("comb_reg")
     def combine_reg(self, *, overwrite: bool = False) -> None:
         """Combine registration images into multi-channel TIFF for viewing."""
         combine_arrs(
@@ -74,24 +75,25 @@ class VisualCheck(AbstractPipeline):
             fp_out=self.pfm.comb_reg,
         )
 
-    @check_overwrite("comb_cellc")
+    @_check_overwrite("comb_cellc")
     def combine_cellc(self, *, overwrite: bool = False) -> None:
         """Combine cell counting images into multi-channel TIFF for viewing."""
         z_trim = slice(None)
         y_trim = slice(None)
         x_trim = slice(None)
         if not self._tuning:
-            z_trim = slice(*self.config.combine_cellc_z_trim)
-            y_trim = slice(*self.config.combine_cellc_y_trim)
-            x_trim = slice(*self.config.combine_cellc_x_trim)
+            z_trim = slice(*self.config.combine.cellcount_trim.z.to_tuple())
+            y_trim = slice(*self.config.combine.cellcount_trim.y.to_tuple())
+            x_trim = slice(*self.config.combine.cellcount_trim.x.to_tuple())
         combine_arrs(
             fp_in_ls=(self.pfm.raw, self.pfm.threshd_final, self.pfm.wshed_final),
             fp_out=self.pfm.comb_cellc,
             trimmer=(z_trim, y_trim, x_trim),
         )
 
-    @check_overwrite("comb_heatmap")
+    @_check_overwrite("comb_heatmap")
     def combine_heatmap_trfm(self, *, overwrite: bool = False) -> None:
+        """Combine heatmap image into multi-channel TIFF for viewing."""
         combine_arrs(
             fp_in_ls=(self.pfm.ref, self.pfm.annot, self.pfm.heatmap_trfm),
             fp_out=self.pfm.comb_heatmap,

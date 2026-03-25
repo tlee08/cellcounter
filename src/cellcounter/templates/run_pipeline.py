@@ -35,44 +35,58 @@ if __name__ == "__main__":
             pipeline.update_config(
                 # RAW
                 chunks={"z": 500, "y": 500, "x": 500},
+                # TUNING CROP
+                tuning_trim={
+                    "z": {"start": 700, "stop": 800, "step": None},
+                    "y": {"start": 1000, "stop": 3000, "step": None},
+                    "x": {"start": 1000, "stop": 3000, "step": None},
+                },
                 # REGISTRATION
-                ref_orient_ls=(-2, 3, 1),
-                ref_z_trim={"start": None, "stop": None, "step": None},
-                ref_y_trim={"start": None, "stop": None, "step": None},
-                ref_x_trim={"start": None, "stop": None, "step": None},
-                z_rough=3,
-                y_rough=6,
-                x_rough=6,
-                z_fine=1,
-                y_fine=0.6,
-                x_fine=0.6,
-                z_trim={"start": None, "stop": None, "step": None},
-                y_trim={"start": None, "stop": None, "step": None},
-                x_trim={"start": None, "stop": None, "step": None},
-                lower_bound=(100, 0),
-                upper_bound=(5000, 5000),
-                # CELL COUNT TUNING CROP
-                tuning_z_trim=(700, 800, None),
-                tuning_y_trim=(1000, 3000, None),
-                tuning_x_trim=(1000, 3000, None),
+                registration={
+                    "ref_orientation": {"z": -2, "y": 3, "x": 1},
+                    "ref_trim": {
+                        "z": {"start": None, "stop": None, "step": None},
+                        "y": {"start": None, "stop": None, "step": None},
+                        "x": {"start": None, "stop": None, "step": None},
+                    },
+                    "downsample_rough": {"z": 3, "y": 6, "x": 6},
+                    "downsample_fine": {"z": 1.0, "y": 0.6, "x": 0.6},
+                    "reg_trim": {
+                        "z": {"start": None, "stop": None, "step": None},
+                        "y": {"start": None, "stop": None, "step": None},
+                        "x": {"start": None, "stop": None, "step": None},
+                    },
+                    "lower_bound": 100,
+                    "lower_bound_mapto": 0,
+                    "upper_bound": 5000,
+                    "upper_bound_mapto": 5000,
+                },
                 # CELL COUNTING
-                tophat_sigma=10,
-                dog_sigma1=1,
-                dog_sigma2=4,
-                large_gauss_sigma=101,
-                threshd_value=60,
-                min_threshd_size=100,
-                max_threshd_size=9000,
-                maxima_sigma=10,
-                min_wshed_size=1,
-                max_wshed_size=700,
+                cell_counting={
+                    "tophat_radius": 10,
+                    "dog_sigma1": 1,
+                    "dog_sigma2": 4,
+                    "large_gauss_radius": 101,
+                    "threshd_value": 60,
+                    "min_threshd_size": 100,
+                    "max_threshd_size": 9000,
+                    "maxima_radius": 10,
+                    "min_wshed_size": 1,
+                    "max_wshed_size": 700,
+                },
                 # VISUAL CHECK
-                heatmap_raw_radius=5,
-                heatmap_trfm_radius=3,
+                visual_check={
+                    "heatmap_raw_radius": 5,
+                    "heatmap_trfm_radius": 3,
+                },
                 # COMBINE ARRAYS
-                combine_cellc_z_trim=(750, 760, None),
-                combine_cellc_y_trim=(None, None, None),
-                combine_cellc_x_trim=(None, None, None),
+                combine={
+                    "cellcount_trim": {
+                        "z": {"start": 750, "stop": 760, "step": None},
+                        "y": {"start": None, "stop": None, "step": None},
+                        "x": {"start": None, "stop": None, "step": None},
+                    },
+                },
             )
 
             # Making zarr from tiff file(s)

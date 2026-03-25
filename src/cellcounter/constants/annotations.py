@@ -49,6 +49,15 @@ ANNOT_COLUMNS_FINAL = [
 
 
 class SpecialRegions(Enum):
+    """Our own special regions (outside brain)."""
+
     INVALID = "invalid"
     UNIVERSE = "universe"
     NO_LABEL = "no_label"
+
+
+class CombinedColumns(Enum):
+    """Combined columns."""
+
+    SPECIMEN = "specimen"
+    MEASURE = "measure"

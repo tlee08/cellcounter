@@ -110,6 +110,7 @@ def coords2points(
     coords: pd.DataFrame,
     shape: tuple[int, ...],
     out_fp: Path | str,
+    chunks: tuple[int, ...],
 ) -> da.Array:
     """Converts list of coordinates to spatial array single points.
 
@@ -123,11 +124,8 @@ def coords2points(
         The output image array
     """
     # Initialising spatial array
-    arr = da.zeros(shape, chunks=PROC_CHUNKS, dtype=np.uint8)
+    arr = da.zeros(shape, chunks=chunks, dtype=np.uint8)
     # Adding coords to image
-    # arr = arr.map_blocks(
-    #     lambda i, block_info=None: coords2points_workers(i, coords, block_info)
-    # )
     arr = da.map_blocks(coords2points_workers, arr, coords)
     # Computing and saving
     return disk_cache(arr, out_fp)
@@ -138,6 +136,7 @@ def coords2heatmap(
     shape: tuple[int, ...],
     out_fp: Path | str,
     radius: int,
+    chunks: tuple[int, ...],
 ) -> da.Array:
     """Converts list of coordinates to spatial array as voxels.
 
@@ -154,7 +153,7 @@ def coords2heatmap(
         The output image array
     """
     # Initialising spatial array
-    arr = da.zeros(shape, chunks=PROC_CHUNKS, dtype=np.uint8)
+    arr = da.zeros(shape, chunks=chunks, dtype=np.uint8)
     # Adding coords to image
     arr = arr.map_blocks(
         lambda i, block_info=None: coords2sphere_workers(i, coords, radius, block_info)
@@ -167,6 +166,7 @@ def coords2regions(
     coords: pd.DataFrame,
     shape: tuple[int, ...],
     out_fp: str,
+    chunks: tuple[int, ...],
 ) -> da.Array:
     """Converts list of coordinates to spatial array.
 
@@ -180,7 +180,7 @@ def coords2regions(
         The output image array
     """
     # Initialising spatial array
-    arr = da.zeros(shape, chunks=PROC_CHUNKS, dtype=np.uint8)
+    arr = da.zeros(shape, chunks=chunks, dtype=np.uint8)
 
     # Adding coords to image with np.apply_along_axis
     def f(coord) -> None:

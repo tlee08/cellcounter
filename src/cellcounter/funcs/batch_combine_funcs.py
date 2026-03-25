@@ -6,7 +6,6 @@ all experiments use the same atlas reference for consistency.
 """
 
 import logging
-from enum import Enum
 from pathlib import Path
 
 import pandas as pd
@@ -19,20 +18,15 @@ from cellcounter.constants import (
     MaskColumns,
     SpecialRegions,
 )
+from cellcounter.constants.annotations import CombinedColumns
 from cellcounter.funcs.map_funcs import annot_df_get_parents, annot_fp2df
 from cellcounter.models.fp_models.proj_fp import ProjFp
 from cellcounter.pipeline.pipeline import Pipeline
 from cellcounter.utils.misc_utils import enum2list
 
-# TODO: move to pipeline and refactor
-
-COMBINED_FP = "combined_df"
 logger = logging.getLogger(__name__)
 
-
-class CombinedColumns(Enum):
-    SPECIMEN = "specimen"
-    MEASURE = "measure"
+COMBINED_FP = "combined_df"
 
 
 class BatchCombineFuncs:
@@ -112,7 +106,7 @@ class BatchCombineFuncs:
         # Adding parent columns to annot_df
         total_df = annot_df_get_parents(total_df)
         # Adding special rows (e.g. "universe")
-        # TODO: is neither clean nor modular
+        # TODO: this is neither clean nor modular
         total_df.loc[-1] = pd.Series(
             {AnnotColumns.NAME.value: SpecialRegions.INVALID.value}
         )
@@ -120,9 +114,6 @@ class BatchCombineFuncs:
             {AnnotColumns.NAME.value: SpecialRegions.UNIVERSE.value}
         )
         # total_df.loc[np.nan] = pd.Series(
-        #     {AnnotColumns.NAME.value: SpecialRegions.NO_LABEL.value}
-        # )
-        # total_df = df_include_special_ids(total_df)
         # Keeping only the required columns
         total_df = total_df[ANNOT_COLUMNS_FINAL]
         # Making columns a multindex with levels ("annotations", annot columns)

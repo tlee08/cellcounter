@@ -6,6 +6,7 @@ Provides the AbstractPipeline base class that handles:
 - Config and filepath model access
 """
 
+import functools
 import logging
 from abc import ABC
 from collections.abc import Callable
@@ -38,6 +39,36 @@ def _get_cellc_funcs() -> CpuCellcFuncs:
 
         return GpuCellcFuncs()
     return CpuCellcFuncs()
+
+
+def _check_overwrite(*fp_attrs: str) -> Callable:
+    """Decorator to check if output files exist before running a pipeline step.
+
+    Args:
+        *fp_attrs: Names of pfm attributes to check for existence.
+    """
+
+    def decorator(func: Callable) -> Callable:
+        @functools.wraps(func)
+        def wrapper(
+            self: AbstractPipeline, *args, overwrite: bool = False, **kwargs
+        ) -> object:
+            if not overwrite:
+                for attr in fp_attrs:
+                    fp = getattr(self.pfm, attr)
+                    if fp.exists():
+                        logger.warning(
+                            "WARNING: Output file, %s, already exists - "
+                            "not overwriting file.\n"
+                            "To overwrite, specify overwrite=True.\n",
+                            fp,
+                        )
+                        return None
+            return func(self, *args, overwrite=overwrite, **kwargs)
+
+        return wrapper
+
+    return decorator
 
 
 class AbstractPipeline(ABC):
@@ -94,8 +125,8 @@ class AbstractPipeline(ABC):
         Use for memory-intensive operations like watershed.
         """
         return LocalCluster(
-            n_workers=self.config.heavy_n_workers,
-            threads_per_worker=self.config.heavy_threads_per_worker,
+            n_workers=self.config.cluster.heavy_n_workers,
+            threads_per_worker=self.config.cluster.heavy_threads_per_worker,
         )
 
     def busy_cluster(self) -> SpecCluster:
@@ -104,8 +135,8 @@ class AbstractPipeline(ABC):
         Use for I/O-bound or parallel operations.
         """
         return LocalCluster(
-            n_workers=self.config.busy_n_workers,
-            threads_per_worker=self.config.busy_threads_per_worker,
+            n_workers=self.config.cluster.busy_n_workers,
+            threads_per_worker=self.config.cluster.busy_threads_per_worker,
         )
 
     def gpu_cluster(self) -> SpecCluster:
