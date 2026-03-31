@@ -77,11 +77,15 @@ class VisualCheck(AbstractPipeline):
 
     @_check_overwrite("comb_cellc")
     def combine_cellc(self, *, overwrite: bool = False) -> None:
-        """Combine cell counting images into multi-channel TIFF for viewing."""
+        """Combine cell counting images into multi-channel TIFF for viewing.
+
+        If not tuning (i.e. is prod), then we have to trim anyway
+        - otherwise image is too large.
+        """
         z_trim = slice(None)
         y_trim = slice(None)
         x_trim = slice(None)
-        if not self._tuning:
+        if not self.tuning:
             z_trim = self.config.combine.cellcount_trim.z.to_slice()
             y_trim = self.config.combine.cellcount_trim.y.to_slice()
             x_trim = self.config.combine.cellcount_trim.x.to_slice()

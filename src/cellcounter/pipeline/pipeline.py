@@ -44,7 +44,7 @@ from cellcounter.funcs.map_funcs import (
     df_map_ids,
     get_cells,
 )
-from cellcounter.models.fp_models import get_proj_fm
+from cellcounter.models.fp_models import get_proj_fp
 from cellcounter.models.fp_models.ref_fp import RefFp
 from cellcounter.pipeline.abstract_pipeline import AbstractPipeline, _check_overwrite
 from cellcounter.utils.dask_utils import cluster_process, disk_cache
@@ -335,8 +335,8 @@ class Pipeline(AbstractPipeline):
     @_check_overwrite("raw")
     def make_tuning_arr(self, *, overwrite: bool = False) -> None:
         """Crop raw zarr to make a smaller zarr for tuning."""
-        pfm_prod = get_proj_fm(self.pfm.root_dir, tuning=False)
-        pfm_tuning = get_proj_fm(self.pfm.root_dir, tuning=True)
+        pfm_prod = get_proj_fp(self.pfm.root_dir, tuning=False)
+        pfm_tuning = get_proj_fp(self.pfm.root_dir, tuning=True)
         with cluster_process(self.busy_cluster()):
             raw_arr = da.from_zarr(pfm_prod.raw)
             raw_arr = raw_arr[
@@ -645,9 +645,9 @@ class Pipeline(AbstractPipeline):
 
     def clean_proj(self) -> None:
         """Clean project directory by removing cellcount subdirs."""
-        pfm_prod = get_proj_fm(self.pfm.root_dir, tuning=False)
+        pfm_prod = get_proj_fp(self.pfm.root_dir, tuning=False)
         silent_remove(pfm_prod.root_dir / pfm_prod.cellcount_sdir)
-        pfm_tuning = get_proj_fm(self.pfm.root_dir, tuning=True)
+        pfm_tuning = get_proj_fp(self.pfm.root_dir, tuning=True)
         silent_remove(pfm_tuning.root_dir / pfm_tuning.cellcount_sdir)
         logger.info("Project %s cleaned.", self.pfm.root_dir)
 
@@ -671,7 +671,7 @@ class Pipeline(AbstractPipeline):
         """
         steps = steps or [
             *["tiff2zarr"],
-            *list(self.STEPS_REGISTRATION[1:]),  # skip tiff2zarr, already added
+            *list(self.STEPS_REGISTRATION[1:]),
             *["make_tuning_arr"],
             *list(self.STEPS_CELL_COUNTING),
             *list(self.STEPS_MAPPING),

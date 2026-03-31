@@ -16,7 +16,7 @@ from dask.distributed import LocalCluster, SpecCluster
 
 from cellcounter.constants import CUPY_ENABLED, DASK_CUDA_ENABLED
 from cellcounter.funcs.cpu_cellc_funcs import CpuCellcFuncs
-from cellcounter.models.fp_models import get_proj_fm
+from cellcounter.models.fp_models import get_proj_fp
 from cellcounter.models.fp_models.proj_fp import ProjFp
 from cellcounter.models.proj_config import ProjConfig
 
@@ -87,8 +87,8 @@ class AbstractPipeline(ABC):
 
     cellc_funcs: CpuCellcFuncs
     _gpu_cluster: Callable[..., SpecCluster]
-    _pfm: ProjFp
     _tuning: bool
+    _pfm: ProjFp
 
     def __init__(self, proj_dir: Path | str, *, tuning: bool = False) -> None:
         """Initialize pipeline with project directory.
@@ -97,14 +97,19 @@ class AbstractPipeline(ABC):
             proj_dir: Path to project directory.
             tuning: If True, use tuning subdirectory for parameters.
         """
-        self._pfm = get_proj_fm(proj_dir, tuning=tuning)
         self._tuning = tuning
+        self._pfm = get_proj_fp(proj_dir, tuning=tuning)
         self.set_gpu(enabled=True)
 
     @property
     def pfm(self) -> ProjFp:
         """Project filepath model."""
         return self._pfm
+
+    @property
+    def tuning(self) -> bool:
+        """Is project in tuning version or raw version."""
+        return self._tuning
 
     @property
     def config(self) -> ProjConfig:

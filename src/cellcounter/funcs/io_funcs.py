@@ -94,6 +94,36 @@ def write_tiff(arr: npt.NDArray, dst_fp: Path | str) -> None:
 
 
 #############################################
+# Agnostic Array Files
+#############################################
+
+
+def read_img(fp: Path | str, trimmer: tuple[slice, ...] | None = None) -> npt.NDArray:
+    """Load TIFF or Zarr file into memory with optional trimming.
+
+    Args:
+        fp: Path to .tif or .zarr file.
+        trimmer: Optional tuple of slices to extract region of interest.
+
+    Returns:
+        Numpy array loaded into memory.
+    """
+    fp = Path(fp)
+    if fp.suffix == ".zarr":
+        arr = da.from_zarr(fp)
+        if trimmer is not None:
+            arr = arr[*trimmer]
+        return arr.compute()
+    if fp.suffix == ".tif":
+        arr = tifffile.imread(fp)
+        if trimmer is not None:
+            arr = arr[*trimmer]
+        return arr
+    err_msg = "Only .zarr and .tif files are supported."
+    raise NotImplementedError(err_msg)
+
+
+#############################################
 # Async reading
 #############################################
 
@@ -267,8 +297,6 @@ def combine_arrs(
     Returns:
         Stacked array with shape (z, y, x, channels).
     """
-    from cellcounter.utils.viewer import read_img
-
     dtype = np.uint16
     arr_ls = []
     for fp in fp_in_ls:

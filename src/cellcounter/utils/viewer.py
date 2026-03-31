@@ -8,13 +8,10 @@ Provides:
 import logging
 from pathlib import Path
 
-import dask.array as da
 import napari
-import numpy.typing as npt
-import tifffile
 
-from cellcounter.funcs.io_funcs import async_read_files_run
-from cellcounter.models.fp_models import get_proj_fm
+from cellcounter.funcs.io_funcs import async_read_files_run, read_img
+from cellcounter.models.fp_models import get_proj_fp
 
 logger = logging.getLogger(__name__)
 
@@ -47,31 +44,6 @@ DISPLAY_DEFAULTS = {
 }
 
 
-def read_img(fp: Path | str, trimmer: tuple[slice, ...] | None = None) -> npt.NDArray:
-    """Load TIFF or Zarr file into memory with optional trimming.
-
-    Args:
-        fp: Path to .tif or .zarr file.
-        trimmer: Optional tuple of slices to extract region of interest.
-
-    Returns:
-        Numpy array loaded into memory.
-    """
-    fp = Path(fp)
-    if fp.suffix == ".zarr":
-        arr = da.from_zarr(fp)
-        if trimmer is not None:
-            arr = arr[*trimmer]
-        return arr.compute()
-    if fp.suffix == ".tif":
-        arr = tifffile.imread(fp)
-        if trimmer is not None:
-            arr = arr[*trimmer]
-        return arr
-    err_msg = "Only .zarr and .tif files are supported."
-    raise NotImplementedError(err_msg)
-
-
 def view_images(
     proj_dir: str | Path,
     images: list[str],
@@ -90,7 +62,7 @@ def view_images(
         **display_overrides: Override default display settings per image.
             e.g., contrast_limits={"bgrm": (0, 5000)}, colormap={"bgrm": "red"}
     """
-    pfm = get_proj_fm(proj_dir, tuning=tuning)
+    pfm = get_proj_fp(proj_dir, tuning=tuning)
     # Build file paths and display settings
     fp_ls = [getattr(pfm, name) for name in images]
     names = images
