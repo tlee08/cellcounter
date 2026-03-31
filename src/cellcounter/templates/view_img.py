@@ -40,8 +40,8 @@ if __name__ == "__main__":
         ],
         trimmer=(
             slice(500, 510),
-            slice(500, 2000),
-            slice(500, 2000),
+            slice(1500, 3000),
+            slice(1500, 3000),
         ),  # e.g.: (slice(100, 200), slice(None), slice(None))
         tuning=True,
     )
