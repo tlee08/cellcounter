@@ -435,7 +435,7 @@ class Pipeline(AbstractPipeline):
         with cluster_process(self.gpu_cluster()):
             result = da.map_blocks(
                 self.cellc_funcs.get_local_maxima,
-                da.from_zarr(self.pfm.raw),
+                da.from_zarr(self.pfm.adaptv),
                 da.from_zarr(self.pfm.threshd_filt),
                 radius=self.pfm.config.cell_counting.maxima_radius,
             )
