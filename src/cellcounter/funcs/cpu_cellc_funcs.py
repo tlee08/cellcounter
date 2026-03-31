@@ -255,8 +255,9 @@ class CpuCellcFuncs:
             loc = self.xp.asarray(block_info[0]["chunk-location"])
             grid_shape = block_info[0]["num-chunks"]
             flat_idx = self.xp.ravel_multi_index(loc, grid_shape)
+            # NOTE: becomes an issue if offset > max uint64
             offset = flat_idx * max_labels_per_chunk
-            block[block > 0] += offset.astype(block.dtype)
+            res_block[res_block > 0] += offset.astype(res_block.dtype)
             logger.debug("Applied label offset: %s", offset)
         return res_block
 
