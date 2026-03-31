@@ -86,9 +86,9 @@ class VisualCheck(AbstractPipeline):
         y_trim = slice(None)
         x_trim = slice(None)
         if not self.tuning:
-            z_trim = self.config.combine.cellcount_trim.z.to_slice()
-            y_trim = self.config.combine.cellcount_trim.y.to_slice()
-            x_trim = self.config.combine.cellcount_trim.x.to_slice()
+            z_trim = self.config.visual_check.cellcount_trim.z.to_slice()
+            y_trim = self.config.visual_check.cellcount_trim.y.to_slice()
+            x_trim = self.config.visual_check.cellcount_trim.x.to_slice()
         combine_arrs(
             fp_in_ls=(self.pfm.raw, self.pfm.threshd_filt, self.pfm.wshed_filt),
             fp_out=self.pfm.comb_cellc,
