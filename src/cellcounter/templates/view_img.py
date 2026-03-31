@@ -38,6 +38,10 @@ if __name__ == "__main__":
             # "points_trfm",
             # "heatmap_trfm",
         ],
-        trimmer=None,  # or: (slice(100, 200), slice(None), slice(None))
+        trimmer=(
+            slice(500, 510),
+            slice(500, 2000),
+            slice(500, 2000),
+        ),  # e.g.: (slice(100, 200), slice(None), slice(None))
         tuning=True,
     )
