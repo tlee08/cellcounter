@@ -15,7 +15,6 @@ class ProjFp(AbstractFp):
         self.root_dir = Path(root_dir)
         self.raw_sdir = "raw"
         self.registration_sdir = "registration"
-        self.mask_sdir = "mask"
         self.cellcount_sdir = "cellcount"
         self.analysis_sdir = "analysis"
         self.visual_sdir = "visual"
@@ -26,7 +25,6 @@ class ProjFp(AbstractFp):
         return [
             self.raw_sdir,
             self.registration_sdir,
-            self.mask_sdir,
             self.cellcount_sdir,
             self.analysis_sdir,
             self.visual_sdir,
@@ -101,31 +99,6 @@ class ProjFp(AbstractFp):
     def regresult(self) -> Path:
         """Regresult."""
         return self.root_dir / self.registration_sdir / "5_regresult.tif"
-
-    @property
-    def premask_blur(self) -> Path:
-        """Premask_blur."""
-        return self.root_dir / self.mask_sdir / "1_premask_blur.tif"
-
-    @property
-    def mask_fill(self) -> Path:
-        """Mask_fill."""
-        return self.root_dir / self.mask_sdir / "2_mask_trimmed.tif"
-
-    @property
-    def mask_outline(self) -> Path:
-        """Mask_outline."""
-        return self.root_dir / self.mask_sdir / "3_outline_reg.tif"
-
-    @property
-    def mask_reg(self) -> Path:
-        """Mask_reg."""
-        return self.root_dir / self.mask_sdir / "4_mask_reg.tif"
-
-    @property
-    def mask_df(self) -> Path:
-        """Mask_df."""
-        return self.root_dir / self.mask_sdir / "5_mask.parquet"
 
     @property
     def bgrm(self) -> Path:
