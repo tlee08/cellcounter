@@ -293,6 +293,11 @@ def get_cells(
 ) -> pd.DataFrame:
     """Extract cells from watershed segmentation to DataFrame.
 
+    Note:
+        assumes that maxima_labels and wshed_labels share
+        the same label IDs (i.e., each
+        maxima has the same integer ID as its watershed region).
+
     Args:
         raw_block: Raw intensity values.
         maxima_labels_block: Labels for each maxima point.
@@ -306,19 +311,20 @@ def get_cells(
     Returns:
         DataFrame with cell coordinates, volumes, and intensities.
     """
+    # Validating input shapes
     assert raw_block.shape == maxima_labels_block.shape
     assert raw_block.shape == wshed_filt_block.shape
-
+    assert raw_block.shape == wshed_labels_block.shape
+    # Convert inputs to GPU arrays if using cupy
     raw = xp.asarray(raw_block)
     maxima_labels = xp.asarray(maxima_labels_block)
     wshed_labels = xp.asarray(wshed_labels_block)
     wshed_filt = xp.asarray(wshed_filt_block)
     mask = wshed_filt > 0
-
     # Get maxima positions (first occurrence of each label)
-    labels, coords_flat = xp.unique(maxima_labels[mask], return_index=True)
+    labels, coords_flat = xp.unique(maxima_labels, return_index=True)
+    # Get z, y, x coordinates from flattened indices
     z, y, x = xp.unravel_index(coords_flat, maxima_labels.shape)
-
     # Build cells DataFrame with offset coordinates
     cells_df = pd.DataFrame(
         {
@@ -327,31 +333,21 @@ def get_cells(
             Coords.X.value: _to_numpy(x) + x_offset,
         },
         index=pd.Index(_to_numpy(labels).astype(np.uint32), name=CELL_IDX_NAME),
-    ).astype(np.uint16)
-
-    if cells_df.shape[0] > 0:
-        # Remove background label
-        cells_df = cells_df.drop(index=0, errors="ignore")
-
+    ).astype(np.uint32)
+    # Set count of 1 for each cell
     cells_df[CellColumns.COUNT.value] = 1
-
     # Get volume at each maxima position
-    cells_df[CellColumns.VOLUME.value] = _to_numpy(
-        wshed_filt[
-            cells_df[Coords.Z.value] - z_offset,
-            cells_df[Coords.Y.value] - y_offset,
-            cells_df[Coords.X.value] - x_offset,
-        ]
-    )
-
+    cells_df[CellColumns.VOLUME.value] = _to_numpy(wshed_filt[z, y, x])
+    # Remove background label (label 0) if present
+    if cells_df.shape[0] > 0:
+        cells_df = cells_df.drop(index=0, errors="ignore")
     # Filter out cells with 0 volume
     cells_df = cells_df[cells_df[CellColumns.VOLUME.value] > 0]
-
     # Compute summed intensities per watershed label
     if cells_df.empty:
         cells_df[CellColumns.SUM_INTENSITY.value] = 0.0
         return cells_df
-
+    # Get unique watershed labels and their corresponding summed intensities
     fg_labels, inverse = xp.unique(wshed_labels[mask].ravel(), return_inverse=True)
     intensities = xp.bincount(inverse, weights=raw[mask].ravel())
     label_to_intensity = dict(
@@ -360,5 +356,5 @@ def get_cells(
     cells_df[CellColumns.SUM_INTENSITY.value] = cells_df.index.map(
         label_to_intensity.get
     ).fillna(0.0)
-
+    # Return cells DataFrame
     return cells_df
