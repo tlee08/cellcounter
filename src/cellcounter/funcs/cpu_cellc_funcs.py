@@ -9,11 +9,8 @@ import logging
 
 import numpy as np
 import numpy.typing as npt
-import pandas as pd
 from scipy import ndimage as sc_ndimage
 from skimage.segmentation import watershed
-
-from cellcounter.constants import CELL_IDX_NAME, CellColumns, Coords
 
 logger = logging.getLogger(__name__)
 
@@ -434,26 +431,3 @@ class CpuCellcFuncs:
             mask=mask_block > 0,
         )
         return res_block
-
-    def get_coords(self, block: npt.NDArray) -> pd.DataFrame:
-        """Get coordinates of regions in 3D tensor.
-
-        TODO: Keep only the first row (i.e cell) for each label (groupby).
-        """
-        logger.debug("Getting coordinates of regions")
-        z, y, x = np.where(block)
-        logger.debug("Getting IDs of regions (from coords)")
-        ids = block[z, y, x]
-        logger.debug("Making dataframe")
-        df = pd.DataFrame(
-            {
-                Coords.Z.value: z,
-                Coords.Y.value: y,
-                Coords.X.value: x,
-            },
-            index=pd.Index(ids.astype(np.uint32), name=CELL_IDX_NAME),
-        ).astype(np.uint16)
-        df[CellColumns.VOLUME.value] = -1  # TODO: placeholder
-        df[CellColumns.SUM_INTENSITY.value] = -1  # TODO: placeholder
-        # df[CellColumns.MAX_INTENSITY.value] = -1  # TODO: placeholder
-        return df

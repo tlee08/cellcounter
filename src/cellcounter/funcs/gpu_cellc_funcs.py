@@ -47,7 +47,6 @@ _GPU_METHODS_NO_CONVERT = {
     "get_boundary_pairs",
     "label2volume",
     "wshed_segm",
-    "get_coords",
 }
 
 
