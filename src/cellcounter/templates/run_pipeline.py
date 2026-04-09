@@ -93,24 +93,23 @@ if __name__ == "__main__":
 
             # Making zarr from tiff file(s)
             # COMMENT OUT AFTER FIRST RUN (ONLY NEEDED INITIALLY AND VERY SLOW)
-            pipeline.tiff2zarr(in_fp, overwrite=overwrite)
+            pipeline.tiff2zarr(in_fp, overwrite=False)
             # pipeline.rechunk_raw()
             # Preparing reference images
             # COMMENT OUT AFTER FIRST RUN (ONLY NEEDED INITIALLY)
-            pipeline.reg_ref_prepare(overwrite=overwrite)
+            pipeline.reg_ref_prepare(overwrite=False)
             # COMMENT OUT AFTER FIRST RUN (ONLY NEEDED INITIALLY AND VERY SLOW)
-            pipeline.reg_img_rough(overwrite=overwrite)
+            pipeline.reg_img_rough(overwrite=False)
             # COMMENT OUT ONCE YOU'RE HAPPY WITH THE REGISTRATION PARAMETERS
+            # ===============================
             pipeline.reg_img_fine(overwrite=overwrite)
-            # COMMENT OUT ONCE YOU'RE HAPPY WITH THE REGISTRATION PARAMETERS
             pipeline.reg_img_trim(overwrite=overwrite)
-            # COMMENT OUT ONCE YOU'RE HAPPY WITH THE REGISTRATION PARAMETERS
             pipeline.reg_img_bound(overwrite=overwrite)
-            # COMMENT OUT ONCE YOU'RE HAPPY WITH THE REGISTRATION PARAMETERS
             pipeline.reg_elastix(overwrite=overwrite)
+            # ===============================
             # Making trimmed image for cell count tuning
             # COMMENT OUT AFTER FIRST RUN (ONLY NEEDED INITIALLY)
-            pipeline.make_tuning_arr(overwrite=overwrite)
+            pipeline.make_tuning_arr(overwrite=False)
             # Cell counting (tuning and final)
             for is_tuning in [
                 True,  # Tuning
