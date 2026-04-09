@@ -459,7 +459,7 @@ class Pipeline(AbstractPipeline):
         with cluster_process(self.heavy_cluster()):
             result = da.map_blocks(
                 self.cellc_funcs.wshed_segm,
-                da.from_zarr(self.pfm.raw),
+                da.from_zarr(self.pfm.adaptv),
                 da.from_zarr(self.pfm.maxima_labels),
                 da.from_zarr(self.pfm.threshd_filt),
             )

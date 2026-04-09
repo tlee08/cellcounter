@@ -416,7 +416,7 @@ class CpuCellcFuncs:
         return res_block
 
     def wshed_segm(
-        self, raw_block: npt.NDArray, maxima_block: npt.NDArray, mask_block: npt.NDArray
+        self, block: npt.NDArray, maxima_block: npt.NDArray, mask_block: npt.NDArray
     ) -> npt.NDArray:
         """Do watershed segmentation.
 
@@ -426,7 +426,7 @@ class CpuCellcFuncs:
         """
         logger.debug("Watershed segmentation")
         res_block = watershed(
-            image=-raw_block,
+            image=-block,
             markers=maxima_block,
             mask=mask_block > 0,
         )
