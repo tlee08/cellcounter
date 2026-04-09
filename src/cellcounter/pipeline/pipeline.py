@@ -523,6 +523,7 @@ class Pipeline(AbstractPipeline):
 
             cells_df = dd.from_delayed(delayed_results)
 
+            # If tuning, add offsets back to get coordinates in original raw space
             if self._tuning:
                 cells_df[Coords.Z.value] += self.config.tuning_trim.z.start or 0
                 cells_df[Coords.Y.value] += self.config.tuning_trim.y.start or 0

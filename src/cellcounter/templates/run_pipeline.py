@@ -94,6 +94,7 @@ if __name__ == "__main__":
             # Making zarr from tiff file(s)
             # COMMENT OUT AFTER FIRST RUN (ONLY NEEDED INITIALLY AND VERY SLOW)
             pipeline.tiff2zarr(in_fp, overwrite=overwrite)
+            # pipeline.rechunk_raw()
             # Preparing reference images
             # COMMENT OUT AFTER FIRST RUN (ONLY NEEDED INITIALLY)
             pipeline.reg_ref_prepare(overwrite=overwrite)
@@ -115,6 +116,7 @@ if __name__ == "__main__":
                 True,  # Tuning
                 False,  # Final (COMMENT OUT UNTIL HAPPY WITH THE CELL COUNT PARAMETERS)
             ]:
+                # Cell detection pipeline
                 pipeline_tuning = Pipeline(analysis_img_dir, tuning=is_tuning)
                 pipeline_tuning.tophat_filter(overwrite=overwrite)
                 pipeline_tuning.dog_filter(overwrite=overwrite)
@@ -128,16 +130,15 @@ if __name__ == "__main__":
                 pipeline_tuning.watershed(overwrite=overwrite)
                 pipeline_tuning.compute_watershed_volumes(overwrite=overwrite)
                 pipeline_tuning.filter_watershed(overwrite=overwrite)
-                pipeline_tuning.save_cells_table(overwrite=overwrite)
                 # Cell mapping
                 # COMMENT OUT UNTIL YOU'RE HAPPY WITH THE CELL COUNT PARAMETERS
+                # ===============================
+                pipeline_tuning.save_cells_table(overwrite=overwrite)
                 pipeline_tuning.transform_coords(overwrite=overwrite)
-                # COMMENT OUT UNTIL YOU'RE HAPPY WITH THE CELL COUNT PARAMETERS
                 pipeline_tuning.cell_mapping(overwrite=overwrite)
-                # COMMENT OUT UNTIL YOU'RE HAPPY WITH THE CELL COUNT PARAMETERS
                 pipeline_tuning.group_cells(overwrite=overwrite)
-                # COMMENT OUT UNTIL YOU'RE HAPPY WITH THE CELL COUNT PARAMETERS
                 pipeline_tuning.cells2csv(overwrite=overwrite)
+                # ===============================
 
             # Registration visual check
             vc = VisualCheck(analysis_img_dir, tuning=False)
