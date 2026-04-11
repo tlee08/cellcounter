@@ -321,10 +321,9 @@ def get_cells(
     wshed_labels = xp.asarray(wshed_labels_block)
     wshed_filt = xp.asarray(wshed_filt_block)
     mask = wshed_filt > 0
-    # First mask the maxima_labels to only consider foreground regions
-    maxima_labels = maxima_labels * mask
     # Get maxima positions (first occurrence of each label)
-    labels, coords_flat = xp.unique(maxima_labels, return_index=True)
+    # Mask the maxima_labels to only consider foreground regions
+    labels, coords_flat = xp.unique(maxima_labels * mask, return_index=True)
     # Get z, y, x coordinates from flattened indices
     z, y, x = xp.unravel_index(coords_flat, maxima_labels.shape)
     # Build cells DataFrame with offset coordinates
