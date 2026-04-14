@@ -397,14 +397,17 @@ class CpuCellcFuncs:
             Binary array where True indicates local maxima.
         """
         block = self.xp.asarray(block)
+        if mask_block is not None:
+            logger.debug("Mask provided. Only mask regions considered (round 1).")
+            mask_block = (self.xp.asarray(mask_block) > 0).astype(self.xp.uint8)
+            block = block * mask_block
         logger.debug("Finding local maxima with spherical radius %d", radius)
         footprint = self._spherical_footprint(radius)
         max_arr = self.xdimage.maximum_filter(block, footprint=footprint)
         logger.debug("Identifying points where arr == max_arr")
         res_block = block == max_arr
         if mask_block is not None:
-            logger.debug("Mask provided. Maxima only in mask regions considered.")
-            mask_block = (self.xp.asarray(mask_block) > 0).astype(self.xp.uint8)
+            logger.debug("Mask provided. Only mask regions considered (round 2).")
             res_block = (res_block * mask_block).astype(self.xp.uint8)
         return res_block
 
