@@ -23,7 +23,6 @@ src/cellcounter/
 ├── constants/                # Enums and constants
 ├── utils/                    # Dask, logging, viewer, union-find
 ├── scripts/                  # CLI entry points
-├── gui/                      # Streamlit GUI
 └── templates/                # User-facing script templates
 ```
 
