@@ -170,6 +170,14 @@ class CpuCellcFuncs:
 
     def otsu_thresh(self, block: npt.NDArray) -> npt.NDArray:
         """Perform Otsu's thresholding on a 3D tensor."""
+        # TODO:
+        # Bug 2 — otsu_thresh compares pixel values against a bin index (Important)
+        # cpu_cellc_funcs.py:175–195
+        # xp.histogram(block, bins=256) bins over the actual data range.
+        # argmax(between_class_variance) returns a bin index (0–255), not an intensity value. Then:
+        # res_block = block > optimal_threshold  # comparing uint16 pixel values vs. 0–255 index
+        # For uint16 data (range 0–65535), the index is almost always near-zero, so nearly every
+        # pixel is marked as foreground. The bin edge corresponding to the argmax must be used instead.
         block = self.xp.asarray(block)
         logger.debug("Calculate histogram")
         hist, _bin_edges = self.xp.histogram(block, bins=256)
@@ -299,7 +307,7 @@ class CpuCellcFuncs:
             return np.array(list(pairs))
         return np.empty((0, 2))
 
-    def get_label_sizemap(self, block: npt.NDArray) -> tuple[npt.NDArray, npt.NDArray]:
+    def get_label_sizemap(self, block: npt.NDArray) -> npt.NDArray:
         """Get a dict of label_val : contiguous_size.
 
         Parameters:
@@ -359,7 +367,9 @@ class CpuCellcFuncs:
 
     def label2volume(self, block: npt.NDArray) -> npt.NDArray:
         """Convert array of label values to contiguous volume (i.e. count) values."""
-        ids, counts = self.get_label_sizemap(block)
+        # TODO: Check correct
+        sizemap = self.get_label_sizemap(block)
+        ids, counts = sizemap[:, 0], sizemap[:, 1]
         res_block = self.map_values_to_arr(block, ids, counts)
         return res_block
 
@@ -369,8 +379,8 @@ class CpuCellcFuncs:
         """Assumes `arr` is array of objects labelled with their volumes."""
         block = self.xp.asarray(block)
         logger.debug("Getting filter of small and large object to filter out")
-        smin = smin or 0
-        smax = smax or block.max()
+        smin = smin if smin is not None else 0
+        smax = smax if smax is not None else block.max()
         filt_objs = (block < smin) | (block > smax)
         logger.debug("Filter out objects (by setting them to 0)")
         block[filt_objs] = 0
@@ -423,7 +433,7 @@ class CpuCellcFuncs:
     ) -> npt.NDArray:
         """Do watershed segmentation.
 
-        NOTE: NOT GPU accelerated
+        NOT GPU accelerated
 
         Expects `maxima_arr` to have unique labels for each maxima.
         """
