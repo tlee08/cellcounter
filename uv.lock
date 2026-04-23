@@ -207,16 +207,16 @@ wheels = [
 
 [[package]]
 name = "build"
-version = "1.4.0"
+version = "1.4.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "colorama", marker = "os_name == 'nt' and sys_platform != 'darwin'" },
     { name = "packaging" },
     { name = "pyproject-hooks" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/42/18/94eaffda7b329535d91f00fe605ab1f1e5cd68b2074d03f255c7d250687d/build-1.4.0.tar.gz", hash = "sha256:f1b91b925aa322be454f8330c6fb48b465da993d1e7e7e6fa35027ec49f3c936", size = 50054, upload-time = "2026-01-08T16:41:47.696Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a7/12/fa7bd9f677a2dcc58a395217c221e2a5e5cebd59ddc9756bc4f5fede8719/build-1.4.1.tar.gz", hash = "sha256:30adeb28821e573a49b556030d8c84186d112f6a38b12fa5476092c4544ae55a", size = 83276, upload-time = "2026-03-24T23:09:00.209Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c5/0d/84a4380f930db0010168e0aa7b7a8fed9ba1835a8fbb1472bc6d0201d529/build-1.4.0-py3-none-any.whl", hash = "sha256:6a07c1b8eb6f2b311b96fcbdbce5dab5fe637ffda0fd83c9cac622e927501596", size = 24141, upload-time = "2026-01-08T16:41:46.453Z" },
+    { url = "https://files.pythonhosted.org/packages/f9/54/8d858f562f598897a7e5e89a8da4f54de06bcd85a98add1275c84efc9ce4/build-1.4.1-py3-none-any.whl", hash = "sha256:21c81f7a0fa423f0da229335c5c2a605967fbfc9af3c4b6ecd368265ed59c6bc", size = 24633, upload-time = "2026-03-24T23:08:58.677Z" },
 ]
 
 [[package]]
@@ -443,10 +443,10 @@ wheels = [
 
 [[package]]
 name = "cuda-pathfinder"
-version = "1.4.4"
+version = "1.5.0"
 source = { registry = "https://pypi.org/simple" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c0/66/7b2c3d23dac4bb9629b4d9702f1f796bd41c01142c2b47be6fcfdeaf4ee4/cuda_pathfinder-1.4.4-py3-none-any.whl", hash = "sha256:1a9e7feccae0d969ad88545d0462f2ed2750df8e6732309798dc1e1ca603a28b", size = 48834, upload-time = "2026-03-23T20:50:00.706Z" },
+    { url = "https://files.pythonhosted.org/packages/93/66/0c02bd330e7d976f83fa68583d6198d76f23581bcbb5c0e98a6148f326e5/cuda_pathfinder-1.5.0-py3-none-any.whl", hash = "sha256:498f90a9e9de36044a7924742aecce11c50c49f735f1bc53e05aa46de9ea4110", size = 49739, upload-time = "2026-03-24T21:14:30.869Z" },
 ]
 
 [[package]]
@@ -896,17 +896,17 @@ wheels = [
 
 [[package]]
 name = "itk-elastix"
-version = "0.25.1"
+version = "0.25.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "itk" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ab/99/3e248f655372062cd05f67e01ace6ef1bd27fd3b52de7103a8709e4f51ca/itk_elastix-0.25.1-cp311-abi3-macosx_11_0_arm64.whl", hash = "sha256:2ae0820cd4d7c07a6dbb194b47784ff474ac8978187370795bee7ee222116963", size = 11810373, upload-time = "2026-03-16T01:35:06.094Z" },
-    { url = "https://files.pythonhosted.org/packages/a1/53/bbfea1893c808d732ffb956facfc61c38e345d385b13ebcb42ccd8665c8e/itk_elastix-0.25.1-cp311-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:9244931f92e1a2fbba0a770d36077be8b78241d7b6bfab30694e3118c2fb4e77", size = 21217827, upload-time = "2026-03-16T01:35:09.461Z" },
-    { url = "https://files.pythonhosted.org/packages/8b/c0/a3d3bc8a4dabbed7a3783a3117a721e0078e601f79c2897cc0f8756d9828/itk_elastix-0.25.1-cp311-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:eed2a6410f14cbecba0bf821c1b504c6c38753e4aff2b153ee4a01fe8c318b7e", size = 19598131, upload-time = "2026-03-16T01:35:12.635Z" },
-    { url = "https://files.pythonhosted.org/packages/f9/36/677da4009c67864b54a48b54d68bda4cb84b5a681c7cdf0c35e5bbf45d0b/itk_elastix-0.25.1-cp311-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:64e7780304b82474fb02f2820938af3e4ff9dacb299abcc136e80d0f5005936b", size = 21422308, upload-time = "2026-03-16T01:35:15.919Z" },
-    { url = "https://files.pythonhosted.org/packages/54/a2/1ca9400086ea57db5124617782e955db65db33ec8338f89bf08ca53c833d/itk_elastix-0.25.1-cp311-abi3-win_amd64.whl", hash = "sha256:cb36e931d94722b690ad896512f21deb3f63868563c8e0104470cabed346305f", size = 7868296, upload-time = "2026-03-16T01:35:18.57Z" },
+    { url = "https://files.pythonhosted.org/packages/48/6d/b3ce641e7c4becc18ca12397c8cf364fd1c2fdfcba8f7e63a670015f01c9/itk_elastix-0.25.2-cp311-abi3-macosx_11_0_arm64.whl", hash = "sha256:7fbd21c93348a76f7eb5661a4395afbcdd07fcd243d1418f219d8641b00c5da3", size = 11811562, upload-time = "2026-03-24T18:33:36.776Z" },
+    { url = "https://files.pythonhosted.org/packages/6c/de/5fb3f327d1680e71d4c8d166235a38330d906ec9ed25db5115182d8edc8a/itk_elastix-0.25.2-cp311-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:071d6c7235b7031534ff59020fb15e9f268b5be5bc9fc951ed66fc4941bb433a", size = 21217458, upload-time = "2026-03-24T18:33:39.417Z" },
+    { url = "https://files.pythonhosted.org/packages/f6/a0/35554edc2e136476a6b76331c0fc4956b1fd3686b6beacb14da5933d73d6/itk_elastix-0.25.2-cp311-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:546e0379341e41e77e22a4911a961c6be77a988e7b6a875737c17c64f63933b1", size = 19597866, upload-time = "2026-03-24T18:33:42.074Z" },
+    { url = "https://files.pythonhosted.org/packages/34/34/cbaed9a1547acf758d62f739564f75b4f703124b875fd81be9f55e8da9a4/itk_elastix-0.25.2-cp311-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:2ccb020e952db4a29c1a3c49a02b9ea489307390a7fe351dbd84b962d9d16c17", size = 21441675, upload-time = "2026-03-24T18:33:44.789Z" },
+    { url = "https://files.pythonhosted.org/packages/05/51/481691dd467ca53ee1da92e333a7350c8160b6ee47b025209ab80a01db0e/itk_elastix-0.25.2-cp311-abi3-win_amd64.whl", hash = "sha256:6afdd7cbbd5357313852917f3f5daba68c2ba9ecda2d9a7d9619394fb7133849", size = 7867555, upload-time = "2026-03-24T18:33:47.08Z" },
 ]
 
 [[package]]
@@ -2239,7 +2239,7 @@ wheels = [
 
 [[package]]
 name = "qtconsole"
-version = "5.7.1"
+version = "5.7.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ipykernel" },
@@ -2251,9 +2251,9 @@ dependencies = [
     { name = "qtpy" },
     { name = "traitlets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/16/8b/ec641425ee462607a05a62c9e86725f1d20f347b63164c87515798dc3226/qtconsole-5.7.1.tar.gz", hash = "sha256:5f0944cdaad2a0fca4aedf598352889b172e8dc7f57354bdd097ed92c6563a01", size = 436262, upload-time = "2026-02-10T16:36:17.928Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/cd/28/4070eb0bacb99bc00bf60173fda25fb6a559d6600040035ba96c196d3647/qtconsole-5.7.2.tar.gz", hash = "sha256:27b485b9161925924c1d8e78e66bb342e6e3bc49bf675d0a67b49bad9c291521", size = 436661, upload-time = "2026-03-25T02:24:38.895Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0f/73/1e12de83d2376977aff54a45a08ab8c5ca535cc8e19429f2120eede4aa34/qtconsole-5.7.1-py3-none-any.whl", hash = "sha256:fa90f4944841d225114b8379d37f1a115b10594d7ee185f9c103fe644c193acd", size = 125519, upload-time = "2026-02-10T16:36:16.276Z" },
+    { url = "https://files.pythonhosted.org/packages/7a/60/aba9f3c3f1f48c7fbdf03bed45b576a916cd09c08242939b5294b85e37b4/qtconsole-5.7.2-py3-none-any.whl", hash = "sha256:e1d1f6a792123363626e643a7a4ee561217773571043992693fba7eccfa89f95", size = 125883, upload-time = "2026-03-25T02:24:36.95Z" },
 ]
 
 [[package]]
