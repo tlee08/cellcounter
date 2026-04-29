@@ -598,6 +598,7 @@ class Pipeline(AbstractPipeline):
                     ]
                 ]
                 .round(0)
+                .astype(np.int64)
                 .astype(np.uint32)
                 .query(
                     f"({Coords.Z.value}_{TRFM} >= 0) & "
