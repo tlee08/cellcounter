@@ -116,13 +116,13 @@ class AbstractPipeline(ABC):
         """Project configuration (cached on pfm)."""
         return self._pfm.config
 
-    def update_config(self, **updates) -> None:
+    def update_config(self, updates: dict) -> None:
         """Update project configuration with new values.
 
         Args:
-            **updates: Key-value pairs to update in config.
+            updates: Key-value pairs to update in config.
         """
-        ProjConfig.ensure(self._pfm.config_fp, **updates)
+        ProjConfig.ensure(self._pfm.config_fp, updates)
 
     def heavy_cluster(self) -> SpecCluster:
         """Create cluster with few workers and high memory per worker.

@@ -11,6 +11,7 @@ from cellcounter.constants import ATLAS_DIR, CACHE_DIR
 def main() -> None:
     """Sets up atlas resources. in the ~/.cellcounter cache directory."""
     # Downloading the Allen Brain Atlas
+    # Hosted on Dropbox: BowenDlcComputer@gmail.com
     atlas_url = "https://www.dropbox.com/scl/fi/63lavisnxp2osri44029s/atlas_resources.zip?rlkey=qveuyr7awqcf67n36s944wkp6&st=sydcwxmy&dl=1"
     output_fp = Path(f"{ATLAS_DIR}.zip")
     CACHE_DIR.mkdir(exist_ok=True)

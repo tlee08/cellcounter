@@ -193,7 +193,6 @@ def combine_nested_regions(
     return cells_agg_df
 
 
-@classmethod
 def annot_df2dict(annot_df: pd.DataFrame) -> list:
     """Convert annotation DataFrame to nested dictionary structure.
 
@@ -228,7 +227,6 @@ def annot_df2dict(annot_df: pd.DataFrame) -> list:
     return tree
 
 
-@classmethod
 def df_map_ids(cells_df: pd.DataFrame, annot_df: pd.DataFrame) -> pd.DataFrame:
     """Map region IDs to annotation metadata (name, acronym, etc.).
 
@@ -251,7 +249,6 @@ def df_map_ids(cells_df: pd.DataFrame, annot_df: pd.DataFrame) -> pd.DataFrame:
     return cells_df
 
 
-@classmethod
 def df_include_special_ids(cells_df: pd.DataFrame) -> pd.DataFrame:
     """Add special region labels for invalid/unlabeled coordinates.
 

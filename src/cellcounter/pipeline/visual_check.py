@@ -25,6 +25,15 @@ class VisualCheck(AbstractPipeline):
     for verifying registration and cell counting results in Napari.
     """
 
+    STEPS_VISUAL_CHECK = (
+        "combine_reg",
+        "coords2points_raw",
+        "combine_cellc",
+        "coords2points_trfm",
+        "coords2heatmap_trfm",
+        "combine_heatmap_trfm",
+    )
+
     @_check_overwrite("points_raw")
     def coords2points_raw(self, *, overwrite: bool = False) -> None:
         """Generate single-voxel markers at raw cell coordinates."""
@@ -103,16 +112,17 @@ class VisualCheck(AbstractPipeline):
             fp_out=self.pfm.comb_heatmap,
         )
 
-    @classmethod
-    def run_make_visual_checks(cls, proj_dir: str, *, overwrite: bool = False) -> None:
-        """Running all visual check pipelines in order."""
-        vc = cls(proj_dir, tuning=False)
-        vc.combine_reg(overwrite=overwrite)
+    #############################################
+    # RUN PIPELINE
+    #############################################
 
-        for is_tuning in [True, False]:
-            vc = cls(proj_dir, tuning=is_tuning)
-            vc.coords2points_raw(overwrite=overwrite)
-            vc.combine_cellc(overwrite=overwrite)
-            vc.coords2points_trfm(overwrite=overwrite)
-            vc.coords2heatmap_trfm(overwrite=overwrite)
-            vc.combine_heatmap_trfm(overwrite=overwrite)
+    def run_visual_check_steps(
+        self,
+        *,
+        steps: list[str] | None = None,
+        overwrite: bool = False,
+    ) -> None:
+        """Running all visual check pipelines in order."""
+        steps = steps or [*self.STEPS_VISUAL_CHECK]
+        for step in steps:
+            getattr(self, step)(overwrite=overwrite)

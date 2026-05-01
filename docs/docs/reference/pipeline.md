@@ -18,10 +18,10 @@ Pipeline(proj_dir: str | Path, *, tuning: bool = False)
 
 **Parameters**:
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `proj_dir` | `str` \| `Path` | Path to project directory |
-| `tuning` | `bool` | If True, use tuning subdirectory |
+| Parameter  | Type            | Description                      |
+| ---------- | --------------- | -------------------------------- |
+| `proj_dir` | `str` \| `Path` | Path to project directory        |
+| `tuning`   | `bool`          | If True, use tuning subdirectory |
 
 **Example**:
 
@@ -96,16 +96,16 @@ Whether this is a tuning instance.
 ### `update_config`
 
 ```python
-def update_config(self, **updates) -> None
+def update_config(self, updates) -> None
 ```
 
 Update project configuration and save to disk.
 
 **Parameters**:
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `**updates` | Any | Key-value pairs to update |
+| Parameter | Type | Description               |
+| --------- | ---- | ------------------------- |
+| `updates` | Any  | Key-value pairs to update |
 
 **Example**:
 
@@ -128,9 +128,9 @@ Switch between GPU and CPU mode.
 
 **Parameters**:
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `enabled` | `bool` | `True` | Use GPU if True, CPU if False |
+| Parameter | Type   | Default | Description                   |
+| --------- | ------ | ------- | ----------------------------- |
+| `enabled` | `bool` | `True`  | Use GPU if True, CPU if False |
 
 **Example**:
 
@@ -153,10 +153,10 @@ Convert TIFF file(s) to chunked Zarr format.
 
 **Parameters**:
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `in_fp` | `str` \| `Path` | Path to TIFF file or directory of TIFFs |
-| `overwrite` | `bool` | Overwrite existing output |
+| Parameter   | Type            | Description                             |
+| ----------- | --------------- | --------------------------------------- |
+| `in_fp`     | `str` \| `Path` | Path to TIFF file or directory of TIFFs |
+| `overwrite` | `bool`          | Overwrite existing output               |
 
 **Example**:
 
@@ -208,12 +208,12 @@ Copies and preprocesses reference/annotation images from atlas, applying orienta
 
 **Output files**:
 
-| File | Description |
-|------|-------------|
-| `ref.tiff` | Reference brain image |
-| `annot.tiff` | Annotation volume |
-| `map.csv` | Region hierarchy mapping |
-| `affine.txt` | Affine transformation parameters |
+| File          | Description                        |
+| ------------- | ---------------------------------- |
+| `ref.tiff`    | Reference brain image              |
+| `annot.tiff`  | Annotation volume                  |
+| `map.csv`     | Region hierarchy mapping           |
+| `affine.txt`  | Affine transformation parameters   |
 | `bspline.txt` | B-spline transformation parameters |
 
 ---
@@ -514,11 +514,11 @@ Run pipeline steps in order.
 
 **Parameters**:
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `in_fp` | `str` | Input file path for `tiff2zarr` |
-| `steps` | `list[str]` | Optional: specific steps to run |
-| `overwrite` | `bool` | Overwrite existing outputs |
+| Parameter   | Type        | Description                     |
+| ----------- | ----------- | ------------------------------- |
+| `in_fp`     | `str`       | Input file path for `tiff2zarr` |
+| `steps`     | `list[str]` | Optional: specific steps to run |
+| `overwrite` | `bool`      | Overwrite existing outputs      |
 
 **Example**:
 
@@ -550,8 +550,8 @@ Useful for batch processing multiple images.
 
 **Parameters**:
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
+| Parameter  | Type            | Description                        |
+| ---------- | --------------- | ---------------------------------- |
 | `imgs_dir` | `str` \| `Path` | Directory containing image folders |
 
 **Returns**: `list[Path]` — Naturally sorted subdirectory paths

@@ -64,22 +64,25 @@ class ProjConfig(BaseModel):
             f.write(self.model_dump_json(indent=2))
 
     @classmethod
-    def ensure(cls, config_fp: Path | str, **updates) -> Self:
+    def ensure(cls, config_fp: Path | str, updates: dict) -> Self:
         """Load config from file, creating default if needed, and apply updates.
 
         Args:
             config_fp: Path to config file.
-            **updates: Fields to update in the config.
+            updates: Fields to update in the config.
 
         Returns:
             The loaded or created config.
         """
         config_fp = Path(config_fp)
+        # Load existing config or create default if file doesn't exist
         try:
             config = cls.read_file(config_fp)
         except FileNotFoundError:
             config = cls()
             config.write_file(config_fp)
+        # Update the config with any provided updates and pydantic validate
+        # Write back to file if updates to ensure the file is always in sync
         if updates:
             config = config.model_validate(config.model_copy(update=updates))
             config.write_file(config_fp)

@@ -659,7 +659,7 @@ class Pipeline(AbstractPipeline):
     # RUN PIPELINE
     #############################################
 
-    def run_pipeline(
+    def run_pipeline_steps(
         self,
         in_fp: str,
         *,
