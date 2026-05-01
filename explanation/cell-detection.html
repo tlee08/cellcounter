@@ -1,0 +1,1925 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://tlee08.github.io/cellcounter/explanation/cell-detection.html">
+      
+      
+        <link rel="prev" href="architecture.html">
+      
+      
+        <link rel="next" href="../reference/pipeline.html">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Cell Detection - CellCounter</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+        <script src="https://unpkg.com/iframe-worker/shim"></script>
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#cell-detection-algorithm" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../index.html" title="CellCounter" class="md-header__button md-logo" aria-label="CellCounter" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            CellCounter
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Cell Detection
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to system preference"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to system preference" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/tlee08/cellcounter" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../index.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../tutorials/installation.html" class="md-tabs__link">
+          
+  
+  
+  Tutorials
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../how-to/batch.html" class="md-tabs__link">
+          
+  
+  
+  How-To Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="architecture.html" class="md-tabs__link">
+          
+  
+  
+  Explanation
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../reference/pipeline.html" class="md-tabs__link">
+          
+  
+  
+  API Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../index.html" title="CellCounter" class="md-nav__button md-logo" aria-label="CellCounter" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    CellCounter
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/tlee08/cellcounter" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../index.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorials
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tutorials
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/installation.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/quickstart.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How-To Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    How-To Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how-to/batch.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Batch Processing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how-to/visual-check.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visual QC
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how-to/configuration.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Explanation
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Explanation
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="architecture.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cell Detection
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="cell-detection.html" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cell Detection
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-pipeline-step-by-step" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Pipeline Step by Step
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The Pipeline Step by Step">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-background-removal-top-hat-filter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Background Removal (Top-Hat Filter)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-edge-enhancement-difference-of-gaussians" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: Edge Enhancement (Difference of Gaussians)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-adaptive-threshold-preparation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: Adaptive Threshold Preparation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-manual-thresholding" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4: Manual Thresholding
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-5-6-label-and-compute-volumes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5-6: Label and Compute Volumes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-7-size-filtering-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 7: Size Filtering #1
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-8-local-maxima-detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 8: Local Maxima Detection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-9-10-label-maxima-and-watershed-segmentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 9-10: Label Maxima and Watershed Segmentation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-11-12-compute-watershed-volumes-and-filter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 11-12: Compute Watershed Volumes and Filter
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-13-save-cells-table" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 13: Save Cells Table
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#algorithm-parameters-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Algorithm Parameters Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#visual-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Visual Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#advantages-of-this-approach" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Advantages of This Approach
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Limitations
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/pipeline.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/visual-check.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visual Check
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/config.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/abstract-pipeline.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Abstract Pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-pipeline-step-by-step" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Pipeline Step by Step
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The Pipeline Step by Step">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-background-removal-top-hat-filter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Background Removal (Top-Hat Filter)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-edge-enhancement-difference-of-gaussians" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: Edge Enhancement (Difference of Gaussians)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-adaptive-threshold-preparation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: Adaptive Threshold Preparation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-manual-thresholding" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4: Manual Thresholding
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-5-6-label-and-compute-volumes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5-6: Label and Compute Volumes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-7-size-filtering-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 7: Size Filtering #1
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-8-local-maxima-detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 8: Local Maxima Detection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-9-10-label-maxima-and-watershed-segmentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 9-10: Label Maxima and Watershed Segmentation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-11-12-compute-watershed-volumes-and-filter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 11-12: Compute Watershed Volumes and Filter
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-13-save-cells-table" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 13: Save Cells Table
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#algorithm-parameters-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Algorithm Parameters Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#visual-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Visual Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#advantages-of-this-approach" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Advantages of This Approach
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Limitations
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="cell-detection-algorithm">Cell Detection Algorithm<a class="headerlink" href="#cell-detection-algorithm" title="Permanent link">&para;</a></h1>
+<p>How CellCounter identifies and counts cFos-positive cells.</p>
+<hr />
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>cFos is a nuclear protein that marks recently active neurons. Cell detection involves:</p>
+<ol>
+<li><strong>Enhancing cell-like structures</strong> — Filtering to highlight nuclei</li>
+<li><strong>Separating foreground from background</strong> — Thresholding</li>
+<li><strong>Finding individual cell centers</strong> — Local maxima detection</li>
+<li><strong>Separating touching cells</strong> — Watershed segmentation</li>
+<li><strong>Filtering by size</strong> — Removing debris and artifacts</li>
+</ol>
+<p>The pipeline is designed for images where:
+- Cells appear as bright, roughly spherical spots
+- Background varies across the image
+- Cells may touch or overlap</p>
+<hr />
+<h2 id="the-pipeline-step-by-step">The Pipeline Step by Step<a class="headerlink" href="#the-pipeline-step-by-step" title="Permanent link">&para;</a></h2>
+<h3 id="step-1-background-removal-top-hat-filter">Step 1: Background Removal (Top-Hat Filter)<a class="headerlink" href="#step-1-background-removal-top-hat-filter" title="Permanent link">&para;</a></h3>
+<p><strong>Goal</strong>: Remove large-scale illumination variations and uneven background.</p>
+<p><strong>How it works</strong>:
+- Morphological opening with a large sphere removes bright objects
+- Subtracting this from original leaves only small bright objects</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Conceptually:</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">background</span> <span class="o">=</span> <span class="n">morphological_opening</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">cells</span> <span class="o">=</span> <span class="n">image</span> <span class="o">-</span> <span class="n">background</span>
+</span></code></pre></div>
+<p><strong>Visual effect</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Before</th>
+<th>After</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Uneven illumination across field</td>
+<td>Uniform background, bright cells stand out</td>
+</tr>
+<tr>
+<td>Dark corners, bright center</td>
+<td>Consistent baseline</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Parameters</strong>:
+- <code>tophat_radius</code>: Radius of structuring element (voxels)
+  - Default: 10
+  - Smaller (5-8): For small cells or uneven background
+  - Larger (12-20): For large cells or smooth background</p>
+<hr />
+<h3 id="step-2-edge-enhancement-difference-of-gaussians">Step 2: Edge Enhancement (Difference of Gaussians)<a class="headerlink" href="#step-2-edge-enhancement-difference-of-gaussians" title="Permanent link">&para;</a></h3>
+<p><strong>Goal</strong>: Highlight cell boundaries and suppress noise.</p>
+<p><strong>How it works</strong>:
+- Gaussian blur at small sigma (preserves cells)
+- Gaussian blur at large sigma (preserves background)
+- Subtract: edges remain, uniform regions cancel</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Conceptually:</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">small_blur</span> <span class="o">=</span> <span class="n">gaussian_filter</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">large_blur</span> <span class="o">=</span> <span class="n">gaussian_filter</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">edges</span> <span class="o">=</span> <span class="n">small_blur</span> <span class="o">-</span> <span class="n">large_blur</span>
+</span></code></pre></div>
+<p><strong>Why it helps</strong>:
+- Cells have strong edges → enhanced
+- Background varies slowly → suppressed
+- Small noise → smoothed out</p>
+<p><strong>Visual effect</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Before</th>
+<th>After</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Whole cells bright, fuzzy boundaries</td>
+<td>Edges emphasized, interiors uniform</td>
+</tr>
+<tr>
+<td>Some noise visible</td>
+<td>Noise reduced</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Parameters</strong>:
+- <code>dog_sigma1</code>: Small Gaussian sigma (voxels)
+  - Default: 1
+  - Match to cell radius
+- <code>dog_sigma2</code>: Large Gaussian sigma (voxels)
+  - Default: 4
+  - Typically 3-4 × sigma1</p>
+<hr />
+<h3 id="step-3-adaptive-threshold-preparation">Step 3: Adaptive Threshold Preparation<a class="headerlink" href="#step-3-adaptive-threshold-preparation" title="Permanent link">&para;</a></h3>
+<p><strong>Goal</strong>: Handle varying background intensity across the image.</p>
+<p><strong>How it works</strong>:
+- Large Gaussian smooths over cells
+- Subtracts this slowly-varying background
+- Result: normalized image suitable for global threshold</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Conceptually:</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">background</span> <span class="o">=</span> <span class="n">gaussian_filter</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mi">101</span><span class="p">)</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">normalized</span> <span class="o">=</span> <span class="n">image</span> <span class="o">-</span> <span class="n">background</span>
+</span></code></pre></div>
+<p><strong>Why it's needed</strong>:
+Some brain regions are brighter than others due to:
+- Staining variation
+- Tissue thickness differences
+- Light sheet illumination falloff</p>
+<hr />
+<h3 id="step-4-manual-thresholding">Step 4: Manual Thresholding<a class="headerlink" href="#step-4-manual-thresholding" title="Permanent link">&para;</a></h3>
+<p><strong>Goal</strong>: Create binary mask (cell / not-cell).</p>
+<p><strong>How it works</strong>:
+- Pixels above threshold → foreground (1)
+- Pixels below threshold → background (0)</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">binary_image</span> <span class="o">=</span> <span class="n">filtered_image</span> <span class="o">&gt;</span> <span class="n">threshold_value</span>
+</span></code></pre></div>
+<p><strong>Visual effect</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Before</th>
+<th>After</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Grayscale, cells brighter</td>
+<td>Black and white mask</td>
+</tr>
+<tr>
+<td>Some dim cells</td>
+<td>May be lost if threshold too high</td>
+</tr>
+<tr>
+<td>Some bright debris</td>
+<td>May be kept if threshold too low</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Parameters</strong>:
+- <code>threshd_value</code>: Intensity threshold
+  - Default: 60
+  - Lower (40): More sensitive, more false positives
+  - Higher (80): More stringent, fewer false positives</p>
+<div class="admonition tip">
+<p class="admonition-title">Finding the Right Threshold</p>
+<p>Start with default (60), visualize with <code>combine_cellc()</code>, and adjust up/down by 10-20 until reaching good balance.</p>
+</div>
+<hr />
+<h3 id="step-5-6-label-and-compute-volumes">Step 5-6: Label and Compute Volumes<a class="headerlink" href="#step-5-6-label-and-compute-volumes" title="Permanent link">&para;</a></h3>
+<p><strong>Goal</strong>: Identify connected regions and measure their sizes.</p>
+<p><strong>How it works</strong>:
+1. Connected component labeling: each contiguous foreground region gets unique ID
+2. Union-Find algorithm merges labels across chunk boundaries
+3. Volume computed for each component</p>
+<p><strong>Challenge</strong>: Cross-chunk connections</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>┌───────┬───────┐
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>│   1   │   1   │  ← Same cell spans both chunks!
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>│   1   │   1   │
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>├───────┼───────┤
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>│   2   │   3   │
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>│   2   │   3   │
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>└───────┴───────┘
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>    ↓ Union-Find
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>┌───────┬───────┐
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>│   A   │   A   │  ← Both labeled &#39;A&#39;
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>│   A   │   A   │
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>├───────┼───────┤
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>│   B   │   C   │
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>│   B   │   C   │
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>└───────┴───────┘
+</span></code></pre></div>
+<p>The custom <code>UnionFind</code> class efficiently merges these labels.</p>
+<hr />
+<h3 id="step-7-size-filtering-1">Step 7: Size Filtering #1<a class="headerlink" href="#step-7-size-filtering-1" title="Permanent link">&para;</a></h3>
+<p><strong>Goal</strong>: Remove obviously wrong objects (too small = noise, too large = artifacts).</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">keep</span> <span class="o">=</span> <span class="p">(</span><span class="n">volume</span> <span class="o">&gt;</span> <span class="n">min_threshd_size</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">volume</span> <span class="o">&lt;</span> <span class="n">max_threshd_size</span><span class="p">)</span>
+</span></code></pre></div>
+<p><strong>What it removes</strong>:
+- <code>min_threshd_size</code> (default: 100): Dust, noise pixels
+- <code>max_threshd_size</code> (default: 9000): Clusters, artifacts</p>
+<p><strong>Note</strong>: This is a coarse filter. Fine-tuning happens after watershed.</p>
+<hr />
+<h3 id="step-8-local-maxima-detection">Step 8: Local Maxima Detection<a class="headerlink" href="#step-8-local-maxima-detection" title="Permanent link">&para;</a></h3>
+<p><strong>Goal</strong>: Find the center point of each cell.</p>
+<p><strong>How it works</strong>:
+- For each pixel, check if it's the maximum in local neighborhood
+- Only keep maxima within valid regions (post-filter mask)</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">for</span> <span class="n">each</span> <span class="n">pixel</span><span class="p">:</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>    <span class="n">neighborhood</span> <span class="o">=</span> <span class="n">image</span><span class="p">[</span><span class="n">pixel</span><span class="o">-</span><span class="n">radius</span><span class="p">:</span><span class="n">pixel</span><span class="o">+</span><span class="n">radius</span><span class="p">]</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    <span class="k">if</span> <span class="n">image</span><span class="p">[</span><span class="n">pixel</span><span class="p">]</span> <span class="o">==</span> <span class="nb">max</span><span class="p">(</span><span class="n">neighborhood</span><span class="p">):</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>        <span class="n">mark</span> <span class="k">as</span> <span class="n">maxima</span>
+</span></code></pre></div>
+<p><strong>Visual effect</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Before</th>
+<th>After</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Filtered threshold mask</td>
+<td>Single-pixel markers at cell centers</td>
+</tr>
+<tr>
+<td>Connected regions</td>
+<td>One marker per cell</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Parameters</strong>:
+- <code>maxima_radius</code>: Neighborhood size (voxels)
+  - Default: 10
+  - Smaller: More sensitive, may split cells
+  - Larger: Less sensitive, may merge nearby cells</p>
+<p><strong>Challenge</strong>: Touching cells share a connected region but should have separate maxima.</p>
+<hr />
+<h3 id="step-9-10-label-maxima-and-watershed-segmentation">Step 9-10: Label Maxima and Watershed Segmentation<a class="headerlink" href="#step-9-10-label-maxima-and-watershed-segmentation" title="Permanent link">&para;</a></h3>
+<p><strong>Goal</strong>: Separate touching cells.</p>
+<p><strong>How watershed works</strong>:
+1. Treat inverted image as a terrain (dark = low, bright = high)
+2. Maxima are "basins" that will collect "water"
+3. Flood from each maxima simultaneously
+4. Where floods meet → boundaries drawn</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>Image Intensity (inverted):
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>   ████████████
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>   ██a████b████   ← Two maxima (a, b) in valley
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>   ████████████
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>      ↑     ↑
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>   Basins that will flood upward
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>Watershed Result:
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>   AAAAAAA|BBBBBBB
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>   AAAAAAA|BBBBBBB  ← Boundary at midpoint
+</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>   AAAAAAA|BBBBBBB
+</span></code></pre></div>
+<p><strong>Why it works for cells</strong>:
+- Cells are brighter in center → form basins
+- Touching cells have saddle point between → watershed boundary
+- Separates overlapping nuclei</p>
+<p><strong>Visual effect</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Before Watershed</th>
+<th>After Watershed</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Single merged region for touching cells</td>
+<td>Each cell has unique label</td>
+</tr>
+<tr>
+<td>Cannot count individual cells</td>
+<td>Cell count = number of labels</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="step-11-12-compute-watershed-volumes-and-filter">Step 11-12: Compute Watershed Volumes and Filter<a class="headerlink" href="#step-11-12-compute-watershed-volumes-and-filter" title="Permanent link">&para;</a></h3>
+<p><strong>Goal</strong>: Final size filtering on actual cells.</p>
+<p><strong>Same as steps 5-7</strong>, but applied to watershed segments:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># Filter watershed cells</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="n">keep</span> <span class="o">=</span> <span class="p">(</span><span class="n">volume</span> <span class="o">&gt;</span> <span class="n">min_wshed_size</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">volume</span> <span class="o">&lt;</span> <span class="n">max_wshed_size</span><span class="p">)</span>
+</span></code></pre></div>
+<p><strong>Parameters</strong>:
+- <code>min_wshed_size</code>: Minimum final cell size (default: 1)
+- <code>max_wshed_size</code>: Maximum final cell size (default: 700)</p>
+<p>These are the <strong>most important</strong> parameters for tuning:
+- Too low: Dust included
+- Too high: Real cells excluded
+- Typical cFos nucleus: 50-300 voxels (at 1µm resolution)</p>
+<hr />
+<h3 id="step-13-save-cells-table">Step 13: Save Cells Table<a class="headerlink" href="#step-13-save-cells-table" title="Permanent link">&para;</a></h3>
+<p><strong>Goal</strong>: Extract measurements for each detected cell.</p>
+<p>For each valid cell:
+- Center coordinates (z, y, x)
+- Volume (voxels)
+- Sum intensity (total fluorescence)
+- Mean intensity (average brightness)</p>
+<p>Output: Parquet file with columns:</p>
+<table>
+<thead>
+<tr>
+<th>z</th>
+<th>y</th>
+<th>x</th>
+<th>label</th>
+<th>volume</th>
+<th>sum_intensity</th>
+<th>mean_intensity</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>100</td>
+<td>1500</td>
+<td>2000</td>
+<td>1</td>
+<td>127</td>
+<td>5432</td>
+<td>42.8</td>
+</tr>
+<tr>
+<td>102</td>
+<td>1505</td>
+<td>2010</td>
+<td>2</td>
+<td>98</td>
+<td>4100</td>
+<td>41.8</td>
+</tr>
+<tr>
+<td>...</td>
+<td>...</td>
+<td>...</td>
+<td>...</td>
+<td>...</td>
+<td>...</td>
+<td>...</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="algorithm-parameters-summary">Algorithm Parameters Summary<a class="headerlink" href="#algorithm-parameters-summary" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Step</th>
+<th>Default</th>
+<th>Effect of Increase</th>
+<th>Effect of Decrease</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>tophat_radius</code></td>
+<td>Background removal</td>
+<td>10</td>
+<td>More background removed</td>
+<td>Less background removed</td>
+</tr>
+<tr>
+<td><code>dog_sigma1</code></td>
+<td>Edge detection</td>
+<td>1</td>
+<td>Larger features</td>
+<td>Smaller features</td>
+</tr>
+<tr>
+<td><code>dog_sigma2</code></td>
+<td>Edge detection</td>
+<td>4</td>
+<td>Smoother edges</td>
+<td>Sharper edges</td>
+</tr>
+<tr>
+<td><code>large_gauss_radius</code></td>
+<td>Adaptive thresh</td>
+<td>101</td>
+<td>More normalization</td>
+<td>Less normalization</td>
+</tr>
+<tr>
+<td><code>threshd_value</code></td>
+<td>Thresholding</td>
+<td>60</td>
+<td>Fewer cells detected</td>
+<td>More cells detected</td>
+</tr>
+<tr>
+<td><code>min_threshd_size</code></td>
+<td>Pre-filter</td>
+<td>100</td>
+<td>Fewer objects</td>
+<td>More objects</td>
+</tr>
+<tr>
+<td><code>max_threshd_size</code></td>
+<td>Pre-filter</td>
+<td>9000</td>
+<td>Allows larger</td>
+<td>Rejects larger</td>
+</tr>
+<tr>
+<td><code>maxima_radius</code></td>
+<td>Maxima detection</td>
+<td>10</td>
+<td>Fewer maxima</td>
+<td>More maxima</td>
+</tr>
+<tr>
+<td><code>min_wshed_size</code></td>
+<td>Final filter</td>
+<td>1</td>
+<td>Rejects small</td>
+<td>Keeps small</td>
+</tr>
+<tr>
+<td><code>max_wshed_size</code></td>
+<td>Final filter</td>
+<td>700</td>
+<td>Rejects large</td>
+<td>Keeps large</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="visual-summary">Visual Summary<a class="headerlink" href="#visual-summary" title="Permanent link">&para;</a></h2>
+<pre class="mermaid"><code>flowchart LR
+    subgraph Raw["1. Raw Image"]
+        R["📷&lt;br/&gt;Brightness = cFos level"]
+    end
+
+    subgraph Filter["2. Filtering"]
+        TOPHAT["Top-hat&lt;br/&gt;remove bg"]
+        DOG["DoG&lt;br/&gt;enhance edges"]
+        ADAPT["Gauss sub&lt;br/&gt;normalize"]
+    end
+
+    subgraph Detect["3. Detection"]
+        THRESH["Threshold&lt;br/&gt;binary mask"]
+        MAXIMA["Local maxima&lt;br/&gt;find centers"]
+        WSHED["Watershed&lt;br/&gt;separate cells"]
+    end
+
+    subgraph Filter2["4. Filtering"]
+        VOL["Size filter&lt;br/&gt;remove debris"]
+    end
+
+    subgraph Output["5. Output"]
+        CELLS["📊 Cell table&lt;br/&gt;coordinates + metrics"]
+    end
+
+    R --&gt; TOPHAT --&gt; DOG --&gt; ADAPT --&gt; THRESH --&gt; MAXIMA --&gt; WSHED --&gt; VOL --&gt; CELLS</code></pre>
+<hr />
+<h2 id="advantages-of-this-approach">Advantages of This Approach<a class="headerlink" href="#advantages-of-this-approach" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>No training data needed</strong> — Traditional image processing, not deep learning</li>
+<li><strong>Interpretable parameters</strong> — Each knob has clear meaning</li>
+<li><strong>Fast on GPU</strong> — All operations parallelize well</li>
+<li><strong>Memory efficient</strong> — Dask handles chunked processing</li>
+<li><strong>Scales to large images</strong> — Tested on ~90GB whole brains</li>
+</ol>
+<hr />
+<h2 id="limitations">Limitations<a class="headerlink" href="#limitations" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>Assumes spherical cells</strong> — Elongated cells may be split</li>
+<li><strong>Requires staining quality</strong> — Poor SNR defeats even best parameters</li>
+<li><strong>Parameter tuning needed</strong> — Not fully automatic</li>
+<li><strong>No cell classification</strong> — Can't distinguish cell types by morphology</li>
+</ol>
+<p>For datasets where these limitations matter, deep learning approaches (StarDist, Cellpose) may be more appropriate, though they have their own trade-offs (training data, compute cost, GPU memory).</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.copy", "navigation.tabs", "navigation.sections", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

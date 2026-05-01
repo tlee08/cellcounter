@@ -2,50 +2,50 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://tlee08.github.io/cellcounter/index.html</loc>
-         <lastmod>2025-02-15</lastmod>
+         <lastmod>2026-05-01</lastmod>
     </url>
     <url>
-         <loc>https://tlee08.github.io/cellcounter/examples/batch_pipeline.html</loc>
-         <lastmod>2025-02-15</lastmod>
+         <loc>https://tlee08.github.io/cellcounter/explanation/architecture.html</loc>
+         <lastmod>2026-05-01</lastmod>
     </url>
     <url>
-         <loc>https://tlee08.github.io/cellcounter/examples/single_pipeline.html</loc>
-         <lastmod>2025-02-15</lastmod>
+         <loc>https://tlee08.github.io/cellcounter/explanation/cell-detection.html</loc>
+         <lastmod>2026-05-01</lastmod>
     </url>
     <url>
-         <loc>https://tlee08.github.io/cellcounter/installation/installing.html</loc>
-         <lastmod>2025-02-15</lastmod>
+         <loc>https://tlee08.github.io/cellcounter/how-to/batch.html</loc>
+         <lastmod>2026-05-01</lastmod>
     </url>
     <url>
-         <loc>https://tlee08.github.io/cellcounter/installation/running.html</loc>
-         <lastmod>2025-02-15</lastmod>
+         <loc>https://tlee08.github.io/cellcounter/how-to/configuration.html</loc>
+         <lastmod>2026-05-01</lastmod>
     </url>
     <url>
-         <loc>https://tlee08.github.io/cellcounter/installation/uninstalling.html</loc>
-         <lastmod>2025-02-15</lastmod>
+         <loc>https://tlee08.github.io/cellcounter/how-to/visual-check.html</loc>
+         <lastmod>2026-05-01</lastmod>
     </url>
     <url>
-         <loc>https://tlee08.github.io/cellcounter/installation/updating.html</loc>
-         <lastmod>2025-02-15</lastmod>
+         <loc>https://tlee08.github.io/cellcounter/reference/abstract-pipeline.html</loc>
+         <lastmod>2026-05-01</lastmod>
     </url>
     <url>
-         <loc>https://tlee08.github.io/cellcounter/reference/config_params_model.html</loc>
-         <lastmod>2025-02-15</lastmod>
+         <loc>https://tlee08.github.io/cellcounter/reference/config.html</loc>
+         <lastmod>2026-05-01</lastmod>
     </url>
     <url>
-         <loc>https://tlee08.github.io/cellcounter/reference/pipeline_funcs.html</loc>
-         <lastmod>2025-02-15</lastmod>
+         <loc>https://tlee08.github.io/cellcounter/reference/pipeline.html</loc>
+         <lastmod>2026-05-01</lastmod>
     </url>
     <url>
-         <loc>https://tlee08.github.io/cellcounter/reference/viewer_funcs.html</loc>
-         <lastmod>2025-02-15</lastmod>
+         <loc>https://tlee08.github.io/cellcounter/reference/visual-check.html</loc>
+         <lastmod>2026-05-01</lastmod>
     </url>
     <url>
-         <loc>https://tlee08.github.io/cellcounter/tutorials/pipeline.html</loc>
-         <lastmod>2025-02-15</lastmod>
+         <loc>https://tlee08.github.io/cellcounter/tutorials/installation.html</loc>
+         <lastmod>2026-05-01</lastmod>
     </url>
     <url>
-         <loc>https://tlee08.github.io/cellcounter/tutorials/tutorial.html</loc>
-         <lastmod>2025-02-15</lastmod>
+         <loc>https://tlee08.github.io/cellcounter/tutorials/quickstart.html</loc>
+         <lastmod>2026-05-01</lastmod>
     </url>
 </urlset>
