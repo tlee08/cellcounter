@@ -4,7 +4,7 @@ import importlib.resources
 from pathlib import Path
 
 
-def confirm(prompt: str, default: bool = False) -> bool:
+def confirm(prompt: str, *, default: bool = False) -> bool:
     """Get yes/no confirmation from user."""
     hint = "[Y/n]" if default else "[y/N]"
     while True:

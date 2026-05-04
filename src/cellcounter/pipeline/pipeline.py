@@ -334,9 +334,9 @@ class Pipeline(AbstractPipeline):
     # CROP RAW ZARR TO MAKE TUNING ZARR
     #############################################
 
-    @_check_overwrite("raw")
     def make_tuning_arr(self, *, overwrite: bool = False) -> None:
         """Crop raw zarr to make a smaller zarr for tuning."""
+        # TODO: make overwrite logic for pfm_tuning
         pfm_prod = get_proj_fp(self.pfm.root_dir, tuning=False)
         pfm_tuning = get_proj_fp(self.pfm.root_dir, tuning=True)
         with cluster_process(self.busy_cluster()):
