@@ -120,7 +120,7 @@ def combine_projects(
         cells_df = _load_cells_agg(pfm)
         cells_df = pd.concat(
             [cells_df],
-            keys=[str(proj_dir)],
+            keys=[proj_dir.name],
             names=[CombinedColumns.SPECIMEN.value],
             axis=1,
         )
