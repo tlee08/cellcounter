@@ -1,32 +1,22 @@
 """Create a new cellcounter project with template scripts."""
 
-import importlib.resources
 from pathlib import Path
 
-from cellcounter.utils.template_utils import confirm
+from cellcounter.utils.template_utils import confirm, save_template
 
 
 def main() -> None:
     """Make a cellcounter pipeline script in the current directory."""
-    # Check with user
-    confirm_create = confirm("Create cellcounter scripts in current directory?")
-    if not confirm_create:
-        print("Exiting.")
+    if not confirm("Create cellcounter scripts in current directory?"):
         return
 
-    overwrite = confirm("Overwrite existing files?", default=False)
+    overwrite = confirm("Overwrite existing files?")
 
-    # Copy templates
-    templates = importlib.resources.files("cellcounter.templates")
-    for template_name in ["run_pipeline.py", "view_img.py"]:
-        dst = Path(template_name)
-        if dst.exists() and not overwrite:
-            print(f"Skipping {template_name} (already exists)")
-            continue
+    if overwrite or not Path("run_pipeline.py").exists():
+        save_template("run_pipeline.py", Path("run_pipeline.py"))
 
-        template_content = (templates / template_name).read_text()
-        dst.write_text(template_content)
-        print(f"Created {template_name}")
+    if overwrite or not Path("view_img.py").exists():
+        save_template("view_img.py", Path("view_img.py"))
 
 
 if __name__ == "__main__":
