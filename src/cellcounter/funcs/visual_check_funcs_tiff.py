@@ -28,13 +28,14 @@ def coords2points_workers(arr: npt.NDArray, coords: pd.DataFrame) -> npt.NDArray
     s = arr.shape
     coords = (
         coords[[Coords.Z.value, Coords.Y.value, Coords.X.value]]
-        .round(0)
-        .astype(np.uint16)
         .query(
             f"({Coords.Z.value} >= 0) & ({Coords.Z.value} < {s[0]}) & "
             f"({Coords.Y.value} >= 0) & ({Coords.Y.value} < {s[1]}) & "
             f"({Coords.X.value} >= 0) & ({Coords.X.value} < {s[2]})"
         )
+        .round(0)
+        .clip(0, 2**16 - 1)
+        .astype(np.uint16)
         .to_numpy()
     )
     # Incrementing the coords in the array
@@ -166,6 +167,7 @@ def coords2regions(
     coords = (
         coords[[Coords.Z.value, Coords.Y.value, Coords.X.value, AnnotColumns.ID.value]]
         .round(0)
+        .clip(0, 2**16 - 1)
         .astype(np.uint16)
     )
     if coords.shape[0] > 0:

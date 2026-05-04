@@ -597,9 +597,6 @@ class Pipeline(AbstractPipeline):
                         f"{Coords.X.value}_{TRFM}",
                     ]
                 ]
-                .round(0)
-                .astype(np.int64)
-                .astype(np.uint32)
                 .query(
                     f"({Coords.Z.value}_{TRFM} >= 0) & "
                     f"({Coords.Z.value}_{TRFM} < {s[0]}) & "
@@ -608,6 +605,9 @@ class Pipeline(AbstractPipeline):
                     f"({Coords.X.value}_{TRFM} >= 0) & "
                     f"({Coords.X.value}_{TRFM} < {s[2]})",
                 )
+                .round(0)
+                .clip(0, 2**32 - 1)
+                .astype(np.uint32)
             )
             cells_df[AnnotColumns.ID.value] = pd.Series(
                 annot_arr[*trfm_loc.to_numpy().T].astype(np.uint32),

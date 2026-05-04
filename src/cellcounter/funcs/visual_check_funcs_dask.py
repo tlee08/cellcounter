@@ -36,13 +36,14 @@ def coords2points_workers(
     s = arr.shape
     coords = (
         coords[[Coords.Z.value, Coords.Y.value, Coords.X.value]]
-        .round(0)
-        .astype(np.uint16)
         .query(
             f"({Coords.Z.value} >= 0) & ({Coords.Z.value} < {s[0]}) & "
             f"({Coords.Y.value} >= 0) & ({Coords.Y.value} < {s[1]}) & "
             f"({Coords.X.value} >= 0) & ({Coords.X.value} < {s[2]})"
         )
+        .round(0)
+        .clip(0, 2**16 - 1)
+        .astype(np.uint16)
     )
     # Groupby and counts, so we don't drop duplicates
     coords = (
@@ -77,13 +78,14 @@ def coords2sphere_workers(
     s = arr.shape
     coords = (
         coords[[Coords.Z.value, Coords.Y.value, Coords.X.value]]
-        .round(0)
-        .astype(np.uint16)
         .query(
             f"({Coords.Z.value} > {-1 * r}) & ({Coords.Z.value} < {s[0] + r}) & "
             f"({Coords.Y.value} > {-1 * r}) & ({Coords.Y.value} < {s[1] + r}) & "
             f"({Coords.X.value} > {-1 * r}) & ({Coords.X.value} < {s[2] + r})"
         )
+        .round(0)
+        .clip(0, 2**16 - 1)
+        .astype(np.uint16)
     )
     # Constructing index and sphere mask arrays
     i = np.arange(-r, r + 1)
@@ -195,6 +197,7 @@ def coords2regions(
     coords = (
         coords[[Coords.Z.value, Coords.Y.value, Coords.X.value, AnnotColumns.ID.value]]
         .round(0)
+        .clip(0, 2**16 - 1)
         .astype(np.uint16)
     )
     if coords.shape[0] > 0:
