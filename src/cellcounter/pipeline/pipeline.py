@@ -171,7 +171,7 @@ class Pipeline(AbstractPipeline):
             Naturally sorted list of subdirectory paths.
         """
         imgs_dir = Path(imgs_dir)
-        return natsorted([fp for fp in imgs_dir.iterdir() if (imgs_dir / fp).is_dir()])
+        return natsorted([fp.name for fp in imgs_dir.iterdir() if fp.is_dir()])
 
     #############################################
     # CONVERT TIFF TO ZARR
