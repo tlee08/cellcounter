@@ -597,6 +597,7 @@ class Pipeline(AbstractPipeline):
                         f"{Coords.X.value}_{TRFM}",
                     ]
                 ]
+                .round(0)
                 .query(
                     f"({Coords.Z.value}_{TRFM} >= 0) & "
                     f"({Coords.Z.value}_{TRFM} < {s[0]}) & "
@@ -605,8 +606,6 @@ class Pipeline(AbstractPipeline):
                     f"({Coords.X.value}_{TRFM} >= 0) & "
                     f"({Coords.X.value}_{TRFM} < {s[2]})",
                 )
-                .round(0)
-                .clip(0, 2**32 - 1)
                 .astype(np.uint32)
             )
             cells_df[AnnotColumns.ID.value] = pd.Series(
