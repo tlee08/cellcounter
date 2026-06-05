@@ -13,12 +13,12 @@ class CellCountingConfig(BaseModel):
     large_gauss_radius: PositiveInt = 101
 
     # Thresholding
-    threshd_value: PositiveInt = 60
-    min_threshd_size: PositiveInt = 100
-    max_threshd_size: PositiveInt = 10000
+    threshd_value: PositiveInt = 100
+    min_threshd_size: PositiveInt = 1
+    max_threshd_size: PositiveInt = 15000
 
     # Watershed
-    maxima_radius: PositiveInt = 10
+    maxima_radius: PositiveInt = 5
     min_wshed_size: PositiveInt = 1
     max_wshed_size: PositiveInt = 1000
 
