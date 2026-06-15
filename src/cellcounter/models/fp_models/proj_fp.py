@@ -10,14 +10,15 @@ logger = logging.getLogger(__name__)
 class ProjFp(AbstractFp):
     """Project filepath model."""
 
-    def __init__(self, root_dir: Path | str) -> None:
+    def __init__(self, root_dir: Path | str, *, tuning: bool = False) -> None:
         """Project filepath model."""
         self.root_dir = Path(root_dir)
-        self.raw_sdir = "raw"
+        suffix = "_tuning" if tuning else ""
+        self.raw_sdir = f"raw{suffix}"
         self.registration_sdir = "registration"
-        self.cellcount_sdir = "cellcount"
-        self.analysis_sdir = "analysis"
-        self.visual_sdir = "visual"
+        self.cellcount_sdir = f"cellcount{suffix}"
+        self.analysis_sdir = f"analysis{suffix}"
+        self.visual_sdir = f"visual{suffix}"
 
     @property
     def subdirs_ls(self) -> list[str]:
