@@ -75,7 +75,7 @@ def _to_numpy[**P](func: Callable[P, cp.ndarray]) -> Callable[P, npt.NDArray]:
     return wrapper
 
 
-def _create_gpu_method(name: str, convert_to_numpy: bool) -> Callable:
+def _create_gpu_method(name: str, *, convert_to_numpy: bool) -> Callable:
     """Create a GPU-wrapped method."""
     cpu_method = getattr(CpuCellcFuncs, name)
     if convert_to_numpy:

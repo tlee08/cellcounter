@@ -128,6 +128,7 @@ class CpuCellcFuncs:
     def dog_filt(
         self, block: npt.NDArray, sigma1: int = 1, sigma2: int = 2
     ) -> npt.NDArray:
+        """Apply Difference of Gaussians (DoG) filter."""
         block = self.xp.asarray(block).astype(self.xp.float32)
         logger.debug("Making gaussian blur 1")
         gaus1 = self.xdimage.gaussian_filter(block, sigma=sigma1)
@@ -140,12 +141,14 @@ class CpuCellcFuncs:
         return res_block.astype(self.xp.uint16)
 
     def gauss_blur_filt(self, block: npt.NDArray, sigma: int = 10) -> npt.NDArray:
+        """Apply Gaussian blur filter."""
         block = self.xp.asarray(block).astype(self.xp.float32)
         logger.debug("Calculate Gaussian blur")
         res_block = self.xdimage.gaussian_filter(block, sigma=sigma)
         return res_block.astype(self.xp.uint16)
 
     def gauss_subt_filt(self, block: npt.NDArray, sigma: int = 10) -> npt.NDArray:
+        """Apply Gaussian subtraction filter."""
         block = self.xp.asarray(block).astype(self.xp.float32)
         logger.debug("Calculate local Gaussian blur")
         gaus = self.xdimage.gaussian_filter(block, sigma=sigma)
@@ -172,12 +175,15 @@ class CpuCellcFuncs:
         """Perform Otsu's thresholding on a 3D tensor."""
         # TODO:
         # Bug 2 — otsu_thresh compares pixel values against a bin index (Important)
-        # cpu_cellc_funcs.py:175–195
+        # on cpu_cellc_funcs.py:175-195
         # xp.histogram(block, bins=256) bins over the actual data range.
-        # argmax(between_class_variance) returns a bin index (0–255), not an intensity value. Then:
-        # res_block = block > optimal_threshold  # comparing uint16 pixel values vs. 0–255 index
-        # For uint16 data (range 0–65535), the index is almost always near-zero, so nearly every
-        # pixel is marked as foreground. The bin edge corresponding to the argmax must be used instead.
+        # argmax(between_class_variance) returns a bin index (0-255), not intensity:
+        # res_block = block > optimal_threshold which is comparing
+        # uint16 pixel values vs. 0-255 index
+        # For uint16 data (range 0-65535),
+        # the index is almost always near-zero, so nearly every
+        # pixel is marked as foreground.
+        # The bin edge corresponding to the argmax must be used instead.
         block = self.xp.asarray(block)
         logger.debug("Calculate histogram")
         hist, _bin_edges = self.xp.histogram(block, bins=256)
@@ -422,6 +428,7 @@ class CpuCellcFuncs:
         return res_block
 
     def mask(self, block: npt.NDArray, mask_block: npt.NDArray) -> npt.NDArray:
+        """Apply binary mask to block, keeping only values where mask > 0."""
         block = self.xp.asarray(block)
         mask_block = self.xp.asarray(mask_block).astype(self.xp.uint8)
         logger.debug("Masking for only maxima within mask")
