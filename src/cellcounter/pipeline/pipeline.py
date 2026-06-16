@@ -225,7 +225,7 @@ class Pipeline(AbstractPipeline):
             zarr_arr = da.from_zarr(self.pfm.raw)
             desired_chunks = self.config.chunks.to_tuple()
             # Check if already in desired chunks
-            if zarr_arr.chunks == desired_chunks:
+            if zarr_arr.chunksize == desired_chunks:
                 logger.debug("Zarr array is already in desired chunks.")
                 return
             # Rechunk
