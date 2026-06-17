@@ -16,19 +16,20 @@ def configure_logger(
     json_output: bool = False,
 ) -> None:
     """Configures logging for the cellcounter package."""
-    logger.remove()  # Clear defaults
-
+    # Clear defaults
+    logger.remove()
+    # Set configs
+    logger.configure(extra={"task_id": "-"})
     # Console: human-readable format
     logger.add(
         sys.stderr,
         level=level,
         format=(
             "<green>{time:HH:mm:ss}</green> | "
-            "<level>{level: <8}</level> | <cyan>{extra[run_id]}</cyan> | "
+            "<level>{level: <8}</level> | <cyan>{extra[task_id]}</cyan> | "
             "<level>{message}</level>"
         ),
     )
-
     # File: structured (JSON if json_output, else detailed)
     log_file = log_file or CACHE_DIR / "cellcounter.log"
     logger.add(
@@ -39,7 +40,7 @@ def configure_logger(
         compression="gz",
         serialize=json_output,
         format=(
-            "{time} | {level} | {name}:{function}:{line} | {extra[run_id]} | {message}"
+            "{time} | {level} | {name}:{function}:{line} | {extra[task_id]} | {message}"
         ),
     )
 

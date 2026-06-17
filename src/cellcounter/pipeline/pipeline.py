@@ -746,7 +746,7 @@ class Pipeline(AbstractPipeline):
         )
         # Generate a unique run ID for logging context
         task_id = uuid.uuid4().hex[:8]
-        with logger.contextualize(run_id=task_id):
+        with logger.contextualize(task_id=task_id):
             logger.info(
                 "Pipeline start — {} steps, overwrite={}", len(steps), overwrite
             )
