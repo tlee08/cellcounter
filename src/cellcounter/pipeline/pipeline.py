@@ -132,7 +132,7 @@ class Pipeline(AbstractPipeline):
         pairs_arr = (
             np.concatenate(pair_arr_ls, axis=0) if pair_arr_ls else np.empty((0, 2))
         )
-        logger.debug("Cross-boundary pairs found: %d", len(pairs_arr))
+        logger.debug("Cross-boundary pairs found: {}", len(pairs_arr))
         uf = UnionFind()
         for a, b in pairs_arr:
             uf.union(int(a), int(b))
@@ -150,7 +150,7 @@ class Pipeline(AbstractPipeline):
         )
         labels = label_counts[:, 0]
         counts = label_counts[:, 1]
-        logger.debug("Unique labels (foreground): %d", len(labels))
+        logger.debug("Unique labels (foreground): {}", len(labels))
         uf.build_lookup_table(labels, counts)
         logger.debug("Writing output array...")
         return da.map_blocks(
@@ -195,8 +195,8 @@ class Pipeline(AbstractPipeline):
     # CONVERT TIFF TO ZARR
     #############################################
 
-    @_check_overwrite("raw")
     @trace
+    @_check_overwrite("raw")
     def tiff2zarr(self, in_fp: Path | str, *, overwrite: bool = False) -> None:
         """Convert TIFF file(s) to Zarr format.
 
@@ -208,7 +208,7 @@ class Pipeline(AbstractPipeline):
         logger.debug("Making zarr from tiff file(s)")
         with cluster_process(LocalCluster(n_workers=1, threads_per_worker=6)):
             if in_fp.is_dir():
-                logger.debug("in_fp (%s) is a directory", in_fp)
+                logger.debug("in_fp ({}) is a directory", in_fp)
                 tiffs2zarr(
                     src_fp_ls=tuple(
                         natsorted(
@@ -221,7 +221,7 @@ class Pipeline(AbstractPipeline):
                     chunks=self.config.chunks.to_tuple(),
                 )
             elif in_fp.is_file():
-                logger.debug("in_fp (%s) is a file", in_fp)
+                logger.debug("in_fp ({}) is a file", in_fp)
                 btiff2zarr(
                     src_fp=in_fp,
                     dst_fp=self.pfm.raw,
@@ -260,8 +260,8 @@ class Pipeline(AbstractPipeline):
     # REGISTRATION PIPELINE FUNCS
     #############################################
 
-    @_check_overwrite("ref", "annot", "map", "affine", "bspline")
     @trace
+    @_check_overwrite("ref", "annot", "map", "affine", "bspline")
     def reg_ref_prepare(self, *, overwrite: bool = False) -> None:
         """Prepare reference atlas images for registration.
 
@@ -289,8 +289,8 @@ class Pipeline(AbstractPipeline):
         shutil.copyfile(rfm.affine, self.pfm.affine)
         shutil.copyfile(rfm.bspline, self.pfm.bspline)
 
-    @_check_overwrite("downsmpl1")
     @trace
+    @_check_overwrite("downsmpl1")
     def reg_img_rough(self, *, overwrite: bool = False) -> None:
         """Rough downsampling of raw image by integer strides.
 
@@ -306,8 +306,8 @@ class Pipeline(AbstractPipeline):
             downsmpl1_arr = downsmpl1_arr.compute()
             write_tiff(downsmpl1_arr, self.pfm.downsmpl1)
 
-    @_check_overwrite("downsmpl2")
     @trace
+    @_check_overwrite("downsmpl2")
     def reg_img_fine(self, *, overwrite: bool = False) -> None:
         """Fine downsampling using Gaussian zoom.
 
@@ -322,8 +322,8 @@ class Pipeline(AbstractPipeline):
         )
         write_tiff(downsmpl2_arr, self.pfm.downsmpl2)
 
-    @_check_overwrite("trimmed")
     @trace
+    @_check_overwrite("trimmed")
     def reg_img_trim(self, *, overwrite: bool = False) -> None:
         """Trim downsampled image to region of interest."""
         downsmpl2_arr = tifffile.imread(self.pfm.downsmpl2)
@@ -334,8 +334,8 @@ class Pipeline(AbstractPipeline):
         ]
         write_tiff(trimmed_arr, self.pfm.trimmed)
 
-    @_check_overwrite("bounded")
     @trace
+    @_check_overwrite("bounded")
     def reg_img_bound(self, *, overwrite: bool = False) -> None:
         """Apply intensity bounds to trimmed image.
 
@@ -351,8 +351,8 @@ class Pipeline(AbstractPipeline):
         )
         write_tiff(bounded_arr, self.pfm.bounded)
 
-    @_check_overwrite("regresult")
     @trace
+    @_check_overwrite("regresult")
     def reg_elastix(self, *, overwrite: bool = False) -> None:
         """Register image with elastix and store transformation components."""
         registration(
@@ -391,8 +391,8 @@ class Pipeline(AbstractPipeline):
     # CELL COUNTING PIPELINE FUNCS
     #############################################
 
-    @_check_overwrite("bgrm")
     @trace
+    @_check_overwrite("bgrm")
     def tophat_filter(self, *, overwrite: bool = False) -> None:
         """Step 1: Top-hat filter (background subtraction)."""
         with cluster_process(self.gpu_cluster()):
@@ -403,8 +403,8 @@ class Pipeline(AbstractPipeline):
             )
             disk_cache(result, self.pfm.bgrm)
 
-    @_check_overwrite("dog")
     @trace
+    @_check_overwrite("dog")
     def dog_filter(self, *, overwrite: bool = False) -> None:
         """Step 2: Difference of Gaussians (edge detection)."""
         with cluster_process(self.gpu_cluster()):
@@ -416,8 +416,8 @@ class Pipeline(AbstractPipeline):
             )
             disk_cache(result, self.pfm.dog)
 
-    @_check_overwrite("adaptv")
     @trace
+    @_check_overwrite("adaptv")
     def adaptive_threshold_prep(self, *, overwrite: bool = False) -> None:
         """Step 3: Gaussian subtraction for adaptive thresholding."""
         with cluster_process(self.gpu_cluster()):
@@ -428,8 +428,8 @@ class Pipeline(AbstractPipeline):
             )
             disk_cache(result, self.pfm.adaptv)
 
-    @_check_overwrite("threshd")
     @trace
+    @_check_overwrite("threshd")
     def threshold(self, *, overwrite: bool = False) -> None:
         """Step 4: Manual thresholding."""
         with cluster_process(self.gpu_cluster()):
@@ -440,8 +440,8 @@ class Pipeline(AbstractPipeline):
             )
             disk_cache(result, self.pfm.threshd)
 
-    @_check_overwrite("threshd_labels")
     @trace
+    @_check_overwrite("threshd_labels")
     def label_thresholded(self, *, overwrite: bool = False) -> None:
         """Step 5: Label contiguous regions in thresholded image."""
         max_labels = int(np.ceil(np.prod(self.config.chunks.to_tuple())) / 2) + 1
@@ -453,8 +453,8 @@ class Pipeline(AbstractPipeline):
             )
             disk_cache(result, self.pfm.threshd_labels)
 
-    @_check_overwrite("threshd_volumes")
     @trace
+    @_check_overwrite("threshd_volumes")
     def compute_thresholded_volumes(self, *, overwrite: bool = False) -> None:
         """Step 6: Compute contiguous sizes using union-find."""
         with cluster_process(self.gpu_cluster()):
@@ -463,8 +463,8 @@ class Pipeline(AbstractPipeline):
             )
             disk_cache(sizes_arr, self.pfm.threshd_volumes)
 
-    @_check_overwrite("threshd_filt")
     @trace
+    @_check_overwrite("threshd_filt")
     def filter_thresholded(self, *, overwrite: bool = False) -> None:
         """Step 7: Filter out objects by size."""
         with cluster_process(self.gpu_cluster()):
@@ -476,8 +476,8 @@ class Pipeline(AbstractPipeline):
             )
             disk_cache(result, self.pfm.threshd_filt)
 
-    @_check_overwrite("maxima")
     @trace
+    @_check_overwrite("maxima")
     def detect_maxima(self, *, overwrite: bool = False) -> None:
         """Step 8: Detect local maxima as cell candidates."""
         with cluster_process(self.gpu_cluster()):
@@ -489,8 +489,8 @@ class Pipeline(AbstractPipeline):
             )
             disk_cache(result, self.pfm.maxima)
 
-    @_check_overwrite("maxima_labels")
     @trace
+    @_check_overwrite("maxima_labels")
     def label_maxima(self, *, overwrite: bool = False) -> None:
         """Step 9: Label maxima points."""
         max_labels = int(np.ceil(np.prod(self.config.chunks.to_tuple())) / 2) + 1
@@ -502,8 +502,8 @@ class Pipeline(AbstractPipeline):
             )
             disk_cache(result, self.pfm.maxima_labels)
 
-    @_check_overwrite("wshed_labels")
     @trace
+    @_check_overwrite("wshed_labels")
     def watershed(self, *, overwrite: bool = False) -> None:
         """Step 10: Watershed segmentation."""
         with cluster_process(self.heavy_cluster()):
@@ -515,8 +515,8 @@ class Pipeline(AbstractPipeline):
             )
             disk_cache(result, self.pfm.wshed_labels)
 
-    @_check_overwrite("wshed_volumes")
     @trace
+    @_check_overwrite("wshed_volumes")
     def compute_watershed_volumes(self, *, overwrite: bool = False) -> None:
         """Step 11: Compute watershed volumes using union-find."""
         with cluster_process(self.heavy_cluster()):
@@ -524,8 +524,8 @@ class Pipeline(AbstractPipeline):
             wshed_volumes_arr = self._spatial_connect_count(wshed_labels_arr)
             disk_cache(wshed_volumes_arr, self.pfm.wshed_volumes)
 
-    @_check_overwrite("wshed_filt")
     @trace
+    @_check_overwrite("wshed_filt")
     def filter_watershed(self, *, overwrite: bool = False) -> None:
         """Step 12: Filter watershed objects by size."""
         with cluster_process(self.heavy_cluster()):
@@ -537,8 +537,8 @@ class Pipeline(AbstractPipeline):
             )
             disk_cache(result, self.pfm.wshed_filt)
 
-    @_check_overwrite("cells_raw_df")
     @trace
+    @_check_overwrite("cells_raw_df")
     def save_cells_table(self, *, overwrite: bool = False) -> None:
         """Step 13: Extract and save cells table with measurements."""
         with cluster_process(self.gpu_cluster()):
@@ -589,8 +589,8 @@ class Pipeline(AbstractPipeline):
     # CELL MAPPING FUNCS
     #############################################
 
-    @_check_overwrite("cells_trfm_df")
     @trace
+    @_check_overwrite("cells_trfm_df")
     def transform_coords(self, *, overwrite: bool = False) -> None:
         """Transform cell coordinates to reference atlas space."""
         with cluster_process(self.busy_cluster()):
@@ -622,8 +622,8 @@ class Pipeline(AbstractPipeline):
             )
             write_parquet(cells_trfm_df, self.pfm.cells_trfm_df)
 
-    @_check_overwrite("cells_df")
     @trace
+    @_check_overwrite("cells_df")
     def cell_mapping(self, *, overwrite: bool = False) -> None:
         """Map transformed cell coordinates to region IDs."""
         with cluster_process(self.busy_cluster()):
@@ -670,8 +670,8 @@ class Pipeline(AbstractPipeline):
             cells_df = df_map_ids(cells_df, annot_df)
             write_parquet(cells_df, self.pfm.cells_df)
 
-    @_check_overwrite("cells_agg_df")
     @trace
+    @_check_overwrite("cells_agg_df")
     def group_cells(self, *, overwrite: bool = False) -> None:
         """Group cells by region and aggregate."""
         with cluster_process(self.busy_cluster()):
@@ -690,8 +690,8 @@ class Pipeline(AbstractPipeline):
             cells_agg_df = cells_agg_df[[*ANNOT_COLUMNS_FINAL, *enum2list(CellColumns)]]
             write_parquet(cells_agg_df, self.pfm.cells_agg_df)
 
-    @_check_overwrite("cells_agg_csv")
     @trace
+    @_check_overwrite("cells_agg_csv")
     def cells2csv(self, *, overwrite: bool = False) -> None:
         """Save aggregated cell data to CSV."""
         cells_agg_df = pd.read_parquet(self.pfm.cells_agg_df)
@@ -712,7 +712,7 @@ class Pipeline(AbstractPipeline):
         silent_remove(pfm_prod.root_dir / pfm_prod.cellcount_sdir)
         pfm_tuning = get_proj_fp(self.pfm.root_dir, tuning=True)
         silent_remove(pfm_tuning.root_dir / pfm_tuning.cellcount_sdir)
-        logger.info("Project %s cleaned.", self.pfm.root_dir)
+        logger.info("Project {} cleaned.", self.pfm.root_dir)
 
     #############################################
     # RUN PIPELINE

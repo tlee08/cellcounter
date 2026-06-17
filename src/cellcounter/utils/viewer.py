@@ -83,7 +83,7 @@ def view_images(
     # Create viewer and add images
     viewer = napari.Viewer()
     for i, arr in enumerate(arr_ls):
-        logger.info("Adding image %d / %d: %s", i + 1, len(arr_ls), imgs_fp_ls[i])
+        logger.info("Adding image {} / {}: {}", i + 1, len(arr_ls), imgs_fp_ls[i])
         viewer.add_image(data=arr, blending="additive", **kwargs_ls[i])
 
     napari.run()

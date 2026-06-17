@@ -104,7 +104,7 @@ def combine_projects(
     out_parquet = out_dir / f"{COMBINED_FP}.parquet"
     out_csv = out_dir / f"{COMBINED_FP}.csv"
     if not overwrite and out_parquet.exists():
-        logger.info("Skipping as %s already exists.", out_parquet)
+        logger.info("Skipping as {} already exists.", out_parquet)
         return
     pfm_ref = ProjFp(proj_dir_ls[0])
     reference_config = _get_reference_config(pfm_ref)
@@ -113,7 +113,7 @@ def combine_projects(
     combined_df = _build_annotation_base(pfm_ref)
     for proj_dir_raw in proj_dir_ls:
         proj_dir = Path(proj_dir_raw)
-        logger.info("Processing: %s", proj_dir.name)
+        logger.info("Processing: {}", proj_dir.name)
         pfm = ProjFp(proj_dir)
         cells_df = _load_cells_agg(pfm)
         cells_df = pd.concat(
@@ -131,7 +131,7 @@ def combine_projects(
     combined_df.columns = combined_df.columns.set_names(enum2list(CombinedColumns))
     combined_df.to_parquet(out_parquet)
     combined_df.to_csv(out_csv)
-    logger.info("Saved combined results to %s", out_dir)
+    logger.info("Saved combined results to {}", out_dir)
 
 
 def discover_projects(root_dir: Path | str) -> list[Path]:
@@ -175,6 +175,6 @@ def combine_root(
     out_dir = Path(out_dir) if out_dir else root_dir
     proj_dir_ls = discover_projects(root_dir)
     if not proj_dir_ls:
-        logger.warning("No projects found in %s", root_dir)
+        logger.warning("No projects found in {}", root_dir)
         return
     combine_projects(proj_dir_ls, out_dir, overwrite=overwrite)

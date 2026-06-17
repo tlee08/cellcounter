@@ -56,7 +56,7 @@ def _check_overwrite(*fp_attrs: str) -> Callable:
                     fp = getattr(self.pfm, attr)
                     if fp.exists():
                         logger.warning(
-                            "Output file, %s, already exists - "
+                            "Output file, {}, already exists - "
                             "not overwriting file.\n"
                             "To overwrite, specify overwrite=True.\n",
                             fp,

@@ -266,7 +266,7 @@ class CpuCellcFuncs:
             # NOTE: becomes an issue if offset > max uint64
             offset = flat_idx * max_labels_per_chunk
             res_block[res_block > 0] += offset.astype(res_block.dtype)
-            logger.debug("Applied label offset: %s", offset)
+            logger.debug("Applied label offset: {}", offset)
         return res_block
 
     def get_boundary_pairs(self, block: npt.NDArray, depth: int = 1) -> npt.NDArray:
@@ -414,7 +414,7 @@ class CpuCellcFuncs:
             logger.debug("Mask provided. Only mask regions considered (round 1).")
             mask_block = (self.xp.asarray(mask_block) > 0).astype(self.xp.uint8)
             block = block * mask_block
-        logger.debug("Finding local maxima with spherical radius %d", radius)
+        logger.debug("Finding local maxima with spherical radius {}", radius)
         footprint = self._spherical_footprint(radius)
         max_arr = self.xdimage.maximum_filter(block, footprint=footprint)
         logger.debug("Identifying points where arr == max_arr")
