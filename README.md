@@ -69,6 +69,8 @@ nvcc --version  # Verify CUDA is installed
 
 ### Step 2: Install CellCounter
 
+Install with `uv`:
+
 ```bash
 # Clone the repository
 git clone https://github.com/tlee08/cellcounter.git
@@ -79,6 +81,22 @@ uv sync
 
 # Optional: Install GPU support (recommended for large images)
 uv sync --extra gpu
+# or
+uv sync --all-extras
+```
+
+Install with `pip`:
+
+```bash
+cd cellcounter
+uv pip install -e ".[gpu]"
+```
+
+Install with `conda`:
+
+```bash
+cd cellcounter
+conda create -f conda_env.yaml
 ```
 
 ### Step 3: Download Reference Atlas
@@ -104,6 +122,7 @@ uv run cellcounter-make-project
 ```
 
 This creates:
+
 ```
 my_project/
 ├── config.json          # All parameters (edit this!)
@@ -167,7 +186,7 @@ pipeline.threshold()
 Results are saved in `cellcount/cells_agg.csv`:
 
 | region_id | region_name | cell_count | avg_intensity | volume |
-|-----------|-------------|------------|---------------|--------|
+| --------- | ----------- | ---------- | ------------- | ------ |
 | 1         | isocortex   | 1523       | 245.3         | 6.2    |
 | 2         | hippocampus | 892        | 198.7         | 3.8    |
 | ...       | ...         | ...        | ...           | ...    |
@@ -199,14 +218,14 @@ Results are saved in `cellcount/cells_agg.csv`:
 
 ## Key Features
 
-| Feature | Description |
-|---------|-------------|
-| **GPU Acceleration** | Process ~90GB images using CUDA (CuPy) |
+| Feature              | Description                                                         |
+| -------------------- | ------------------------------------------------------------------- |
+| **GPU Acceleration** | Process ~90GB images using CUDA (CuPy)                              |
 | **Memory Efficient** | Chunked processing via Dask — no need to load entire image into RAM |
-| **Reproducible** | All parameters saved in `config.json`; every run documented |
-| **Customizable** | Tune detection parameters for your specific staining and resolution |
-| **Visual QC** | Built-in tools to verify registration and cell detection |
-| **Batch Processing** | Process many brains with consistent parameters |
+| **Reproducible**     | All parameters saved in `config.json`; every run documented         |
+| **Customizable**     | Tune detection parameters for your specific staining and resolution |
+| **Visual QC**        | Built-in tools to verify registration and cell detection            |
+| **Batch Processing** | Process many brains with consistent parameters                      |
 
 ---
 
@@ -225,22 +244,26 @@ graph TD
 ```
 
 ### 1. Setup
+
 - Install software
 - Download atlas (`cellcounter-init`)
 - Create project (`cellcounter-make-project`)
 
 ### 2. Registration (run once per brain)
+
 - Convert TIFF to Zarr
 - Prepare reference atlas
 - Run registration steps
 - **Verify**: Use `VisualCheck.combine_reg()` to check alignment
 
 ### 3. Tune Cell Detection
+
 - Use small crop (`tuning=True`) for fast iteration
 - Adjust `threshd_value` and size filters
 - **Verify**: Use `VisualCheck.combine_cellc()` to see detected cells
 
 ### 4. Run Full Pipeline
+
 - Process entire image (`tuning=False`)
 - Map cells to brain regions
 - Export CSV results
