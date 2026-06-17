@@ -57,8 +57,8 @@ def _check_overwrite(*fp_attrs: str) -> Callable:
                     if fp.exists():
                         logger.warning(
                             "Output file, {}, already exists - "
-                            "not overwriting file.\n"
-                            "To overwrite, specify overwrite=True.\n",
+                            "not overwriting file. "
+                            "To overwrite, specify overwrite=True.",
                             fp,
                         )
                         return None
