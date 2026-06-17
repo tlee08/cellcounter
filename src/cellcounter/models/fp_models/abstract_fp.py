@@ -1,8 +1,5 @@
-import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
-
-logger = logging.getLogger(__name__)
 
 
 class AbstractFp(ABC):

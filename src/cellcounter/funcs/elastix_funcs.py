@@ -9,7 +9,6 @@ Uses ITK-Elastix for deformable registration of microscopy images
 to reference atlas.
 """
 
-import logging
 import os
 import re
 from pathlib import Path
@@ -18,11 +17,10 @@ import itk
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
+from loguru import logger
 
 from cellcounter.constants import CACHE_DIR, Coords
 from cellcounter.funcs.io_funcs import silent_remove, write_tiff
-
-logger = logging.getLogger(__name__)
 
 
 def registration(
@@ -93,9 +91,10 @@ def registration(
     write_tiff(arr, output_img_fp)
 
     # Removing temporary and unnecessary elastix files
-    for i in output_img_dir.iterdir():
-        if re.search(r"^IterationInfo.(\d+).R(\d+).txt$", str(i.name)):
-            silent_remove(i)
+    for fp in output_img_dir.iterdir():
+        if re.search(r"^IterationInfo.(\d+).R(\d+).txt$", str(fp.name)):
+            logger.debug("ITK-Elastix [{}]: {}", fp.name, fp.read_text().strip())
+            silent_remove(fp)
 
     return arr
 
@@ -198,14 +197,18 @@ def _transformix_file2coords(output_points_fp: str) -> pd.DataFrame:
         df = pd.read_csv(output_points_fp, header=None, sep=";")
     except pd.errors.EmptyDataError:
         # If there are no points, then return empty df
-        return pd.DataFrame(columns=[Coords.Z.value, Coords.Y.value, Coords.X.value])
+        logger.warning("No output points from transformix — returning empty DataFrame")
+        return pd.DataFrame(
+            columns=pd.Index([Coords.Z.value, Coords.Y.value, Coords.X.value])
+        )
     df.columns = df.loc[0].str.strip().str.split(r"\s").str[0]
     # Try either "OutputIndexFixed" or "OutputPoint"
     df = df["OutputPoint"].apply(
         lambda x: [float(i) for i in x.replace(" ]", "").split("[ ")[1].split()]
     )
     return pd.DataFrame(
-        df.values.tolist(), columns=[Coords.X.value, Coords.Y.value, Coords.Z.value]
+        df.to_numpy().tolist(),
+        columns=pd.Index([Coords.X.value, Coords.Y.value, Coords.Z.value]),
     )[[Coords.Z.value, Coords.Y.value, Coords.X.value]]
 
 

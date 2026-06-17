@@ -2,6 +2,8 @@
 
 from pathlib import Path
 
+from loguru import logger
+
 from cellcounter import Pipeline, VisualCheck
 from cellcounter.funcs.batch_combine_funcs import combine_root
 
@@ -15,7 +17,7 @@ if __name__ == "__main__":
 
     # Which images to process
     imgs_ls = Pipeline.get_imgs_ls(stitched_imgs_dir)
-    # imgs_ls = ["example_img"]  # Or specify specific images
+    # Or specify specific images with: imgs_ls = ["example_img"]
 
     assert stitched_imgs_dir != analysis_root_dir
 
@@ -77,7 +79,7 @@ if __name__ == "__main__":
     # RUN PIPELINE
     # =========================================
     for img_name in imgs_ls:
-        print(f"Running: {img_name}")
+        logger.info(f"Running: {img_name}")
         try:
             proj_dir = analysis_root_dir / img_name
             in_fp = stitched_imgs_dir / img_name
@@ -140,8 +142,8 @@ if __name__ == "__main__":
                 vc.coords2heatmap_trfm(overwrite=overwrite)
                 vc.combine_heatmap_trfm(overwrite=overwrite)
 
-        except Exception as e:
-            print(f"Error in {img_name}: {e}")
+        except Exception:
+            logger.exception("Error in {}", img_name)
 
     # Combine all results
     combine_root(analysis_root_dir, analysis_root_dir.parent, overwrite=True)

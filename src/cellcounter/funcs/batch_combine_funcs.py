@@ -10,10 +10,10 @@ Output structure:
     - Each project specimen contains cell measurements (count, volume, etc.)
 """
 
-import logging
 from pathlib import Path
 
 import pandas as pd
+from loguru import logger
 from natsort import natsorted
 
 from cellcounter.constants import (
@@ -26,8 +26,6 @@ from cellcounter.constants.annotations import CombinedColumns
 from cellcounter.funcs.map_funcs import annot_df_get_parents, annot_fp2df
 from cellcounter.models.fp_models.proj_fp import ProjFp
 from cellcounter.utils.misc_utils import enum2list
-
-logger = logging.getLogger(__name__)
 
 COMBINED_FP = "combined_df"
 

@@ -1,13 +1,11 @@
-import warnings
+"""Cellcounter package."""
 
 from cellcounter.pipeline.pipeline import Pipeline
 from cellcounter.pipeline.visual_check import VisualCheck
 from cellcounter.utils.dask_utils import setup_dask_configs
-from cellcounter.utils.logging_utils import setup_logging
+from cellcounter.utils.logger_utils import configure_logger
 
-warnings.filterwarnings("ignore")
-
-setup_logging()
+configure_logger()
 setup_dask_configs()
 
 __all__ = [

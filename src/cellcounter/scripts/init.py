@@ -5,6 +5,8 @@
 import subprocess
 from pathlib import Path
 
+from loguru import logger
+
 from cellcounter.constants import ATLAS_DIR, CACHE_DIR
 
 
@@ -30,8 +32,8 @@ def main() -> None:
                 shell=True,
                 check=True,
             )
-        except subprocess.CalledProcessError as e:
-            print(f"Error: {e}")
+        except subprocess.CalledProcessError:
+            logger.exception("Command failed: {}", cmd_str)
     # Delete the zip file
     output_fp.unlink()
 

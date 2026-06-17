@@ -5,15 +5,13 @@ Provides:
 - view_images(): Display project images in Napari with sensible defaults
 """
 
-import logging
 from pathlib import Path
 
 import napari
+from loguru import logger
 
 from cellcounter.funcs.io_funcs import async_read_files_run, read_img
 from cellcounter.models.fp_models.proj_fp import ProjFp
-
-logger = logging.getLogger(__name__)
 
 # Display defaults per image type
 pfm = ProjFp(Path.cwd())
@@ -48,15 +46,14 @@ DISPLAY_DEFAULTS = {
 def view_images(
     imgs_fp_ls: list[Path | str],
     trimmer: tuple[slice, ...] | None = None,
-    *args,
-    **display_overrides,
+    **kwargs,
 ) -> None:
     """Display project images in Napari with sensible defaults.
 
     Args:
         imgs_fp_ls: List of image attribute names from pfm (e.g., ["bgrm", "dog"]).
         trimmer: Optional tuple of slices to crop region of interest.
-        **display_overrides: Override default display settings per image.
+        **kwargs: Override default display settings per image.
             e.g., contrast_limits={"bgrm": (0, 5000)}, colormap={"bgrm": "red"}
     """
     imgs_fp_ls = [Path(_i) for _i in imgs_fp_ls]
@@ -68,10 +65,8 @@ def view_images(
         defaults = DISPLAY_DEFAULTS.get(
             str(name), {"contrast_limits": (0, 10000), "colormap": "gray"}
         )
-        cl = display_overrides.get("contrast_limits", {}).get(
-            name, defaults["contrast_limits"]
-        )
-        cm = display_overrides.get("colormap", {}).get(name, defaults["colormap"])
+        cl = kwargs.get("contrast_limits", {}).get(name, defaults["contrast_limits"])
+        cm = kwargs.get("colormap", {}).get(name, defaults["colormap"])
         contrast_limits.append(cl)
         colormaps.append(cm)
     # Read arrays in parallel

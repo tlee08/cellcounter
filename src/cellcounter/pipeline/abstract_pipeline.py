@@ -7,20 +7,18 @@ Provides the AbstractPipeline base class that handles:
 """
 
 import functools
-import logging
 from abc import ABC
 from collections.abc import Callable
 from pathlib import Path
 
 from dask.distributed import LocalCluster, SpecCluster
+from loguru import logger
 
 from cellcounter.constants import CUPY_ENABLED, DASK_CUDA_ENABLED
 from cellcounter.funcs.cpu_cellc_funcs import CpuCellcFuncs
 from cellcounter.models.fp_models import get_proj_fp
 from cellcounter.models.fp_models.proj_fp import ProjFp
 from cellcounter.models.proj_config import ProjConfig
-
-logger = logging.getLogger(__name__)
 
 
 def _get_gpu_cluster_factory() -> Callable[..., SpecCluster]:
@@ -58,7 +56,7 @@ def _check_overwrite(*fp_attrs: str) -> Callable:
                     fp = getattr(self.pfm, attr)
                     if fp.exists():
                         logger.warning(
-                            "WARNING: Output file, %s, already exists - "
+                            "Output file, %s, already exists - "
                             "not overwriting file.\n"
                             "To overwrite, specify overwrite=True.\n",
                             fp,
@@ -115,14 +113,6 @@ class AbstractPipeline(ABC):
     def config(self) -> ProjConfig:
         """Project configuration (cached on pfm)."""
         return self._pfm.config
-
-    def update_config(self, updates: dict) -> None:
-        """Update project configuration with new values.
-
-        Args:
-            updates: Key-value pairs to update in config.
-        """
-        ProjConfig.ensure(self._pfm.config_fp, updates)
 
     def heavy_cluster(self) -> SpecCluster:
         """Create cluster with few workers and high memory per worker.

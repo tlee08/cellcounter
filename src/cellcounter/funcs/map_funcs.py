@@ -9,7 +9,6 @@ Handles:
 """
 
 import json
-import logging
 from pathlib import Path
 
 import numpy as np
@@ -25,8 +24,6 @@ from cellcounter.constants import (
     Coords,
     SpecialRegions,
 )
-
-logger = logging.getLogger(__name__)
 
 
 def annot_fp2df(fp: Path | str) -> pd.DataFrame:

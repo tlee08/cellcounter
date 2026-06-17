@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 from typing import Self
 
+from loguru import logger
 from pydantic import BaseModel, ConfigDict, PositiveInt
 
 from cellcounter.models.proj_config.cell_counting_config import CellCountingConfig
@@ -79,6 +80,7 @@ class ProjConfig(BaseModel):
         try:
             config = cls.read_file(config_fp)
         except FileNotFoundError:
+            logger.info("Config file not found at {} — creating default", config_fp)
             config = cls()
             config.write_file(config_fp)
         # Update the config with any provided updates and pydantic validate

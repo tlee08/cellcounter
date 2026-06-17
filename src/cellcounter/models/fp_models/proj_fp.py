@@ -1,10 +1,7 @@
-import logging
 from pathlib import Path
 
 from cellcounter.models.fp_models.abstract_fp import AbstractFp
 from cellcounter.models.proj_config import ProjConfig
-
-logger = logging.getLogger(__name__)
 
 
 class ProjFp(AbstractFp):

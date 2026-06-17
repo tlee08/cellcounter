@@ -6,6 +6,7 @@ import dask
 import dask.array as da
 import pandas as pd
 from dask.distributed import Client, SpecCluster
+from loguru import logger
 
 from cellcounter.constants import Coords
 from cellcounter.constants.paths import CACHE_DIR
@@ -60,7 +61,7 @@ def disk_cache(arr: da.Array, fp: Path | str) -> da.Array:
 def cluster_process(cluster: SpecCluster) -> Generator[None, None, None]:
     """Context manager for Dask cluster with automatic cleanup."""
     client = Client(cluster)
-    print(f"Dask Dashboard is accessible at {client.dashboard_link}")
+    logger.info("Dask Dashboard is accessible at {}", client.dashboard_link)
     try:
         yield
     finally:

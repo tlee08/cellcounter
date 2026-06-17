@@ -8,9 +8,10 @@ Coordinates the full workflow:
 All pipeline methods use @check_overwrite decorator for file safety.
 """
 
-import logging
 import re
 import shutil
+import time
+import uuid
 from pathlib import Path
 
 import dask
@@ -20,6 +21,7 @@ import numpy as np
 import pandas as pd
 import tifffile
 from dask.distributed import LocalCluster
+from loguru import logger
 from natsort import natsorted
 
 from cellcounter.constants import (
@@ -46,12 +48,12 @@ from cellcounter.funcs.map_funcs import (
 )
 from cellcounter.models.fp_models import get_proj_fp
 from cellcounter.models.fp_models.ref_fp import RefFp
+from cellcounter.models.proj_config import ProjConfig
 from cellcounter.pipeline.abstract_pipeline import AbstractPipeline, _check_overwrite
 from cellcounter.utils.dask_utils import cluster_process, disk_cache
+from cellcounter.utils.logger_utils import trace
 from cellcounter.utils.misc_utils import enum2list
 from cellcounter.utils.union_find import UnionFind
-
-logger = logging.getLogger(__name__)
 
 
 class Pipeline(AbstractPipeline):
@@ -67,8 +69,11 @@ class Pipeline(AbstractPipeline):
     """
 
     # Pipeline step registry for declarative execution
-    STEPS_REGISTRATION = (
+    STEPS_LOAD_RAW = (
         "tiff2zarr",
+        "rechunk_raw",
+    )
+    STEPS_REGISTRATION = (
         "reg_ref_prepare",
         "reg_img_rough",
         "reg_img_fine",
@@ -157,6 +162,19 @@ class Pipeline(AbstractPipeline):
         )
 
     #############################################
+    # UPDATE CONFIG METHOD
+    #############################################
+
+    @trace
+    def update_config(self, updates: dict) -> None:
+        """Update project configuration with new values.
+
+        Args:
+            updates: Key-value pairs to update in config.
+        """
+        ProjConfig.ensure(self._pfm.config_fp, updates)
+
+    #############################################
     # STATIC UTILITIES
     #############################################
 
@@ -178,6 +196,7 @@ class Pipeline(AbstractPipeline):
     #############################################
 
     @_check_overwrite("raw")
+    @trace
     def tiff2zarr(self, in_fp: Path | str, *, overwrite: bool = False) -> None:
         """Convert TIFF file(s) to Zarr format.
 
@@ -216,6 +235,7 @@ class Pipeline(AbstractPipeline):
     # RECHUNK
     #############################################
 
+    @trace
     def rechunk_raw(self, *, overwrite: bool = False) -> None:
         """Rechunk raw zarr to configured chunk size.
 
@@ -226,7 +246,7 @@ class Pipeline(AbstractPipeline):
             desired_chunks = self.config.chunks.to_tuple()
             # Check if already in desired chunks
             if zarr_arr.chunksize == desired_chunks:
-                logger.debug("Zarr array is already in desired chunks.")
+                logger.warning("Zarr is already in desired chunks. Not rechunking.")
                 return
             # Rechunk
             temp_fp = self.pfm.raw.with_suffix(".rechunk_temp.zarr")
@@ -241,6 +261,7 @@ class Pipeline(AbstractPipeline):
     #############################################
 
     @_check_overwrite("ref", "annot", "map", "affine", "bspline")
+    @trace
     def reg_ref_prepare(self, *, overwrite: bool = False) -> None:
         """Prepare reference atlas images for registration.
 
@@ -269,6 +290,7 @@ class Pipeline(AbstractPipeline):
         shutil.copyfile(rfm.bspline, self.pfm.bspline)
 
     @_check_overwrite("downsmpl1")
+    @trace
     def reg_img_rough(self, *, overwrite: bool = False) -> None:
         """Rough downsampling of raw image by integer strides.
 
@@ -285,6 +307,7 @@ class Pipeline(AbstractPipeline):
             write_tiff(downsmpl1_arr, self.pfm.downsmpl1)
 
     @_check_overwrite("downsmpl2")
+    @trace
     def reg_img_fine(self, *, overwrite: bool = False) -> None:
         """Fine downsampling using Gaussian zoom.
 
@@ -300,6 +323,7 @@ class Pipeline(AbstractPipeline):
         write_tiff(downsmpl2_arr, self.pfm.downsmpl2)
 
     @_check_overwrite("trimmed")
+    @trace
     def reg_img_trim(self, *, overwrite: bool = False) -> None:
         """Trim downsampled image to region of interest."""
         downsmpl2_arr = tifffile.imread(self.pfm.downsmpl2)
@@ -311,6 +335,7 @@ class Pipeline(AbstractPipeline):
         write_tiff(trimmed_arr, self.pfm.trimmed)
 
     @_check_overwrite("bounded")
+    @trace
     def reg_img_bound(self, *, overwrite: bool = False) -> None:
         """Apply intensity bounds to trimmed image.
 
@@ -327,6 +352,7 @@ class Pipeline(AbstractPipeline):
         write_tiff(bounded_arr, self.pfm.bounded)
 
     @_check_overwrite("regresult")
+    @trace
     def reg_elastix(self, *, overwrite: bool = False) -> None:
         """Register image with elastix and store transformation components."""
         registration(
@@ -341,11 +367,16 @@ class Pipeline(AbstractPipeline):
     # CROP RAW ZARR TO MAKE TUNING ZARR
     #############################################
 
+    @trace
     def make_tuning_arr(self, *, overwrite: bool = False) -> None:
         """Crop raw zarr to make a smaller zarr for tuning."""
-        # TODO: make overwrite logic for pfm_tuning
         pfm_prod = get_proj_fp(self.pfm.root_dir, tuning=False)
         pfm_tuning = get_proj_fp(self.pfm.root_dir, tuning=True)
+        # If tuning zarr already exists and overwrite is False, skip processing
+        if pfm_tuning.raw.exists() and not overwrite:
+            logger.warning("Tuning raw zarr already exists. Not overwriting.")
+            return
+        # Crop raw zarr to tuning region and save as new zarr for tuning pipeline steps
         with cluster_process(self.busy_cluster()):
             raw_arr = da.from_zarr(pfm_prod.raw)
             raw_arr = raw_arr[
@@ -361,6 +392,7 @@ class Pipeline(AbstractPipeline):
     #############################################
 
     @_check_overwrite("bgrm")
+    @trace
     def tophat_filter(self, *, overwrite: bool = False) -> None:
         """Step 1: Top-hat filter (background subtraction)."""
         with cluster_process(self.gpu_cluster()):
@@ -372,6 +404,7 @@ class Pipeline(AbstractPipeline):
             disk_cache(result, self.pfm.bgrm)
 
     @_check_overwrite("dog")
+    @trace
     def dog_filter(self, *, overwrite: bool = False) -> None:
         """Step 2: Difference of Gaussians (edge detection)."""
         with cluster_process(self.gpu_cluster()):
@@ -384,6 +417,7 @@ class Pipeline(AbstractPipeline):
             disk_cache(result, self.pfm.dog)
 
     @_check_overwrite("adaptv")
+    @trace
     def adaptive_threshold_prep(self, *, overwrite: bool = False) -> None:
         """Step 3: Gaussian subtraction for adaptive thresholding."""
         with cluster_process(self.gpu_cluster()):
@@ -395,6 +429,7 @@ class Pipeline(AbstractPipeline):
             disk_cache(result, self.pfm.adaptv)
 
     @_check_overwrite("threshd")
+    @trace
     def threshold(self, *, overwrite: bool = False) -> None:
         """Step 4: Manual thresholding."""
         with cluster_process(self.gpu_cluster()):
@@ -406,6 +441,7 @@ class Pipeline(AbstractPipeline):
             disk_cache(result, self.pfm.threshd)
 
     @_check_overwrite("threshd_labels")
+    @trace
     def label_thresholded(self, *, overwrite: bool = False) -> None:
         """Step 5: Label contiguous regions in thresholded image."""
         max_labels = int(np.ceil(np.prod(self.config.chunks.to_tuple())) / 2) + 1
@@ -418,6 +454,7 @@ class Pipeline(AbstractPipeline):
             disk_cache(result, self.pfm.threshd_labels)
 
     @_check_overwrite("threshd_volumes")
+    @trace
     def compute_thresholded_volumes(self, *, overwrite: bool = False) -> None:
         """Step 6: Compute contiguous sizes using union-find."""
         with cluster_process(self.gpu_cluster()):
@@ -427,6 +464,7 @@ class Pipeline(AbstractPipeline):
             disk_cache(sizes_arr, self.pfm.threshd_volumes)
 
     @_check_overwrite("threshd_filt")
+    @trace
     def filter_thresholded(self, *, overwrite: bool = False) -> None:
         """Step 7: Filter out objects by size."""
         with cluster_process(self.gpu_cluster()):
@@ -439,6 +477,7 @@ class Pipeline(AbstractPipeline):
             disk_cache(result, self.pfm.threshd_filt)
 
     @_check_overwrite("maxima")
+    @trace
     def detect_maxima(self, *, overwrite: bool = False) -> None:
         """Step 8: Detect local maxima as cell candidates."""
         with cluster_process(self.gpu_cluster()):
@@ -451,6 +490,7 @@ class Pipeline(AbstractPipeline):
             disk_cache(result, self.pfm.maxima)
 
     @_check_overwrite("maxima_labels")
+    @trace
     def label_maxima(self, *, overwrite: bool = False) -> None:
         """Step 9: Label maxima points."""
         max_labels = int(np.ceil(np.prod(self.config.chunks.to_tuple())) / 2) + 1
@@ -463,6 +503,7 @@ class Pipeline(AbstractPipeline):
             disk_cache(result, self.pfm.maxima_labels)
 
     @_check_overwrite("wshed_labels")
+    @trace
     def watershed(self, *, overwrite: bool = False) -> None:
         """Step 10: Watershed segmentation."""
         with cluster_process(self.heavy_cluster()):
@@ -475,6 +516,7 @@ class Pipeline(AbstractPipeline):
             disk_cache(result, self.pfm.wshed_labels)
 
     @_check_overwrite("wshed_volumes")
+    @trace
     def compute_watershed_volumes(self, *, overwrite: bool = False) -> None:
         """Step 11: Compute watershed volumes using union-find."""
         with cluster_process(self.heavy_cluster()):
@@ -483,6 +525,7 @@ class Pipeline(AbstractPipeline):
             disk_cache(wshed_volumes_arr, self.pfm.wshed_volumes)
 
     @_check_overwrite("wshed_filt")
+    @trace
     def filter_watershed(self, *, overwrite: bool = False) -> None:
         """Step 12: Filter watershed objects by size."""
         with cluster_process(self.heavy_cluster()):
@@ -495,6 +538,7 @@ class Pipeline(AbstractPipeline):
             disk_cache(result, self.pfm.wshed_filt)
 
     @_check_overwrite("cells_raw_df")
+    @trace
     def save_cells_table(self, *, overwrite: bool = False) -> None:
         """Step 13: Extract and save cells table with measurements."""
         with cluster_process(self.gpu_cluster()):
@@ -546,6 +590,7 @@ class Pipeline(AbstractPipeline):
     #############################################
 
     @_check_overwrite("cells_trfm_df")
+    @trace
     def transform_coords(self, *, overwrite: bool = False) -> None:
         """Transform cell coordinates to reference atlas space."""
         with cluster_process(self.busy_cluster()):
@@ -578,6 +623,7 @@ class Pipeline(AbstractPipeline):
             write_parquet(cells_trfm_df, self.pfm.cells_trfm_df)
 
     @_check_overwrite("cells_df")
+    @trace
     def cell_mapping(self, *, overwrite: bool = False) -> None:
         """Map transformed cell coordinates to region IDs."""
         with cluster_process(self.busy_cluster()):
@@ -625,6 +671,7 @@ class Pipeline(AbstractPipeline):
             write_parquet(cells_df, self.pfm.cells_df)
 
     @_check_overwrite("cells_agg_df")
+    @trace
     def group_cells(self, *, overwrite: bool = False) -> None:
         """Group cells by region and aggregate."""
         with cluster_process(self.busy_cluster()):
@@ -644,6 +691,7 @@ class Pipeline(AbstractPipeline):
             write_parquet(cells_agg_df, self.pfm.cells_agg_df)
 
     @_check_overwrite("cells_agg_csv")
+    @trace
     def cells2csv(self, *, overwrite: bool = False) -> None:
         """Save aggregated cell data to CSV."""
         cells_agg_df = pd.read_parquet(self.pfm.cells_agg_df)
@@ -653,8 +701,13 @@ class Pipeline(AbstractPipeline):
     # CLEAN
     #############################################
 
+    @trace
     def clean_proj(self) -> None:
-        """Clean project directory by removing cellcount subdirs."""
+        """Clean project directory by removing cellcount subdirs.
+
+        Warning: This will delete all intermediate
+        outputs of the cell counting pipeline.
+        """
         pfm_prod = get_proj_fp(self.pfm.root_dir, tuning=False)
         silent_remove(pfm_prod.root_dir / pfm_prod.cellcount_sdir)
         pfm_tuning = get_proj_fp(self.pfm.root_dir, tuning=True)
@@ -679,16 +732,49 @@ class Pipeline(AbstractPipeline):
             steps: Optional list of steps to run. If None, runs full pipeline.
             overwrite: If True, overwrite existing outputs.
         """
-        steps = steps or [
-            *["tiff2zarr"],
-            *list(self.STEPS_REGISTRATION[1:]),
-            *["make_tuning_arr"],
-            *list(self.STEPS_CELL_COUNTING),
-            *list(self.STEPS_MAPPING),
-        ]
-
-        for step in steps:
-            if step == "tiff2zarr":
-                self.tiff2zarr(in_fp, overwrite=overwrite)
-            else:
-                getattr(self, step)(overwrite=overwrite)
+        # Define steps to run
+        steps = (
+            steps
+            if steps is not None
+            else [
+                *list(self.STEPS_LOAD_RAW),
+                *list(self.STEPS_REGISTRATION),
+                *["make_tuning_arr"],
+                *list(self.STEPS_CELL_COUNTING),
+                *list(self.STEPS_MAPPING),
+            ]
+        )
+        # Generate a unique run ID for logging context
+        run_id = uuid.uuid4().hex[:8]
+        with logger.contextualize(run_id=run_id):
+            logger.info(
+                "Pipeline start — {} steps, overwrite={}", len(steps), overwrite
+            )
+            # Run each step and log time taken, with error handling
+            t_total = time.perf_counter()
+            for i, step in enumerate(steps, 1):
+                tag = f"[{i}/{len(steps)}]"
+                t0 = time.perf_counter()
+                logger.info("{} Step: {}", tag, step)
+                # Run function
+                try:
+                    if step == "tiff2zarr":
+                        self.tiff2zarr(in_fp, overwrite=overwrite)
+                    else:
+                        getattr(self, step)(overwrite=overwrite)
+                except Exception:
+                    # If a step fails, log the error with time taken and re-raise
+                    elapsed = time.perf_counter() - t0
+                    logger.exception(
+                        "{} Step {} FAILED after {:.1f}s", tag, step, elapsed
+                    )
+                    raise
+                # If successful, log time taken
+                elapsed = time.perf_counter() - t0
+                logger.info("{} Step {} done ({:.1f}s)", tag, step, elapsed)
+            # Log total pipeline time
+            logger.info(
+                "Pipeline complete — {} steps, total {:.1f}s",
+                len(steps),
+                time.perf_counter() - t_total,
+            )
