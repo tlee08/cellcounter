@@ -126,8 +126,8 @@ def transformation_coords(
     # Getting the output image directory (i.e. where registration results are stored)
     reg_dir = output_img_fp.parent
     # Store temporary transformix outputs
-    task_id = uuid.uuid4().hex[:8]
-    out_dir = CACHE_DIR / f"transformed_coords_{task_id}"
+    run_id = uuid.uuid4().hex[:8]
+    out_dir = CACHE_DIR / f"transformed_coords_{run_id}"
     out_dir.mkdir(exist_ok=True)
 
     # Load moving image
@@ -237,8 +237,8 @@ def transformation_img(
     reg_dir = output_img_fp.parent
 
     # Store temporary transformix outputs
-    task_id = uuid.uuid4().hex[:8]
-    out_dir = CACHE_DIR / f"transformed_img_{task_id}"
+    run_id = uuid.uuid4().hex[:8]
+    out_dir = CACHE_DIR / f"transformed_img_{run_id}"
     out_dir.mkdir(exist_ok=True)
 
     # Load moving image

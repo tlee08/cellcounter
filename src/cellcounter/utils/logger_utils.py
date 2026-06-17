@@ -30,14 +30,15 @@ def configure_logger(
     # Clear defaults
     logger.remove()
     # Set configs
-    logger.configure(extra={"task_id": "-"})
+    logger.configure(extra={"func_name": "-"})
     # Console: human-readable format
     logger.add(
         sys.stderr,
         level=level,
         format=(
             "<green>{time:HH:mm:ss}</green> | "
-            "<level>{level: <8}</level> | <cyan>{extra[task_id]}</cyan> | "
+            "<level>{level: <8}</level> | "
+            "<cyan>{extra[func_name]}</cyan> | "
             "<level>{message}</level>"
         ),
     )
@@ -51,7 +52,11 @@ def configure_logger(
         compression="gz",
         serialize=json_output,
         format=(
-            "{time} | {level} | {name}:{function}:{line} | {extra[task_id]} | {message}"
+            "{time} | "
+            "{level} | "
+            "{name}:{function}:{line} | "
+            "{extra[func_name]} | "
+            "{message}"
         ),
     )
 
@@ -72,21 +77,22 @@ def trace(_func: Callable | None = None, *, level: LogLevel = "INFO") -> Callabl
     def decorator(func: Callable) -> Callable:
         module_name = func.__module__
         qual_name = getattr(func, "__qualname__", "unknown_callable")
-        name = f"{module_name}.{qual_name}"
+        func_name = f"{module_name}.{qual_name}"
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs) -> object:
-            logger.log(level, "→ {}() called", name)
-            t0 = time.perf_counter()
-            try:
-                result = func(*args, **kwargs)
-                elapsed = time.perf_counter() - t0
-                logger.log(level, "← {}() done ({:.2f}s)", name, elapsed)
-                return result
-            except Exception:
-                elapsed = time.perf_counter() - t0
-                logger.exception("✗ {}() FAILED after {:.2f}s", name, elapsed)
-                raise
+            with logger.contextualize(func_name=func_name):
+                logger.log(level, "→ called")
+                t0 = time.perf_counter()
+                try:
+                    result = func(*args, **kwargs)
+                    elapsed = time.perf_counter() - t0
+                    logger.log(level, "← done ({:.2f}s)", elapsed)
+                    return result
+                except Exception:
+                    elapsed = time.perf_counter() - t0
+                    logger.exception("✗ FAILED after {:.2f}s", elapsed)
+                    raise
 
         return wrapper
 

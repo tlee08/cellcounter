@@ -11,7 +11,6 @@ All pipeline methods use @check_overwrite decorator for file safety.
 import re
 import shutil
 import time
-import uuid
 from pathlib import Path
 
 import dask
@@ -745,36 +744,30 @@ class Pipeline(AbstractPipeline):
             ]
         )
         # Generate a unique run ID for logging context
-        task_id = uuid.uuid4().hex[:8]
-        with logger.contextualize(task_id=task_id):
-            logger.info(
-                "Pipeline start — {} steps, overwrite={}", len(steps), overwrite
-            )
-            # Run each step and log time taken, with error handling
-            t_total = time.perf_counter()
-            for i, step in enumerate(steps, 1):
-                tag = f"[{i}/{len(steps)}]"
-                t0 = time.perf_counter()
-                logger.info("{} Step: {}", tag, step)
-                # Run function
-                try:
-                    if step == "tiff2zarr":
-                        self.tiff2zarr(in_fp, overwrite=overwrite)
-                    else:
-                        getattr(self, step)(overwrite=overwrite)
-                except Exception:
-                    # If a step fails, log the error with time taken and re-raise
-                    elapsed = time.perf_counter() - t0
-                    logger.exception(
-                        "{} Step {} FAILED after {:.1f}s", tag, step, elapsed
-                    )
-                    raise
-                # If successful, log time taken
+        logger.info("Pipeline start — {} steps, overwrite={}", len(steps), overwrite)
+        # Run each step and log time taken, with error handling
+        t_total = time.perf_counter()
+        for i, step in enumerate(steps, 1):
+            tag = f"[{i}/{len(steps)}]"
+            t0 = time.perf_counter()
+            logger.info("{} Step: {}", tag, step)
+            # Run function
+            try:
+                if step == "tiff2zarr":
+                    self.tiff2zarr(in_fp, overwrite=overwrite)
+                else:
+                    getattr(self, step)(overwrite=overwrite)
+            except Exception:
+                # If a step fails, log the error with time taken and re-raise
                 elapsed = time.perf_counter() - t0
-                logger.info("{} Step {} done ({:.1f}s)", tag, step, elapsed)
-            # Log total pipeline time
-            logger.info(
-                "Pipeline complete — {} steps, total {:.1f}s",
-                len(steps),
-                time.perf_counter() - t_total,
-            )
+                logger.exception("{} Step {} FAILED after {:.1f}s", tag, step, elapsed)
+                raise
+            # If successful, log time taken
+            elapsed = time.perf_counter() - t0
+            logger.info("{} Step {} done ({:.1f}s)", tag, step, elapsed)
+        # Log total pipeline time
+        logger.info(
+            "Pipeline complete — {} steps, total {:.1f}s",
+            len(steps),
+            time.perf_counter() - t_total,
+        )
