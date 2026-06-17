@@ -3,14 +3,25 @@ import sys
 import time
 from collections.abc import Callable
 from pathlib import Path
+from typing import Literal
 
 from loguru import logger
 
 from cellcounter.constants import CACHE_DIR
 
+type LogLevel = Literal[
+    "TRACE",
+    "DEBUG",
+    "INFO",
+    "SUCCESS",
+    "WARNING",
+    "ERROR",
+    "CRITICAL",
+]
+
 
 def configure_logger(
-    level: str = "INFO",
+    level: LogLevel = "INFO",
     log_file: Path | str | None = None,
     *,
     json_output: bool = False,
@@ -45,7 +56,7 @@ def configure_logger(
     )
 
 
-def trace(_func: Callable | None = None, *, level: str = "DEBUG") -> Callable:
+def trace(_func: Callable | None = None, *, level: LogLevel = "INFO") -> Callable:
     """Log function entry, exit, duration. Exception → full traceback.
 
     Usage:
@@ -65,7 +76,7 @@ def trace(_func: Callable | None = None, *, level: str = "DEBUG") -> Callable:
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs) -> object:
-            logger.info("→ {}() called", name)
+            logger.log(level, "→ {}() called", name)
             t0 = time.perf_counter()
             try:
                 result = func(*args, **kwargs)
