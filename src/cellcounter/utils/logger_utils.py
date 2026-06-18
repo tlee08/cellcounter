@@ -36,7 +36,7 @@ def configure_logger(
         sys.stderr,
         level=level,
         format=(
-            "<green>{time:HH:mm:ss}</green> | "
+            "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
             "<level>{level: <8}</level> | "
             "<cyan>{extra[func_name]}</cyan> | "
             "<level>{message}</level>"
@@ -47,12 +47,12 @@ def configure_logger(
     logger.add(
         log_file,
         level="DEBUG",
-        rotation="10 MB",
-        retention="7 days",
+        rotation="50 MB",
+        retention="60 days",
         compression="gz",
         serialize=json_output,
         format=(
-            "{time} | "
+            "{time:YYYY-MM-DD HH:mm:ss.SSS} | "
             "{level} | "
             "{name}:{function}:{line} | "
             "{extra[func_name]} | "
