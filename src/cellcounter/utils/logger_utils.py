@@ -82,7 +82,6 @@ def trace(_func: Callable | None = None, *, level: LogLevel = "INFO") -> Callabl
         @functools.wraps(func)
         def wrapper(*args, **kwargs) -> object:
             with logger.contextualize(func_name=func_name):
-                logger.log(level, "→ called")
                 t0 = time.perf_counter()
                 try:
                     result = func(*args, **kwargs)
