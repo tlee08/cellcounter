@@ -171,7 +171,7 @@ class Pipeline(AbstractPipeline):
         Args:
             updates: Key-value pairs to update in config.
         """
-        ProjConfig.ensure(self._pfm.config_fp, updates)
+        ProjConfig.ensure(self.pfm.config_fp, updates)
 
     #############################################
     # STATIC UTILITIES

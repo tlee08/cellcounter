@@ -154,7 +154,8 @@ def transformation_coords(
     transformix_object.SetFixedPointSetFileName(str(out_dir / "temp.dat"))
     transformix_object.SetTransformParameterObject(transform_parameter_object)
     transformix_object.SetOutputDirectory(str(out_dir))
-    transformix_object.SetLogToConsole(False)
+    transformix_object.LogToConsoleOn()
+    transformix_object.LogToFileOn()
 
     # Execute transformation
     transformix_object.UpdateLargestPossibleRegion()
