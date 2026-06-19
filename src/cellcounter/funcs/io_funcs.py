@@ -57,7 +57,7 @@ def write_parquet(df: pd.DataFrame, fp: Path | str) -> None:
         fp: Output file path.
     """
     fp = Path(fp)
-    fp.parent.mkdir(exist_ok=True)
+    fp.parent.mkdir(parents=True, exist_ok=True)
     df.to_parquet(fp)
 
 
@@ -89,7 +89,7 @@ def write_tiff(arr: npt.NDArray, dst_fp: Path | str) -> None:
         dst_fp: Output file path.
     """
     dst_fp = Path(dst_fp)
-    dst_fp.parent.mkdir(exist_ok=True)
+    dst_fp.parent.mkdir(parents=True, exist_ok=True)
     tifffile.imwrite(dst_fp, arr)
 
 

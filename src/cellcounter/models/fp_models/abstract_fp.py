@@ -17,7 +17,7 @@ class AbstractFp(ABC):
         """Make project directories from all subdirs in."""
         for subdir in self.subdirs_ls:
             if subdir is not None:
-                (self.root_dir / subdir).mkdir(exist_ok=True)
+                (self.root_dir / subdir).mkdir(parents=True, exist_ok=True)
 
     def export2dict(self) -> dict:
         """Returns a dict of all the FpModel attributes."""

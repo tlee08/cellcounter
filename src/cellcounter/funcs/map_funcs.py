@@ -36,7 +36,7 @@ def annot_fp2df(fp: Path | str) -> pd.DataFrame:
         DataFrame with region ID as index and region metadata as columns.
     """
     fp = Path(fp)
-    with fp.open(mode="r") as f:
+    with fp.open(mode="r", encoding="utf-8") as f:
         content = json.load(f)
     annot_df = annot_dict2df(content)
     return annot_df

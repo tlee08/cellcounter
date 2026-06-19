@@ -51,7 +51,7 @@ def coords2block(df: pd.DataFrame, block_info: dict) -> pd.DataFrame:
 def disk_cache(arr: da.Array, fp: Path | str) -> da.Array:
     """Save array to disk as zarr and return lazy array."""
     fp = Path(fp)
-    fp.parent.mkdir(exist_ok=True)
+    fp.parent.mkdir(parents=True, exist_ok=True)
     silent_remove(fp)
     arr.to_zarr(fp, mode="w")
     return da.from_zarr(fp)

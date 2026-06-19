@@ -128,7 +128,7 @@ def transformation_coords(
     # Store temporary transformix outputs
     run_id = uuid.uuid4().hex[:8]
     out_dir = CACHE_DIR / f"transformed_coords_{run_id}"
-    out_dir.mkdir(exist_ok=True)
+    out_dir.mkdir(parents=True, exist_ok=True)
 
     # Load moving image
     moving_image = itk.imread(str(moving_img_fp), itk.F)
@@ -176,7 +176,7 @@ def _make_fixed_points_file(coords: npt.NDArray, fixed_points_fp: Path | str) ->
     and converts it to the .pts file format for transformix.
     """
     fixed_points_fp = Path(fixed_points_fp)
-    with fixed_points_fp.open(mode="w") as f:
+    with fixed_points_fp.open(mode="w", encoding="utf-8") as f:
         f.write("index\n")
         f.write(f"{coords.shape[0]}\n")
         for i in np.arange(coords.shape[0]):
@@ -240,7 +240,7 @@ def transformation_img(
     # Store temporary transformix outputs
     run_id = uuid.uuid4().hex[:8]
     out_dir = CACHE_DIR / f"transformed_img_{run_id}"
-    out_dir.mkdir(exist_ok=True)
+    out_dir.mkdir(parents=True, exist_ok=True)
 
     # Load moving image
     moving_image = itk.imread(str(moving_img_fp), itk.F)

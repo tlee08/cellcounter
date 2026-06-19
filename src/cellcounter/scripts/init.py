@@ -16,7 +16,7 @@ def main() -> None:
     # Hosted on Dropbox: BowenDlcComputer@gmail.com
     atlas_url = "https://www.dropbox.com/scl/fi/63lavisnxp2osri44029s/atlas_resources.zip?rlkey=qveuyr7awqcf67n36s944wkp6&st=sydcwxmy&dl=1"
     output_fp = Path(f"{ATLAS_DIR}.zip")
-    CACHE_DIR.mkdir(exist_ok=True)
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
     # Assert whether atlas resources already exist
     assert not ATLAS_DIR.exists(), f"Atlas resources already exist at {ATLAS_DIR}!"

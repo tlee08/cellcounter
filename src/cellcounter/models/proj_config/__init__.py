@@ -19,6 +19,21 @@ from cellcounter.models.proj_config.registration_config import RegistrationConfi
 from cellcounter.models.proj_config.visual_check_config import VisualCheckConfig
 
 
+def _deep_merge(target: dict, source: dict) -> dict:
+    """Recursively merge source dict into target dict.
+
+    Source values will overwrite target values,
+    except when both values are dicts,
+    in which case the merge is applied recursively.
+    """
+    for key, value in source.items():
+        if isinstance(value, dict) and key in target and isinstance(target[key], dict):
+            target[key] = _deep_merge(target[key], value)
+        else:
+            target[key] = value
+    return target
+
+
 class ProjConfig(BaseModel):
     """Pydantic model for pipeline configuration."""
 
@@ -26,6 +41,7 @@ class ProjConfig(BaseModel):
         extra="ignore",
         validate_default=True,
         use_enum_values=True,
+        frozen=True,
     )
 
     # Zarr storage
@@ -47,21 +63,22 @@ class ProjConfig(BaseModel):
 
     def update(self, **kwargs) -> Self:
         """Update configs and return new instance."""
-        return self.model_validate(self.model_copy(update=kwargs))
+        merged = _deep_merge(self.model_dump(), kwargs)
+        return self.model_validate(merged)
 
     @classmethod
     def read_file(cls, fp: Path | str) -> Self:
         """Read configs from JSON file."""
         fp = Path(fp)
-        with fp.open(mode="r") as f:
+        with fp.open(mode="r", encoding="utf-8") as f:
             content = json.load(f)
         return cls.model_validate(content)
 
     def write_file(self, fp: Path | str) -> None:
         """Write configs to JSON file."""
         fp = Path(fp)
-        fp.parent.mkdir(exist_ok=True)
-        with fp.open(mode="w") as f:
+        fp.parent.mkdir(parents=True, exist_ok=True)
+        with fp.open(mode="w", encoding="utf-8") as f:
             f.write(self.model_dump_json(indent=2))
 
     @classmethod
@@ -75,6 +92,7 @@ class ProjConfig(BaseModel):
         Returns:
             The loaded or created config.
         """
+        should_write = False
         config_fp = Path(config_fp)
         # Load existing config or create default if file doesn't exist
         try:
@@ -82,10 +100,13 @@ class ProjConfig(BaseModel):
         except FileNotFoundError:
             logger.info("Config file not found at {} — creating default", config_fp)
             config = cls()
-            config.write_file(config_fp)
+            should_write = True
         # Update the config with any provided updates and pydantic validate
         # Write back to file if updates to ensure the file is always in sync
         if updates:
-            config = config.model_validate(config.model_copy(update=updates))
+            config = config.update(**updates)
+            should_write = True
+        # Write back to file if we modified config
+        if should_write:
             config.write_file(config_fp)
         return config
