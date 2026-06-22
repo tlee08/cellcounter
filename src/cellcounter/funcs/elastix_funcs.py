@@ -70,7 +70,8 @@ def registration(
     # Run registration using OO interface
     elastix_object = itk.ElastixRegistrationMethod.New(fixed_image, moving_image)
     elastix_object.SetParameterObject(parameter_object)
-    elastix_object.SetLogToConsole(True)
+    elastix_object.LogToConsoleOn()
+    elastix_object.LogToFileOn()
 
     # Update filter (required)
     elastix_object.UpdateLargestPossibleRegion()
@@ -258,7 +259,8 @@ def transformation_img(
     transformix_object = itk.TransformixFilter.New(moving_image)
     transformix_object.SetTransformParameterObject(transform_parameter_object)
     transformix_object.SetOutputDirectory(str(out_dir))
-    transformix_object.SetLogToConsole(False)
+    transformix_object.LogToConsoleOn()
+    transformix_object.LogToFileOn()
 
     # Execute transformation
     transformix_object.UpdateLargestPossibleRegion()
