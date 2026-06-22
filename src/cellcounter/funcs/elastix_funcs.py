@@ -52,7 +52,6 @@ def registration(
 
     # Set up parameter object with affine and bspline maps
     parameter_object = itk.ParameterObject.New()
-
     # Affine parameter map
     if affine_fp is not None:
         affine_fp = Path(affine_fp)
@@ -60,7 +59,6 @@ def registration(
     else:
         params_affine = itk.ParameterObject.GetDefaultParameterMap("affine")
         parameter_object.AddParameterMap(params_affine)
-
     # Bspline parameter map
     if bspline_fp is not None:
         bspline_fp = Path(bspline_fp)
@@ -69,18 +67,13 @@ def registration(
         params_bspline = itk.ParameterObject.GetDefaultParameterMap("bspline")
         parameter_object.AddParameterMap(params_bspline)
 
-    # Run registration using OO interface
-    elastix_object = itk.ElastixRegistrationMethod.New(fixed_image, moving_image)
-    elastix_object.SetParameterObject(parameter_object)
-    elastix_object.LogToConsoleOn()
-    # elastix_object.LogToFileOn(str(output_img_dir))
-
-    # Update filter (required)
-    elastix_object.UpdateLargestPossibleRegion()
-
-    # Get results
-    result_image = elastix_object.GetOutput()
-    result_transform_parameters = elastix_object.GetTransformParameterObject()
+    # Run registration
+    result_image, result_transform_parameters = itk.elastix_registration_method(
+        fixed_image,
+        moving_image,
+        parameter_object=parameter_object,
+        log_to_console=True,
+    )
 
     # Save transform parameters to output directory for later use with transformix
     for i in range(result_transform_parameters.GetNumberOfParameterMaps()):
@@ -97,7 +90,7 @@ def registration(
     for fp in output_img_dir.iterdir():
         if re.search(r"^IterationInfo.(\d+).R(\d+).txt$", str(fp.name)):
             logger.debug("ITK-Elastix [{}]: {}", fp.name, fp.read_text().strip())
-            shutil.rmtree(fp)
+            Path(fp).unlink()
 
     return arr
 
