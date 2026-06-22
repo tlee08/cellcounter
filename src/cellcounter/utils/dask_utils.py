@@ -53,7 +53,7 @@ def disk_cache(arr: da.Array, fp: Path | str) -> da.Array:
     fp = Path(fp)
     fp.parent.mkdir(parents=True, exist_ok=True)
     silent_remove(fp)
-    arr.to_zarr(fp, mode="w")
+    arr.to_zarr(fp, zarr_store_kwargs={"mode": "w"})
     return da.from_zarr(fp)
 
 

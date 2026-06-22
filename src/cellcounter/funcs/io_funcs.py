@@ -205,7 +205,7 @@ def btiff2zarr(
     # To final dask tiff
     zarr_arr = da.from_zarr(f"{dst_fp}_tmp.zarr")
     silent_remove(dst_fp)
-    zarr_arr.to_zarr(dst_fp, mode="w")
+    zarr_arr.to_zarr(dst_fp, zarr_store_kwargs={"mode": "w"})
     # Remove intermediate
     silent_remove(f"{dst_fp}_tmp.zarr")
 
@@ -239,7 +239,7 @@ def tiffs2zarr(
     arr = da.stack(tiffs_ls, axis=0).rechunk(chunks)
     # Saving to zarr
     silent_remove(dst_fp)
-    arr.to_zarr(dst_fp, mode="w")
+    arr.to_zarr(dst_fp, zarr_store_kwargs={"mode": "w"})
 
 
 def zarr2tiff(src_fp: str, dst_fp: str) -> None:
