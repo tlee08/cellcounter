@@ -129,36 +129,38 @@ def transformation_coords(
     out_dir = CACHE_DIR / f"transformed_coords_{run_id}"
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # Load moving image
-    moving_image = itk.imread(str(moving_img_fp), itk.F)
+    try:
+        # Load moving image
+        moving_image = itk.imread(str(moving_img_fp), itk.F)
 
-    # Create fixed points file
-    # NOTE: xyz, NOT zyx
-    _make_fixed_points_file(
-        coords[[Coords.X.value, Coords.Y.value, Coords.Z.value]].values,
-        out_dir / "temp.dat",
-    )
+        # Create fixed points file
+        # NOTE: xyz, NOT zyx
+        _make_fixed_points_file(
+            coords[[Coords.X.value, Coords.Y.value, Coords.Z.value]].values,
+            out_dir / "temp.dat",
+        )
 
-    # Load transform parameters from registration
-    transform_parameter_object = itk.ParameterObject.New()
-    for _i in natsorted(reg_dir.glob("TransformParameters.*.txt")):
-        transform_parameter_object.AddParameterFile(str(_i))
+        # Load transform parameters from registration
+        transform_parameter_object = itk.ParameterObject.New()
+        for _i in natsorted(reg_dir.glob("TransformParameters.*.txt")):
+            transform_parameter_object.AddParameterFile(str(_i))
 
-    # Set up Transformix object
-    transformix_object = itk.TransformixFilter.New(moving_image)
-    transformix_object.SetFixedPointSetFileName(str(out_dir / "temp.dat"))
-    transformix_object.SetTransformParameterObject(transform_parameter_object)
-    transformix_object.SetOutputDirectory(str(out_dir))
-    transformix_object.LogToConsoleOn()
-    # transformix_object.LogToFileOn(str(out_dir))
+        # Set up Transformix object
+        transformix_object = itk.TransformixFilter.New(moving_image)
+        transformix_object.SetFixedPointSetFileName(str(out_dir / "temp.dat"))
+        transformix_object.SetTransformParameterObject(transform_parameter_object)
+        transformix_object.SetOutputDirectory(str(out_dir))
+        transformix_object.LogToConsoleOn()
 
-    # Execute transformation
-    transformix_object.UpdateLargestPossibleRegion()
+        # Execute transformation
+        transformix_object.UpdateLargestPossibleRegion()
 
-    # Converting transformix output to df
-    coords_transformed = _transformix_file2coords(str(out_dir / "outputpoints.txt"))
-    # # Clean up temporary files
-    # shutil.rmtree(out_dir)
+        # Converting transformix output to df
+        coords_transformed = _transformix_file2coords(str(out_dir / "outputpoints.txt"))
+    finally:
+        # Clean up temporary files
+        shutil.rmtree(out_dir)
+    # Return coords
     return coords_transformed
 
 
@@ -237,32 +239,32 @@ def transformation_img(
     out_dir = CACHE_DIR / f"transformed_img_{run_id}"
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # Load moving image
-    moving_image = itk.imread(str(moving_img_fp), itk.F)
+    try:
+        # Load moving image
+        moving_image = itk.imread(str(moving_img_fp), itk.F)
 
-    # Load transform parameters from registration
-    transform_parameter_object = itk.ParameterObject.New()
-    transform_parameter_object.AddParameterFile(
-        str(reg_dir / "TransformParameters.0.txt")
-    )
-    transform_parameter_object.AddParameterFile(
-        str(reg_dir / "TransformParameters.1.txt")
-    )
+        # Load transform parameters from registration
+        transform_parameter_object = itk.ParameterObject.New()
+        transform_parameter_object.AddParameterFile(
+            str(reg_dir / "TransformParameters.0.txt")
+        )
+        transform_parameter_object.AddParameterFile(
+            str(reg_dir / "TransformParameters.1.txt")
+        )
 
-    # Set up Transformix object
-    transformix_object = itk.TransformixFilter.New(moving_image)
-    transformix_object.SetTransformParameterObject(transform_parameter_object)
-    transformix_object.SetOutputDirectory(str(out_dir))
-    transformix_object.LogToConsoleOn()
-    # transformix_object.LogToFileOn(str(out_dir))
+        # Set up Transformix object
+        transformix_object = itk.TransformixFilter.New(moving_image)
+        transformix_object.SetTransformParameterObject(transform_parameter_object)
+        transformix_object.SetOutputDirectory(str(out_dir))
+        transformix_object.LogToConsoleOn()
 
-    # Execute transformation
-    transformix_object.UpdateLargestPossibleRegion()
+        # Execute transformation
+        transformix_object.UpdateLargestPossibleRegion()
 
-    # Get result image
-    result_image = transformix_object.GetOutput()
-
-    # Clean up temporary files
-    shutil.rmtree(out_dir)
-
+        # Get result image
+        result_image = transformix_object.GetOutput()
+    finally:
+        # Clean up temporary files
+        shutil.rmtree(out_dir)
+    # Return image
     return np.asarray(result_image)
