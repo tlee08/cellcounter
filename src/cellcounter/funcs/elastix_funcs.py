@@ -10,6 +10,7 @@ to reference atlas.
 """
 
 import re
+import shutil
 import uuid
 from pathlib import Path
 
@@ -18,9 +19,10 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 from loguru import logger
+from natsort import natsorted
 
 from cellcounter.constants import CACHE_DIR, Coords
-from cellcounter.funcs.io_funcs import silent_remove, write_tiff
+from cellcounter.funcs.io_funcs import write_tiff
 
 
 def registration(
@@ -95,7 +97,7 @@ def registration(
     for fp in output_img_dir.iterdir():
         if re.search(r"^IterationInfo.(\d+).R(\d+).txt$", str(fp.name)):
             logger.debug("ITK-Elastix [{}]: {}", fp.name, fp.read_text().strip())
-            silent_remove(fp)
+            shutil.rmtree(fp)
 
     return arr
 
@@ -143,12 +145,8 @@ def transformation_coords(
 
     # Load transform parameters from registration
     transform_parameter_object = itk.ParameterObject.New()
-    transform_parameter_object.AddParameterFile(
-        str(reg_dir / "TransformParameters.0.txt")
-    )
-    transform_parameter_object.AddParameterFile(
-        str(reg_dir / "TransformParameters.1.txt")
-    )
+    for _i in natsorted(reg_dir.glob("TransformParameters.*.txt")):
+        transform_parameter_object.AddParameterFile(str(_i))
 
     # Set up Transformix object
     transformix_object = itk.TransformixFilter.New(moving_image)
@@ -164,7 +162,7 @@ def transformation_coords(
     # Converting transformix output to df
     coords_transformed = _transformix_file2coords(str(out_dir / "outputpoints.txt"))
     # # Clean up temporary files
-    # silent_remove(out_dir)
+    # shutil.rmtree(out_dir)
     return coords_transformed
 
 
@@ -269,6 +267,6 @@ def transformation_img(
     result_image = transformix_object.GetOutput()
 
     # Clean up temporary files
-    silent_remove(out_dir)
+    shutil.rmtree(out_dir)
 
     return np.asarray(result_image)
