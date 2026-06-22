@@ -99,6 +99,10 @@ class AbstractPipeline(ABC):
         self._pfm = get_proj_fp(proj_dir, tuning=tuning)
         self.set_gpu(enabled=True)
 
+    def get_log_context(self) -> dict:
+        """Log context for loguru context."""
+        return {"experiment": str(self.pfm.root_dir)}
+
     @property
     def pfm(self) -> ProjFp:
         """Project filepath model."""

@@ -38,7 +38,7 @@ def configure_logger(
         format=(
             "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
             "<level>{level: <8}</level> | "
-            "<cyan>{extra[func_name]}</cyan> | "
+            "<cyan>{extra}</cyan> | "
             "<level>{message}</level>"
         ),
     )
@@ -55,7 +55,7 @@ def configure_logger(
             "{time:YYYY-MM-DD HH:mm:ss.SSS} | "
             "{level} | "
             "{name}:{function}:{line} | "
-            "{extra[func_name]} | "
+            "{extra} | "
             "{message}"
         ),
     )
@@ -81,7 +81,14 @@ def trace(_func: Callable | None = None, *, level: LogLevel = "INFO") -> Callabl
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs) -> object:
-            with logger.contextualize(func_name=func_name):
+            # Constructing extras context
+            extras = {"func_name": func_name}
+            if args:
+                get_ctx = getattr(args[0], "get_log_context", None)
+                if callable(get_ctx):
+                    extras.update(get_ctx())
+            # Running function with context, timer, and error logger
+            with logger.contextualize(**extras):
                 t0 = time.perf_counter()
                 try:
                     result = func(*args, **kwargs)
