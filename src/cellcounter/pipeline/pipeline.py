@@ -249,7 +249,7 @@ class Pipeline(AbstractPipeline):
                 return
             # Rechunk
             temp_fp = self.pfm.raw.with_suffix(".rechunk_temp.zarr")
-            zarr_rechunked = zarr_arr.rechunk()
+            zarr_rechunked = zarr_arr.rechunk(desired_chunks)
             disk_cache(zarr_rechunked, temp_fp)
             # Remove old zarr and move rechunked zarr to original location
             silent_remove(self.pfm.raw)
