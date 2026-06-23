@@ -73,8 +73,6 @@ def registration(
         moving_image,
         parameter_object=parameter_object,
         log_to_console=True,
-        # log_to_file=True,
-        log_file_name="elx_HASI.log",
         output_directory=str(output_img_dir),
     )
 
