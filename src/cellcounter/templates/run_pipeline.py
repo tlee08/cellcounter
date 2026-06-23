@@ -146,4 +146,4 @@ if __name__ == "__main__":
             logger.exception("Error in {}", img_name)
 
     # Combine all results
-    Pipeline.combine_root(analysis_root_dir, overwrite=True)
+    Pipeline.combine(analysis_root_dir, overwrite=True)
