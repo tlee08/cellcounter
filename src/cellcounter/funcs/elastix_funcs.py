@@ -73,6 +73,7 @@ def registration(
         moving_image,
         parameter_object=parameter_object,
         log_to_console=True,
+        output_directory=str(output_img_dir),
     )
 
     # Save transform parameters to output directory for later use with transformix
@@ -135,46 +136,33 @@ def transformation_coords(
 
         # Create fixed points file
         # NOTE: xyz, NOT zyx
-        # _make_fixed_points_file(
-        #     coords[[Coords.X.value, Coords.Y.value, Coords.Z.value]].values,
-        #     out_dir / "temp.dat",
-        # )
-        points_array = coords[
-            [Coords.X.value, Coords.Y.value, Coords.Z.value]
-        ].values.astype(np.float32)
+        _make_fixed_points_file(
+            coords[[Coords.X.value, Coords.Y.value, Coords.Z.value]].values,
+            out_dir / "temp.dat",
+        )
 
         # Load transform parameters from registration
         transform_parameters = itk.ParameterObject.New()
         for _i in natsorted(reg_dir.glob("TransformParameters.*.txt")):
             transform_parameters.AddParameterFile(str(_i))
 
-        # Run transformix
-        transformed_points = itk.transformix_filter(
-            moving_image,
-            transform_parameters,
-            fixed_point_set=points_array,
-        )
+        # Set up Transformix object
+        transformix_object = itk.TransformixFilter.New(moving_image)
+        transformix_object.SetFixedPointSetFileName(str(out_dir / "temp.dat"))
+        transformix_object.SetTransformParameterObject(transform_parameters)
+        transformix_object.SetOutputDirectory(str(out_dir))
+        transformix_object.LogToConsoleOn()
 
-        # # Set up Transformix object
-        # transformix_object = itk.TransformixFilter.New(moving_image)
-        # transformix_object.SetFixedPointSetFileName(str(out_dir / "temp.dat"))
-        # transformix_object.SetTransformParameterObject(transform_parameters)
-        # # transformix_object.SetOutputDirectory(str(out_dir))
-        # # transformix_object.LogToConsoleOn()
-        # # Execute transformation
-        # transformix_object.UpdateLargestPossibleRegion()
+        # Execute transformation
+        transformix_object.UpdateLargestPossibleRegion()
 
-        # # Converting transformix output to df
-        # coords_transformed = _transformix_file2coords(str(out_dir / "outputpoints.txt"))
+        # Converting transformix output to df
+        coords_transformed = _transformix_file2coords(str(out_dir / "outputpoints.txt"))
     finally:
         # Clean up temporary files
         shutil.rmtree(out_dir)
-    # # Return coords
-    # return coords_transformed
-    # transformed_points is returned as a NumPy array of shape (N, 3)
-    return pd.DataFrame(
-        transformed_points, columns=[Coords.X.value, Coords.Y.value, Coords.Z.value]
-    )[[Coords.Z.value, Coords.Y.value, Coords.X.value]]
+    # Return coords
+    return coords_transformed
 
 
 def _make_fixed_points_file(coords: npt.NDArray, fixed_points_fp: Path | str) -> None:
