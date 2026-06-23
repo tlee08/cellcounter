@@ -10,7 +10,7 @@ to reference atlas.
 """
 
 import re
-import shutil
+import tempfile
 import uuid
 from pathlib import Path
 
@@ -101,13 +101,10 @@ def transformation_coords(
     moving_img_fp: Path | str,
     output_img_fp: Path | str,
 ) -> pd.DataFrame:
-    """Get transformation coords from elastix.
+    """Transform coordinates from the fixed image space to the moving image space.
 
-    Uses the transformation parameter output from registration to transform
+    Uses the transformation parameters output from registration to transform
     cell coordinates from the fixed image space to moving image space.
-
-    Potentially refer to this:
-    https://github.com/InsightSoftwareConsortium/ITKElastix/blob/main/examples/ITK_Example02_CustomOrMultipleParameterMaps.ipynb
 
     Params:
         coords: A pd.DataFrame of points, with the columns `x`, `y`, and `z`.
@@ -122,45 +119,31 @@ def transformation_coords(
         from the fixed image space to the moving image space.
     """
     moving_img_fp = Path(moving_img_fp)
-    output_img_fp = Path(output_img_fp)
-    # Getting the output image directory (i.e. where registration results are stored)
-    reg_dir = output_img_fp.parent
-    # Store temporary transformix outputs
-    run_id = uuid.uuid4().hex[:8]
-    out_dir = CACHE_DIR / f"transformed_coords_{run_id}"
-    out_dir.mkdir(parents=True, exist_ok=True)
+    reg_dir = Path(output_img_fp).parent
+    # Load moving image
+    moving_image = itk.imread(str(moving_img_fp), itk.F)
+    # Load transform parameters from registration
+    transform_parameters = itk.ParameterObject.New()
+    for fp in natsorted(reg_dir.glob("TransformParameters.*.txt")):
+        transform_parameters.AddParameterFile(str(fp))
 
-    try:
-        # Load moving image
-        moving_image = itk.imread(str(moving_img_fp), itk.F)
-
-        # Create fixed points file
-        # NOTE: xyz, NOT zyx
+    with tempfile.TemporaryDirectory(dir=CACHE_DIR) as _out_dir:
+        out_dir = Path(_out_dir)
+        # Write fixed points file (NOTE: xyz, NOT zyx)
         _make_fixed_points_file(
             coords[[Coords.X.value, Coords.Y.value, Coords.Z.value]].values,
             out_dir / "temp.dat",
         )
-
-        # Load transform parameters from registration
-        transform_parameters = itk.ParameterObject.New()
-        for _i in natsorted(reg_dir.glob("TransformParameters.*.txt")):
-            transform_parameters.AddParameterFile(str(_i))
-
-        # Set up Transformix object
-        transformix_object = itk.TransformixFilter.New(moving_image)
-        transformix_object.SetFixedPointSetFileName(str(out_dir / "temp.dat"))
-        transformix_object.SetTransformParameterObject(transform_parameters)
-        transformix_object.SetOutputDirectory(str(out_dir))
-        transformix_object.LogToConsoleOn()
-
-        # Execute transformation
-        transformix_object.UpdateLargestPossibleRegion()
-
-        # Converting transformix output to df
+        # Run transformix on the point set (procedural/functional interface)
+        itk.transformix_filter(
+            moving_image,
+            transform_parameters,
+            fixed_point_set_file_name=str(out_dir / "temp.dat"),
+            output_directory=str(out_dir),
+            log_to_console=True,
+        )
         coords_transformed = _transformix_file2coords(str(out_dir / "outputpoints.txt"))
-    finally:
-        # Clean up temporary files
-        shutil.rmtree(out_dir)
+
     # Return coords
     return coords_transformed
 
@@ -231,41 +214,23 @@ def transformation_img(
     """
     moving_img_fp = Path(moving_img_fp)
     output_img_fp = Path(output_img_fp)
-
     # Getting the output image directory (i.e. where registration results are stored)
     reg_dir = output_img_fp.parent
-
     # Store temporary transformix outputs
     run_id = uuid.uuid4().hex[:8]
     out_dir = CACHE_DIR / f"transformed_img_{run_id}"
     out_dir.mkdir(parents=True, exist_ok=True)
+    # Load moving image
+    moving_image = itk.imread(str(moving_img_fp), itk.F)
+    # Load transform parameters from registration
+    transform_parameters = itk.ParameterObject.New()
+    for fp in natsorted(reg_dir.glob("TransformParameters.*.txt")):
+        transform_parameters.AddParameterFile(str(fp))
 
-    try:
-        # Load moving image
-        moving_image = itk.imread(str(moving_img_fp), itk.F)
-
-        # Load transform parameters from registration
-        transform_parameter_object = itk.ParameterObject.New()
-        transform_parameter_object.AddParameterFile(
-            str(reg_dir / "TransformParameters.0.txt")
-        )
-        transform_parameter_object.AddParameterFile(
-            str(reg_dir / "TransformParameters.1.txt")
-        )
-
-        # Set up Transformix object
-        transformix_object = itk.TransformixFilter.New(moving_image)
-        transformix_object.SetTransformParameterObject(transform_parameter_object)
-        transformix_object.SetOutputDirectory(str(out_dir))
-        transformix_object.LogToConsoleOn()
-
+    with tempfile.TemporaryDirectory(dir=CACHE_DIR) as _out_dir:
+        out_dir = Path(_out_dir)
         # Execute transformation
-        transformix_object.UpdateLargestPossibleRegion()
+        result_image = itk.transformix_filter(moving_image, transform_parameters)
 
-        # Get result image
-        result_image = transformix_object.GetOutput()
-    finally:
-        # Clean up temporary files
-        shutil.rmtree(out_dir)
     # Return image
     return np.asarray(result_image)
