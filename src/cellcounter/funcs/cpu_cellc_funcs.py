@@ -168,44 +168,6 @@ class CpuCellcFuncs:
             res_block = self.xp.minimum(res_block, max_)
         return res_block
 
-    def otsu_thresh(self, block: npt.NDArray) -> npt.NDArray:
-        """Perform Otsu's thresholding on a 3D tensor."""
-        # TODO:
-        # Bug 2 — otsu_thresh compares pixel values against a bin index (Important)
-        # on cpu_cellc_funcs.py:175-195
-        # xp.histogram(block, bins=256) bins over the actual data range.
-        # argmax(between_class_variance) returns a bin index (0-255), not intensity:
-        # res_block = block > optimal_threshold which is comparing
-        # uint16 pixel values vs. 0-255 index
-        # For uint16 data (range 0-65535),
-        # the index is almost always near-zero, so nearly every
-        # pixel is marked as foreground.
-        # The bin edge corresponding to the argmax must be used instead.
-        block = self.xp.asarray(block)
-        logger.debug("Calculate histogram")
-        hist, _bin_edges = self.xp.histogram(block, bins=256)
-        logger.debug("Normalize histogram")
-        prob_hist = hist / hist.sum()
-        logger.debug("Compute cumulative sum and cumulative mean")
-        cum_sum = self.xp.cumsum(prob_hist)
-        cum_mean = self.xp.cumsum(prob_hist * self.xp.arange(256))
-        logger.debug("Compute global mean")
-        global_mean = cum_mean[-1]
-        logger.debug(
-            "Compute between class variance for all thresholds "
-            "and find the threshold that maximizes it"
-        )
-        numerator = (global_mean * cum_sum - cum_mean) ** 2
-        denominator = cum_sum * (1.0 - cum_sum)
-        logger.debug("Avoid division by zero")
-        denominator = self.xp.where(denominator == 0, float("inf"), denominator)
-        between_class_variance = numerator / denominator
-        logger.debug("Find the threshold that maximizes the between class variance")
-        optimal_threshold = self.xp.argmax(between_class_variance)
-        logger.debug("Apply threshold")
-        res_block = block > optimal_threshold
-        return res_block.astype(self.xp.uint8)
-
     def mean_thresh(self, block: npt.NDArray, offset_sd: float = 0.0) -> npt.NDArray:
         """Perform adaptive thresholding on a 3D tensor."""
         block = self.xp.asarray(block)
@@ -370,7 +332,6 @@ class CpuCellcFuncs:
 
     def label2volume(self, block: npt.NDArray) -> npt.NDArray:
         """Convert array of label values to contiguous volume (i.e. count) values."""
-        # TODO: Check correct
         sizemap = self.get_label_sizemap(block)
         ids, counts = sizemap[:, 0], sizemap[:, 1]
         res_block = self.map_values_to_arr(block, ids, counts)

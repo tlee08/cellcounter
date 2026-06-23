@@ -29,7 +29,6 @@ _GPU_METHODS = {
     "gauss_blur_filt",
     "gauss_subt_filt",
     "intensity_cutoff",
-    "otsu_thresh",
     "mean_thresh",
     "manual_thresh",
     "map_values_to_arr",

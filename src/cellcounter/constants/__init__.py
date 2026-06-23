@@ -17,7 +17,6 @@ from cellcounter.constants.atlas_options import AnnotVersions, MapVersions, RefV
 from cellcounter.constants.cells import CELL_AGG_MAPPINGS, CELL_IDX_NAME, CellColumns
 from cellcounter.constants.config import CUPY_ENABLED, DASK_CUDA_ENABLED
 from cellcounter.constants.coords import Coords
-from cellcounter.constants.masks import MASK_VOLUME, MaskColumns
 from cellcounter.constants.paths import ATLAS_DIR, CACHE_DIR
 from cellcounter.constants.processing import ROWS_PARTITION, TRFM
 
@@ -31,7 +30,6 @@ __all__ = [
     "CUPY_ENABLED",
     "DASK_CUDA_ENABLED",
     "GPU_ENABLED",
-    "MASK_VOLUME",
     "ROWS_PARTITION",
     "TRFM",
     "AnnotColumns",
@@ -40,7 +38,6 @@ __all__ = [
     "CellColumns",
     "Coords",
     "MapVersions",
-    "MaskColumns",
     "RefVersions",
     "SpecialRegions",
 ]
