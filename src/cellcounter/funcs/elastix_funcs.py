@@ -11,7 +11,6 @@ to reference atlas.
 
 import re
 import tempfile
-import uuid
 from pathlib import Path
 
 import itk
@@ -216,10 +215,6 @@ def transformation_img(
     output_img_fp = Path(output_img_fp)
     # Getting the output image directory (i.e. where registration results are stored)
     reg_dir = output_img_fp.parent
-    # Store temporary transformix outputs
-    run_id = uuid.uuid4().hex[:8]
-    out_dir = CACHE_DIR / f"transformed_img_{run_id}"
-    out_dir.mkdir(parents=True, exist_ok=True)
     # Load moving image
     moving_image = itk.imread(str(moving_img_fp), itk.F)
     # Load transform parameters from registration
@@ -227,10 +222,8 @@ def transformation_img(
     for fp in natsorted(reg_dir.glob("TransformParameters.*.txt")):
         transform_parameters.AddParameterFile(str(fp))
 
-    with tempfile.TemporaryDirectory(dir=CACHE_DIR) as _out_dir:
-        out_dir = Path(_out_dir)
-        # Execute transformation
-        result_image = itk.transformix_filter(moving_image, transform_parameters)
+    # Execute transformation
+    result_image = itk.transformix_filter(moving_image, transform_parameters)
 
     # Return image
     return np.asarray(result_image)
