@@ -108,6 +108,9 @@ def transformation_coords(
     Uses the transformation parameter output from registration to transform
     cell coordinates from the fixed image space to moving image space.
 
+    Potentially refer to this:
+    https://github.com/InsightSoftwareConsortium/ITKElastix/blob/main/examples/ITK_Example02_CustomOrMultipleParameterMaps.ipynb
+
     Params:
         coords: A pd.DataFrame of points, with the columns `x`, `y`, and `z`.
         moving_img_fp: Filepath of the moved image from registration
