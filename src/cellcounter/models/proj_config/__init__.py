@@ -110,3 +110,8 @@ class ProjConfig(BaseModel):
         if should_write:
             config.write_file(config_fp)
         return config
+
+
+__all__ = [
+    "ProjConfig",
+]

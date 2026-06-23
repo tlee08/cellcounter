@@ -15,10 +15,8 @@ from dask.distributed import LocalCluster, SpecCluster
 from loguru import logger
 
 from cellcounter.constants import CUPY_ENABLED, DASK_CUDA_ENABLED
-from cellcounter.funcs.cpu_cellc_funcs import CpuCellcFuncs
-from cellcounter.models.fp_models import get_proj_fp
-from cellcounter.models.fp_models.proj_fp import ProjFp
-from cellcounter.models.proj_config import ProjConfig
+from cellcounter.funcs import CpuCellcFuncs
+from cellcounter.models import ProjConfig, ProjFp, get_proj_fp
 
 
 def _get_gpu_cluster_factory() -> Callable[..., SpecCluster]:

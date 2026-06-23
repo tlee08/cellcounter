@@ -217,3 +217,8 @@ class ProjFp(AbstractFp):
     def comb_heatmap(self) -> Path:
         """Comb_heatmap."""
         return self.root_dir / self.visual_sdir / "comb_heatmap.tif"
+
+
+def get_proj_fp(proj_dir: Path | str, *, tuning: bool = False) -> ProjFp:
+    """Returns Project Filepath object, given context."""
+    return ProjFp(proj_dir, tuning=tuning)

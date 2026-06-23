@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from cellcounter.utils.template_utils import confirm, save_template
+from cellcounter.utils import confirm, save_template
 
 
 def main() -> None:

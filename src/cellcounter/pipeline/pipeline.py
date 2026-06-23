@@ -31,28 +31,24 @@ from cellcounter.constants import (
     CellColumns,
     Coords,
 )
-from cellcounter.funcs.elastix_funcs import registration, transformation_coords
-from cellcounter.funcs.io_funcs import (
+from cellcounter.funcs import (
+    annot_fp2df,
     btiff2zarr,
+    combine_nested_regions,
+    combine_root,
+    df_map_ids,
+    get_cells,
+    registration,
     silent_remove,
     tiffs2zarr,
+    transformation_coords,
     write_parquet,
     write_tiff,
 )
-from cellcounter.funcs.map_funcs import (
-    annot_fp2df,
-    combine_nested_regions,
-    df_map_ids,
-    get_cells,
-)
-from cellcounter.models.fp_models import get_proj_fp
-from cellcounter.models.fp_models.ref_fp import RefFp
-from cellcounter.models.proj_config import ProjConfig
-from cellcounter.pipeline.abstract_pipeline import AbstractPipeline, _check_overwrite
-from cellcounter.utils.dask_utils import cluster_process, disk_cache
-from cellcounter.utils.logger_utils import trace
-from cellcounter.utils.misc_utils import enum2list
-from cellcounter.utils.union_find import UnionFind
+from cellcounter.models import ProjConfig, RefFp, get_proj_fp
+from cellcounter.utils import UnionFind, cluster_process, disk_cache, enum2list, trace
+
+from .abstract_pipeline import AbstractPipeline, _check_overwrite
 
 
 class Pipeline(AbstractPipeline):
@@ -161,19 +157,6 @@ class Pipeline(AbstractPipeline):
         )
 
     #############################################
-    # UPDATE CONFIG METHOD
-    #############################################
-
-    @trace
-    def update_config(self, updates: dict) -> None:
-        """Update project configuration with new values.
-
-        Args:
-            updates: Key-value pairs to update in config.
-        """
-        ProjConfig.ensure(self.pfm.config_fp, updates)
-
-    #############################################
     # STATIC UTILITIES
     #############################################
 
@@ -189,6 +172,19 @@ class Pipeline(AbstractPipeline):
         """
         imgs_dir = Path(imgs_dir)
         return natsorted([fp.name for fp in imgs_dir.iterdir() if fp.is_dir()])
+
+    #############################################
+    # UPDATE CONFIG METHOD
+    #############################################
+
+    @trace
+    def update_config(self, updates: dict) -> None:
+        """Update project configuration with new values.
+
+        Args:
+            updates: Key-value pairs to update in config.
+        """
+        ProjConfig.ensure(self.pfm.config_fp, updates)
 
     #############################################
     # CONVERT TIFF TO ZARR
@@ -695,6 +691,16 @@ class Pipeline(AbstractPipeline):
         """Save aggregated cell data to CSV."""
         cells_agg_df = pd.read_parquet(self.pfm.cells_agg_df)
         cells_agg_df.to_csv(self.pfm.cells_agg_csv)
+
+    #############################################
+    # HELPER WRAPPER FOR COMBINE IMAGE DATA
+    #############################################
+
+    @trace
+    @staticmethod
+    def combine(root_dir: Path | str, *, overwrite: bool = False) -> None:
+        """Combine image data into single table and save."""
+        combine_root(root_dir, root_dir.parent, overwrite=overwrite)
 
     #############################################
     # CLEAN

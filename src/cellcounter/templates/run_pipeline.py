@@ -5,7 +5,6 @@ from pathlib import Path
 from loguru import logger
 
 from cellcounter import Pipeline, VisualCheck
-from cellcounter.funcs.batch_combine_funcs import combine_root
 
 if __name__ == "__main__":
     # =========================================
@@ -88,12 +87,13 @@ if __name__ == "__main__":
             pipeline = Pipeline(proj_dir)
             pipeline.update_config(updates=CONFIG)
 
-            # Run once (skip if outputs exist)
-            # Registration
+            # Loading in the raw image and saving as a zarr
             pipeline.tiff2zarr(in_fp, overwrite=False)
+
+            # Registration
+            # Run once (skip if outputs exist)
             pipeline.reg_ref_prepare(overwrite=False)
             pipeline.reg_img_rough(overwrite=False)
-
             # Iterative tuning: set overwrite=True for steps you're adjusting
             pipeline.reg_img_fine(overwrite=overwrite)
             pipeline.reg_img_trim(overwrite=overwrite)
@@ -146,4 +146,4 @@ if __name__ == "__main__":
             logger.exception("Error in {}", img_name)
 
     # Combine all results
-    combine_root(analysis_root_dir, analysis_root_dir.parent, overwrite=True)
+    Pipeline.combine_root(analysis_root_dir, overwrite=True)

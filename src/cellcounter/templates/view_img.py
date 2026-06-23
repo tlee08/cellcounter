@@ -1,7 +1,7 @@
 """View pipeline outputs in Napari."""
 
-from cellcounter.models.fp_models import get_proj_fp
-from cellcounter.utils.viewer import view_images
+from cellcounter.models import get_proj_fp
+from cellcounter.viewer import view_images
 
 if __name__ == "__main__":
     # =========================================

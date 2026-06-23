@@ -1,7 +1,6 @@
 """Template utilities."""
 
 from pathlib import Path
-from typing import Any
 
 from jinja2 import Environment, PackageLoader
 
@@ -20,7 +19,7 @@ def confirm(prompt: str, *, default: bool = False) -> bool:
         print("Please enter 'y' or 'n'.")
 
 
-def save_template(template_name: str, dst: Path, **kwargs: Any) -> None:
+def save_template(template_name: str, dst: Path, **kwargs: object) -> None:
     """Render and save a template."""
     env = Environment(loader=PackageLoader("cellcounter", "templates"), autoescape=True)
     dst.parent.mkdir(parents=True, exist_ok=True)

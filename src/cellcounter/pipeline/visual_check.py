@@ -10,8 +10,9 @@ import tifffile
 
 from cellcounter.funcs import visual_check_funcs_dask, visual_check_funcs_tiff
 from cellcounter.funcs.io_funcs import combine_arrs
-from cellcounter.pipeline.abstract_pipeline import AbstractPipeline, _check_overwrite
-from cellcounter.utils.dask_utils import cluster_process
+from cellcounter.utils import cluster_process
+
+from .abstract_pipeline import AbstractPipeline, _check_overwrite
 
 
 class VisualCheck(AbstractPipeline):
