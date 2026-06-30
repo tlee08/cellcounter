@@ -92,7 +92,6 @@ def registration(
             r"^IterationInfo\.(\d+)\.R(\d+)\.txt$|^result\.(\d+)\.(\w+)$",
             str(fp.name),
         ):
-            logger.debug("ITK-Elastix [{}]: {}", fp.name, fp.read_text().strip())
             Path(fp).unlink()
 
     return arr
