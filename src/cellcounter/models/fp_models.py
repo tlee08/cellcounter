@@ -2,8 +2,6 @@
 
 from pathlib import Path
 
-from cellcounter.models.proj_config import ProjConfig
-
 
 class ProjFp:
     """Project filepath model."""
@@ -39,11 +37,6 @@ class ProjFp:
     def config_fp(self) -> Path:
         """Config filepath."""
         return self.root_dir / "config_params.json"
-
-    @property
-    def config(self) -> ProjConfig:
-        """Project configuration (reads from disk each time)."""
-        return ProjConfig.read_file(self.config_fp)
 
     @property
     def diagnostics(self) -> Path:

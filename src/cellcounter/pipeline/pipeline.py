@@ -397,7 +397,7 @@ class Pipeline(AbstractPipeline):
             result = da.map_blocks(
                 self.cellc_funcs.tophat_filt,
                 da.from_zarr(self.pfm.raw),
-                radius=self.pfm.config.cell_counting.tophat_radius,
+                radius=self.config.cell_counting.tophat_radius,
             )
             disk_cache(result, self.pfm.bgrm)
 
@@ -409,8 +409,8 @@ class Pipeline(AbstractPipeline):
             result = da.map_blocks(
                 self.cellc_funcs.dog_filt,
                 da.from_zarr(self.pfm.bgrm),
-                sigma1=self.pfm.config.cell_counting.dog_sigma1,
-                sigma2=self.pfm.config.cell_counting.dog_sigma2,
+                sigma1=self.config.cell_counting.dog_sigma1,
+                sigma2=self.config.cell_counting.dog_sigma2,
             )
             disk_cache(result, self.pfm.dog)
 
@@ -422,7 +422,7 @@ class Pipeline(AbstractPipeline):
             result = da.map_blocks(
                 self.cellc_funcs.gauss_subt_filt,
                 da.from_zarr(self.pfm.dog),
-                sigma=self.pfm.config.cell_counting.large_gauss_radius,
+                sigma=self.config.cell_counting.large_gauss_radius,
             )
             disk_cache(result, self.pfm.adaptv)
 
@@ -434,7 +434,7 @@ class Pipeline(AbstractPipeline):
             result = da.map_blocks(
                 self.cellc_funcs.manual_thresh,
                 da.from_zarr(self.pfm.adaptv),
-                val=self.pfm.config.cell_counting.threshd_value,
+                val=self.config.cell_counting.threshd_value,
             )
             disk_cache(result, self.pfm.threshd)
 
@@ -469,8 +469,8 @@ class Pipeline(AbstractPipeline):
             result = da.map_blocks(
                 self.cellc_funcs.volume_filter,
                 da.from_zarr(self.pfm.threshd_volumes),
-                smin=self.pfm.config.cell_counting.min_threshd_size,
-                smax=self.pfm.config.cell_counting.max_threshd_size,
+                smin=self.config.cell_counting.min_threshd_size,
+                smax=self.config.cell_counting.max_threshd_size,
             )
             disk_cache(result, self.pfm.threshd_filt)
 
@@ -483,7 +483,7 @@ class Pipeline(AbstractPipeline):
                 self.cellc_funcs.get_local_maxima,
                 da.from_zarr(self.pfm.adaptv),
                 da.from_zarr(self.pfm.threshd_filt),
-                radius=self.pfm.config.cell_counting.maxima_radius,
+                radius=self.config.cell_counting.maxima_radius,
             )
             disk_cache(result, self.pfm.maxima)
 
@@ -530,8 +530,8 @@ class Pipeline(AbstractPipeline):
             result = da.map_blocks(
                 self.cellc_funcs.volume_filter,
                 da.from_zarr(self.pfm.wshed_volumes),
-                smin=self.pfm.config.cell_counting.min_wshed_size,
-                smax=self.pfm.config.cell_counting.max_wshed_size,
+                smin=self.config.cell_counting.min_wshed_size,
+                smax=self.config.cell_counting.max_wshed_size,
             )
             disk_cache(result, self.pfm.wshed_filt)
 

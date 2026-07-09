@@ -113,8 +113,8 @@ class AbstractPipeline(ABC):
 
     @property
     def config(self) -> ProjConfig:
-        """Project configuration (cached on pfm)."""
-        return self._pfm.config
+        """Project configuration."""
+        return ProjConfig.read_yaml(self._pfm.config_fp)
 
     def heavy_cluster(self) -> SpecCluster:
         """Create cluster with few workers and high memory per worker.
