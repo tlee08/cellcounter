@@ -5,6 +5,7 @@ app = marimo.App(width="medium")
 
 with app.setup:
     from pathlib import Path
+
     import marimo as mo
     from loguru import logger
 
@@ -23,7 +24,6 @@ def _():
 
     Load your config YAML (copy `templates/default_config.yaml` and edit).
     """)
-    return
 
 
 @app.cell
@@ -43,7 +43,7 @@ def _():
     config = ProjConfig.read_yaml(fp)
 
     mo.md(f"Loaded config from `{fp}`")
-    return
+    return (config_path,)
 
 
 @app.cell(hide_code=True)
@@ -51,7 +51,6 @@ def _():
     mo.md("""
     ## Inputs
     """)
-    return
 
 
 @app.cell
@@ -62,13 +61,13 @@ def _():
         full_width=True,
     )
     analysis_root_dir = mo.ui.text(
-        value="/path/to/analysis_outputs_folder",
+        value="analysis_images",
         label="Analysis output directory",
         full_width=True,
     )
     overwrite = mo.ui.checkbox(label="Overwrite existing outputs")
     mo.vstack([stitched_imgs_dir, analysis_root_dir, overwrite])
-    return (stitched_imgs_dir,)
+    return analysis_root_dir, overwrite, stitched_imgs_dir
 
 
 @app.cell
@@ -97,7 +96,7 @@ def _(imgs_ls):
         full_width=True,
     )
     selected_imgs
-    return
+    return (selected_imgs,)
 
 
 @app.cell(hide_code=True)
@@ -105,26 +104,33 @@ def _():
     mo.md("""
     ## Run Pipeline
     """)
-    return
 
 
 @app.cell
 def _():
     run_btn = mo.ui.run_button(label="Run Pipeline")
     run_btn
-    return
+    return (run_btn,)
 
 
-app._unparsable_cell(
-    r"""
+@app.cell
+def _(
+    analysis_root_dir,
+    config_path,
+    overwrite,
+    run_btn,
+    selected_imgs,
+    stitched_imgs_dir,
+):
     mo.stop(not run_btn.value, mo.md("Click **Run Pipeline** to start."))
 
     stitch_dir = Path(stitched_imgs_dir.value)
     analysis_dir = Path(analysis_root_dir.value)
 
-    if stitch_dir == analysis_dir:
-        mo.md("Input and output directories must be different")
-        return
+    mo.stop(
+        stitch_dir == analysis_dir,
+        mo.md("Input and output directories must be different"),
+    )
 
     _is_overwrite = overwrite.value
     n_imgs = len(selected_imgs.value)
@@ -138,14 +144,10 @@ app._unparsable_cell(
             pipeline.update_config(config_path)
 
             with mo.status.progress_bar(total=28) as bar:
-                bar.update(
-                    subtitle=f"({i + 1}/{n_imgs}) {img_name}: tiff2zarr"
-                )
+                bar.update(subtitle=f"({i + 1}/{n_imgs}) {img_name}: tiff2zarr")
                 pipeline.tiff2zarr(in_fp, overwrite=False)
 
-                bar.update(
-                    subtitle=f"({i + 1}/{n_imgs}) {img_name}: registration"
-                )
+                bar.update(subtitle=f"({i + 1}/{n_imgs}) {img_name}: registration")
                 pipeline.reg_ref_prepare(overwrite=False)
                 pipeline.reg_img_rough(overwrite=False)
                 pipeline.reg_img_fine(overwrite=_is_overwrite)
@@ -153,9 +155,7 @@ app._unparsable_cell(
                 pipeline.reg_img_bound(overwrite=_is_overwrite)
                 pipeline.reg_elastix(overwrite=_is_overwrite)
 
-                bar.update(
-                    subtitle=f"({i + 1}/{n_imgs}) {img_name}: tuning arr"
-                )
+                bar.update(subtitle=f"({i + 1}/{n_imgs}) {img_name}: tuning arr")
                 pipeline.make_tuning_arr(overwrite=False)
 
                 for is_tuning in [True, False]:
@@ -187,9 +187,7 @@ app._unparsable_cell(
                     p.group_cells(overwrite=_is_overwrite)
                     p.cells2csv(overwrite=_is_overwrite)
 
-                bar.update(
-                    subtitle=f"({i + 1}/{n_imgs}) {img_name}: visual checks"
-                )
+                bar.update(subtitle=f"({i + 1}/{n_imgs}) {img_name}: visual checks")
                 pipeline.combine_reg(overwrite=_is_overwrite)
 
                 for is_tuning in [True, False]:
@@ -200,15 +198,12 @@ app._unparsable_cell(
 
         except Exception:
             logger.exception(f"Error in {img_name}")
-    """,
-    name="_"
-)
+    return (analysis_dir,)
 
 
 @app.cell
 def _(analysis_dir):
     Pipeline.combine(analysis_dir, overwrite=True)
-    return
 
 
 if __name__ == "__main__":

@@ -1,22 +1,45 @@
-"""Create a new cellcounter project with template scripts."""
+"""Create a new cellcounter project with template files."""
 
+import shutil
+import sys
+from importlib.resources import files
 from pathlib import Path
 
-from cellcounter.utils import confirm, save_template
+TEMPLATE_DIR = Path(str(files("cellcounter.templates")))
+FILES = ["run_pipeline.py", "view_img.py", "default_config.yaml"]
+FOLDERS = ["analysis_images"]
+
+
+def _confirm(prompt: str) -> bool:
+    while True:
+        resp = input(f"{prompt} [y/N]: ").strip().lower()
+        if resp in ("y", "yes"):
+            return True
+        if resp in ("", "n", "no"):
+            return False
 
 
 def main() -> None:
-    """Make a cellcounter pipeline script in the current directory."""
-    if not confirm("Create cellcounter scripts in current directory?"):
+    target = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path.cwd()
+
+    if not _confirm(f"Create project in {target}?"):
         return
 
-    overwrite = confirm("Overwrite existing files?")
+    target.mkdir(parents=True, exist_ok=True)
 
-    if overwrite or not Path("run_pipeline.py").exists():
-        save_template("run_pipeline.py", Path("run_pipeline.py"))
+    # Make files
+    for name in FILES:
+        dst = target / name
+        if dst.exists() and not _confirm(f"Overwrite {name}?"):
+            continue
+        shutil.copy(str(TEMPLATE_DIR / name), dst)
+        print(f"Copied: {name}")
 
-    if overwrite or not Path("view_img.py").exists():
-        save_template("view_img.py", Path("view_img.py"))
+    # Make folders
+    for folder in FOLDERS:
+        (dst / folder).mkdir(parents=True, exist_ok=True)
+
+    print(f"\nNext:\n  marimo edit {target / 'run_pipeline.py'}")
 
 
 if __name__ == "__main__":
