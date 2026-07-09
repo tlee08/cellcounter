@@ -17,15 +17,16 @@ from loguru import logger
 from natsort import natsorted
 
 from cellcounter.constants import (
-    ANNOT_COLUMNS_FINAL,
-    AnnotColumns,
-    CellColumns,
-    SpecialRegions,
+    ANNOTATED_COLUMNS_FINAL,
+    CELL_COLUMNS,
+    COMBINED_COLUMNS,
+    INVALID,
+    NAME,
+    SPECIMEN,
+    UNIVERSE,
 )
-from cellcounter.constants.annotations import CombinedColumns
 from cellcounter.funcs.map_funcs import annot_df_get_parents, annot_fp2df
 from cellcounter.models.fp_models import ProjFp
-from cellcounter.utils.misc_utils import enum2list
 
 COMBINED_FP = "combined_df"
 
@@ -34,17 +35,13 @@ def _build_annotation_base(pfm: ProjFp) -> pd.DataFrame:
     """Build annotation columns with special regions."""
     annot_df = annot_fp2df(pfm.map)
     annot_df = annot_df_get_parents(annot_df)
-    annot_df.loc[-1] = pd.Series(
-        {AnnotColumns.NAME.value: SpecialRegions.INVALID.value}
-    )
-    annot_df.loc[0] = pd.Series(
-        {AnnotColumns.NAME.value: SpecialRegions.UNIVERSE.value}
-    )
-    annot_df = annot_df[ANNOT_COLUMNS_FINAL]
+    annot_df.loc[-1] = pd.Series({NAME: INVALID})
+    annot_df.loc[0] = pd.Series({NAME: UNIVERSE})
+    annot_df = annot_df[ANNOTATED_COLUMNS_FINAL]
     return pd.concat(
         [annot_df],
         keys=["annotations"],
-        names=[CombinedColumns.SPECIMEN.value],
+        names=[SPECIMEN],
         axis=1,
     )
 
@@ -77,12 +74,12 @@ def _validate_project(pfm: ProjFp, reference_config: tuple) -> None:
 def _load_cells_agg(pfm: ProjFp) -> pd.DataFrame:
     """Load cell aggregation data for a single project."""
     df = pd.read_parquet(pfm.cells_agg_df)
-    return df[enum2list(CellColumns)]
+    return df[CELL_COLUMNS]
 
 
 def combine_projects(
-    proj_dir_ls: list[Path | str],
-    out_dir: Path | str,
+    proj_dir_ls: list[Path],
+    out_dir: Path,
     *,
     overwrite: bool = False,
 ) -> None:
@@ -119,7 +116,7 @@ def combine_projects(
         cells_df = pd.concat(
             [cells_df],
             keys=[proj_dir.name],
-            names=[CombinedColumns.SPECIMEN.value],
+            names=[SPECIMEN],
             axis=1,
         )
         combined_df = combined_df.merge(
@@ -128,7 +125,7 @@ def combine_projects(
             right_index=True,
             how="outer",
         )
-    combined_df.columns = combined_df.columns.set_names(enum2list(CombinedColumns))
+    combined_df.columns = combined_df.columns.set_names(COMBINED_COLUMNS)
     combined_df.to_parquet(out_parquet)
     combined_df.to_csv(out_csv)
     logger.info("Saved combined results to {}", out_dir)

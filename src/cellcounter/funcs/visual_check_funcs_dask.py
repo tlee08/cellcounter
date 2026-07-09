@@ -14,7 +14,7 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
-from cellcounter.constants import AnnotColumns, Coords
+from cellcounter.constants import ID, X, Y, Z
 from cellcounter.utils.dask_utils import coords2block, disk_cache
 
 #####################################################################
@@ -35,28 +35,24 @@ def coords2points_workers(
     # Filtering
     s = arr.shape
     coords = (
-        coords[[Coords.Z.value, Coords.Y.value, Coords.X.value]]
+        coords[[Z, Y, X]]
         .round(0)
         .query(
-            f"({Coords.Z.value} >= 0) & ({Coords.Z.value} < {s[0]}) & "
-            f"({Coords.Y.value} >= 0) & ({Coords.Y.value} < {s[1]}) & "
-            f"({Coords.X.value} >= 0) & ({Coords.X.value} < {s[2]})"
+            f"({Z} >= 0) & ({Z} < {s[0]}) & "
+            f"({Y} >= 0) & ({Y} < {s[1]}) & "
+            f"({X} >= 0) & ({X} < {s[2]})"
         )
         .clip(0, 2**16 - 1)
         .astype(np.uint16)
     )
     # Groupby and counts, so we don't drop duplicates
-    coords = (
-        coords.groupby([Coords.Z.value, Coords.Y.value, Coords.X.value])
-        .size()
-        .reset_index(name="counts")
-    )
-    # Incrementing the coords inCoords.Y.valuee array
+    coords = coords.groupby([Z, Y, X]).size().reset_index(name="counts")
+    # Incrementing the coords in array
     if coords.shape[0] > 0:
         arr[
-            coords[Coords.Z.value],
-            coords[Coords.Y.value],
-            coords[Coords.X.value],
+            coords[Z],
+            coords[Y],
+            coords[X],
         ] += coords["counts"]
     # Return arr
     return arr
@@ -74,15 +70,15 @@ def coords2sphere_workers(
         coords = coords2block(coords, block_info)
     # Formatting coord values as (z, y, x),
     # rounding to integers, and
-    # Filtering for pCoords.Y.valuets within the image + radius padding bounds
+    # Filtering for pts within the image + radius padding bounds
     s = arr.shape
     coords = (
-        coords[[Coords.Z.value, Coords.Y.value, Coords.X.value]]
+        coords[[Z, Y, X]]
         .round(0)
         .query(
-            f"({Coords.Z.value} > {-1 * r}) & ({Coords.Z.value} < {s[0] + r}) & "
-            f"({Coords.Y.value} > {-1 * r}) & ({Coords.Y.value} < {s[1] + r}) & "
-            f"({Coords.X.value} > {-1 * r}) & ({Coords.X.value} < {s[2] + r})"
+            f"({Z} > {-1 * r}) & ({Z} < {s[0] + r}) & "
+            f"({Y} > {-1 * r}) & ({Y} < {s[1] + r}) & "
+            f"({X} > {-1 * r}) & ({X} < {s[2] + r})"
         )
         .clip(0, 2**16 - 1)
         .astype(np.uint16)
@@ -97,9 +93,9 @@ def coords2sphere_workers(
     ):
         if t:
             coords_i = coords.copy()
-            coords_i[Coords.Z.value] += z
-            coords_i[Coords.Y.value] += y
-            coords_i[Coords.X.value] += x
+            coords_i[Z] += z
+            coords_i[Y] += y
+            coords_i[X] += x
             arr = coords2points_workers(arr, coords_i)
     # Return arr
     return arr
@@ -194,12 +190,7 @@ def coords2regions(
             arr[z, y, x] = _id
 
     # Formatting coord values as (z, y, x) and rounding to integers
-    coords = (
-        coords[[Coords.Z.value, Coords.Y.value, Coords.X.value, AnnotColumns.ID.value]]
-        .round(0)
-        .clip(0, 2**16 - 1)
-        .astype(np.uint16)
-    )
+    coords = coords[[Z, Y, X, ID]].round(0).clip(0, 2**16 - 1).astype(np.uint16)
     if coords.shape[0] > 0:
         np.apply_along_axis(f, 1, coords)
     # Computing and saving

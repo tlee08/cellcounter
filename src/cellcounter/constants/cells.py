@@ -1,19 +1,20 @@
-from enum import Enum
-
 CELL_IDX_NAME = "label"
 
+# ===============================================
+# Cell Columns
+# ===============================================
 
-class CellColumns(Enum):
-    """Cell columns."""
 
-    COUNT = "count"
-    VOLUME = "volume"
-    SUM_INTENSITY = "sum_intensity"
-    IOV = "iov"
+COUNT = "count"
+VOLUME = "volume"
+SUM_INTENSITY = "sum_intensity"
+IOV = "iov"
+
+CELL_COLUMNS = [COUNT, VOLUME, SUM_INTENSITY, IOV]
 
 
 CELL_AGG_MAPPINGS = {
-    CellColumns.COUNT.value: "sum",
-    CellColumns.VOLUME.value: "sum",
-    CellColumns.SUM_INTENSITY.value: "sum",
+    COUNT: "sum",
+    VOLUME: "sum",
+    SUM_INTENSITY: "sum",
 }

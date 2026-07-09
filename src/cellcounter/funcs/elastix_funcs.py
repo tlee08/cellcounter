@@ -20,7 +20,7 @@ import pandas as pd
 from loguru import logger
 from natsort import natsorted
 
-from cellcounter.constants import CACHE_DIR, Coords
+from cellcounter.constants import CACHE_DIR, X, Y, Z
 from cellcounter.funcs.io_funcs import write_tiff
 
 
@@ -132,7 +132,7 @@ def transformation_coords(
         out_dir = Path(_out_dir)
         # Write fixed points file (NOTE: xyz, NOT zyx)
         _make_fixed_points_file(
-            coords[[Coords.X.value, Coords.Y.value, Coords.Z.value]].values,
+            coords[[X, Y, Z]].to_numpy(),
             out_dir / "temp.dat",
         )
         # Run transformix on the point set (procedural/functional interface)
@@ -182,9 +182,7 @@ def _transformix_file2coords(output_points_fp: str) -> pd.DataFrame:
     except pd.errors.EmptyDataError:
         # If there are no points, then return empty df
         logger.warning("No output points from transformix — returning empty DataFrame")
-        return pd.DataFrame(
-            columns=pd.Index([Coords.Z.value, Coords.Y.value, Coords.X.value])
-        )
+        return pd.DataFrame(columns=pd.Index([Z, Y, X]))
     df.columns = df.loc[0].str.strip().str.split(r"\s").str[0]
     # Try either "OutputIndexFixed" or "OutputPoint"
     df = df["OutputPoint"].apply(
@@ -192,8 +190,8 @@ def _transformix_file2coords(output_points_fp: str) -> pd.DataFrame:
     )
     return pd.DataFrame(
         df.to_numpy().tolist(),
-        columns=pd.Index([Coords.X.value, Coords.Y.value, Coords.Z.value]),
-    )[[Coords.Z.value, Coords.Y.value, Coords.X.value]]
+        columns=pd.Index([X, Y, Z]),
+    )[[Z, Y, X]]
 
 
 def transformation_img(

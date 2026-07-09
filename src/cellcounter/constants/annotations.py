@@ -1,63 +1,78 @@
-from enum import Enum
-
 import numpy as np
 
+# ===============================================
+# Annotation Columns
+# ===============================================
 
-class AnnotColumns(Enum):
-    """Atlas annotation column names."""
+ID = "id"
+ATLAS_ID = "atlas_id"
+ONTOLOGY_ID = "ontology_id"
+ACRONYM = "acronym"
+NAME = "name"
+COLOR_HEX_TRIPLET = "color_hex_triplet"
+GRAPH_ORDER = "graph_order"
+ST_LEVEL = "st_level"
+HEMISPHERE_ID = "hemisphere_id"
+PARENT_STRUCTURE_ID = "parent_structure_id"
 
-    ID = "id"
-    ATLAS_ID = "atlas_id"
-    ONTOLOGY_ID = "ontology_id"
-    ACRONYM = "acronym"
-    NAME = "name"
-    COLOR_HEX_TRIPLET = "color_hex_triplet"
-    GRAPH_ORDER = "graph_order"
-    ST_LEVEL = "st_level"
-    HEMISPHERE_ID = "hemisphere_id"
-    PARENT_STRUCTURE_ID = "parent_structure_id"
-
-
-class AnnotExtraColumns(Enum):
-    """Other annotation columns derived from the Atlas annotations."""
-
-    PARENT_ID = "parent_id"
-    PARENT_ACRONYM = "parent_acronym"
-    CHILDREN = "children"
-
-
-ANNOT_COLUMNS_TYPES = {
-    AnnotColumns.ID.value: np.float64,
-    AnnotColumns.ATLAS_ID.value: np.float64,
-    AnnotColumns.ONTOLOGY_ID.value: np.float64,
-    AnnotColumns.ACRONYM.value: str,
-    AnnotColumns.NAME.value: str,
-    AnnotColumns.COLOR_HEX_TRIPLET.value: str,
-    AnnotColumns.GRAPH_ORDER.value: np.float64,
-    AnnotColumns.ST_LEVEL.value: np.float64,
-    AnnotColumns.HEMISPHERE_ID.value: np.float64,
-    AnnotColumns.PARENT_STRUCTURE_ID.value: np.float64,
-}
-
-ANNOT_COLUMNS_FINAL = [
-    AnnotColumns.NAME.value,
-    AnnotColumns.ACRONYM.value,
-    AnnotColumns.COLOR_HEX_TRIPLET.value,
-    AnnotColumns.PARENT_STRUCTURE_ID.value,
-    AnnotExtraColumns.PARENT_ACRONYM.value,
+ANNOTATED_COLUMNS = [
+    ID,
+    ATLAS_ID,
+    ONTOLOGY_ID,
+    ACRONYM,
+    NAME,
+    COLOR_HEX_TRIPLET,
+    GRAPH_ORDER,
+    ST_LEVEL,
+    HEMISPHERE_ID,
+    PARENT_STRUCTURE_ID,
 ]
 
 
-class SpecialRegions(Enum):
-    """Our own special regions (outside brain)."""
-
-    INVALID = "invalid"
-    UNIVERSE = "universe"
-    NO_LABEL = "no_label"
+# Annotation Extra Columns
+PARENT_ID = "parent_id"
+PARENT_ACRONYM = "parent_acronym"
+CHILDREN = "children"
 
 
-class CombinedColumns(Enum):
-    """Combined columns."""
+ANNOTATED_COLUMNS_TYPES = {
+    ID: np.float64,
+    ATLAS_ID: np.float64,
+    ONTOLOGY_ID: np.float64,
+    ACRONYM: str,
+    NAME: str,
+    COLOR_HEX_TRIPLET: str,
+    GRAPH_ORDER: np.float64,
+    ST_LEVEL: np.float64,
+    HEMISPHERE_ID: np.float64,
+    PARENT_STRUCTURE_ID: np.float64,
+}
 
-    SPECIMEN = "specimen"
-    MEASURE = "measure"
+ANNOTATED_COLUMNS_FINAL = [
+    NAME,
+    ACRONYM,
+    COLOR_HEX_TRIPLET,
+    PARENT_STRUCTURE_ID,
+    PARENT_ACRONYM,
+]
+
+# ===============================================
+# Special Regions
+# ===============================================
+
+
+INVALID = "invalid"
+UNIVERSE = "universe"
+NO_LABEL = "no_label"
+
+SPECIAL_REGIONS = [INVALID, UNIVERSE, NO_LABEL]
+
+# ===============================================
+# Combined Columns
+# ===============================================
+
+
+SPECIMEN = "specimen"
+MEASURE = "measure"
+
+COMBINED_COLUMNS = [SPECIMEN, MEASURE]

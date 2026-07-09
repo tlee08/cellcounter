@@ -15,7 +15,7 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
-from cellcounter.constants import CACHE_DIR, AnnotColumns, Coords
+from cellcounter.constants import CACHE_DIR, ID, X, Y, Z
 from cellcounter.funcs.io_funcs import silent_remove, write_tiff
 
 #####################################################################
@@ -27,12 +27,12 @@ def coords2points_workers(arr: npt.NDArray, coords: pd.DataFrame) -> npt.NDArray
     """Formatting coord values as (z, y, x), rounding to integers, and filtering."""
     s = arr.shape
     coords = (
-        coords[[Coords.Z.value, Coords.Y.value, Coords.X.value]]
+        coords[[Z, Y, X]]
         .round(0)
         .query(
-            f"({Coords.Z.value} >= 0) & ({Coords.Z.value} < {s[0]}) & "
-            f"({Coords.Y.value} >= 0) & ({Coords.Y.value} < {s[1]}) & "
-            f"({Coords.X.value} >= 0) & ({Coords.X.value} < {s[2]})"
+            f"({Z} >= 0) & ({Z} < {s[0]}) & "
+            f"({Y} >= 0) & ({Y} < {s[1]}) & "
+            f"({X} >= 0) & ({X} < {s[2]})"
         )
         .clip(0, 2**16 - 1)
         .astype(np.uint16)
@@ -127,9 +127,9 @@ def coords2heatmap(
     ):
         if t:
             coords_i = coords.copy()
-            coords_i[Coords.Z.value] += z
-            coords_i[Coords.Y.value] += y
-            coords_i[Coords.X.value] += x
+            coords_i[Z] += z
+            coords_i[Y] += y
+            coords_i[X] += x
             coords2points_workers(arr, coords_i)
 
     # Saving the subsampled array
@@ -164,12 +164,7 @@ def coords2regions(
             arr[z, y, x] = _id
 
     # Formatting coord values as (z, y, x) and rounding to integers
-    coords = (
-        coords[[Coords.Z.value, Coords.Y.value, Coords.X.value, AnnotColumns.ID.value]]
-        .round(0)
-        .clip(0, 2**16 - 1)
-        .astype(np.uint16)
-    )
+    coords = coords[[Z, Y, X, ID]].round(0).clip(0, 2**16 - 1).astype(np.uint16)
     if coords.shape[0] > 0:
         np.apply_along_axis(f, 1, coords)
 

@@ -24,12 +24,17 @@ from loguru import logger
 from natsort import natsorted
 
 from cellcounter.constants import (
-    ANNOT_COLUMNS_FINAL,
+    ANNOTATED_COLUMNS_FINAL,
     CELL_AGG_MAPPINGS,
+    CELL_COLUMNS,
+    ID,
+    IOV,
+    SUM_INTENSITY,
     TRFM,
-    AnnotColumns,
-    CellColumns,
-    Coords,
+    VOLUME,
+    X,
+    Y,
+    Z,
 )
 from cellcounter.funcs import (
     annot_fp2df,
@@ -46,7 +51,7 @@ from cellcounter.funcs import (
     write_tiff,
 )
 from cellcounter.models import ProjConfig, ProjFp, RefFp
-from cellcounter.utils import UnionFind, cluster_process, disk_cache, enum2list, trace
+from cellcounter.utils import UnionFind, cluster_process, disk_cache, trace
 
 from .abstract_pipeline import AbstractPipeline, _check_overwrite
 
@@ -161,7 +166,7 @@ class Pipeline(AbstractPipeline):
     #############################################
 
     @staticmethod
-    def get_imgs_ls(imgs_dir: Path | str) -> list:
+    def get_imgs_ls(imgs_dir: Path) -> list:
         """Get sorted list of subdirectories in a directory.
 
         Args:
@@ -170,7 +175,6 @@ class Pipeline(AbstractPipeline):
         Returns:
             Naturally sorted list of subdirectory paths.
         """
-        imgs_dir = Path(imgs_dir)
         return natsorted([fp.name for fp in imgs_dir.iterdir() if fp.is_dir()])
 
     #############################################
@@ -192,14 +196,13 @@ class Pipeline(AbstractPipeline):
 
     @trace
     @_check_overwrite("raw")
-    def tiff2zarr(self, in_fp: Path | str, *, overwrite: bool = False) -> None:
+    def tiff2zarr(self, in_fp: Path, *, overwrite: bool = False) -> None:
         """Convert TIFF file(s) to Zarr format.
 
         Args:
             in_fp: Path to TIFF file or directory of TIFF files.
             overwrite: If True, overwrite existing output.
         """
-        in_fp = Path(in_fp)
         logger.debug("Making zarr from tiff file(s)")
         with cluster_process(LocalCluster(n_workers=1, threads_per_worker=6)):
             if in_fp.is_dir():
@@ -573,9 +576,9 @@ class Pipeline(AbstractPipeline):
 
             # If tuning, add offsets back to get coordinates in original raw space
             if self._tuning:
-                cells_df[Coords.Z.value] += self.config.tuning_trim.z.start or 0
-                cells_df[Coords.Y.value] += self.config.tuning_trim.y.start or 0
-                cells_df[Coords.X.value] += self.config.tuning_trim.x.start or 0
+                cells_df[Z] += self.config.tuning_trim.z.start or 0
+                cells_df[Y] += self.config.tuning_trim.y.start or 0
+                cells_df[X] += self.config.tuning_trim.x.start or 0
 
             cells_df = cells_df.compute()
             write_parquet(cells_df, self.pfm.cells_raw_df)
@@ -590,7 +593,7 @@ class Pipeline(AbstractPipeline):
         """Transform cell coordinates to reference atlas space."""
         with cluster_process(self.busy_cluster()):
             cells_df = pd.read_parquet(self.pfm.cells_raw_df)
-            cells_df = cells_df[enum2list(Coords)]
+            cells_df = cells_df[[Z, Y, X]]
 
             cells_df = cells_df / np.array(
                 self.config.registration.downsample_rough.to_tuple(),
@@ -608,7 +611,7 @@ class Pipeline(AbstractPipeline):
                     )
                 ],
             )
-            cells_df = pd.DataFrame(cells_df, columns=enum2list(Coords))
+            cells_df = pd.DataFrame(cells_df, columns=pd.Series([Z, Y, X]))
 
             cells_trfm_df = transformation_coords(
                 cells_df,
@@ -625,38 +628,26 @@ class Pipeline(AbstractPipeline):
             cells_df = pd.read_parquet(self.pfm.cells_raw_df)
             coords_trfm = pd.read_parquet(self.pfm.cells_trfm_df)
             cells_df = cells_df.reset_index(drop=True)
-            cells_df[f"{Coords.Z.value}_{TRFM}"] = coords_trfm[
-                Coords.Z.value
-            ].to_numpy()
-            cells_df[f"{Coords.Y.value}_{TRFM}"] = coords_trfm[
-                Coords.Y.value
-            ].to_numpy()
-            cells_df[f"{Coords.X.value}_{TRFM}"] = coords_trfm[
-                Coords.X.value
-            ].to_numpy()
+            cells_df[f"{Z}_{TRFM}"] = coords_trfm[Z].to_numpy()
+            cells_df[f"{Y}_{TRFM}"] = coords_trfm[Y].to_numpy()
+            cells_df[f"{X}_{TRFM}"] = coords_trfm[X].to_numpy()
 
             annot_arr = tifffile.imread(self.pfm.annot)
             s = annot_arr.shape
             trfm_loc = (
-                cells_df[
-                    [
-                        f"{Coords.Z.value}_{TRFM}",
-                        f"{Coords.Y.value}_{TRFM}",
-                        f"{Coords.X.value}_{TRFM}",
-                    ]
-                ]
+                cells_df[[f"{Z}_{TRFM}", f"{Y}_{TRFM}", f"{X}_{TRFM}"]]
                 .round(0)
                 .query(
-                    f"({Coords.Z.value}_{TRFM} >= 0) & "
-                    f"({Coords.Z.value}_{TRFM} < {s[0]}) & "
-                    f"({Coords.Y.value}_{TRFM} >= 0) & "
-                    f"({Coords.Y.value}_{TRFM} < {s[1]}) & "
-                    f"({Coords.X.value}_{TRFM} >= 0) & "
-                    f"({Coords.X.value}_{TRFM} < {s[2]})",
+                    f"({Z}_{TRFM} >= 0) & "
+                    f"({Z}_{TRFM} < {s[0]}) & "
+                    f"({Y}_{TRFM} >= 0) & "
+                    f"({Y}_{TRFM} < {s[1]}) & "
+                    f"({X}_{TRFM} >= 0) & "
+                    f"({X}_{TRFM} < {s[2]})",
                 )
                 .astype(np.uint32)
             )
-            cells_df[AnnotColumns.ID.value] = pd.Series(
+            cells_df[ID] = pd.Series(
                 annot_arr[*trfm_loc.to_numpy().T].astype(np.uint32),
                 index=trfm_loc.index,
             ).fillna(-1)
@@ -671,18 +662,15 @@ class Pipeline(AbstractPipeline):
         """Group cells by region and aggregate."""
         with cluster_process(self.busy_cluster()):
             cells_df = pd.read_parquet(self.pfm.cells_df)
-            cells_agg_df = cells_df.groupby(AnnotColumns.ID.value).agg(
+            cells_agg_df = cells_df.groupby(ID).agg(
                 CELL_AGG_MAPPINGS,
             )
             cells_agg_df.columns = list(CELL_AGG_MAPPINGS.keys())
 
             annot_df = annot_fp2df(self.pfm.map)
             cells_agg_df = combine_nested_regions(cells_agg_df, annot_df)
-            cells_agg_df[CellColumns.IOV.value] = (
-                cells_agg_df[CellColumns.SUM_INTENSITY.value]
-                / cells_agg_df[CellColumns.VOLUME.value]
-            )
-            cells_agg_df = cells_agg_df[[*ANNOT_COLUMNS_FINAL, *enum2list(CellColumns)]]
+            cells_agg_df[IOV] = cells_agg_df[SUM_INTENSITY] / cells_agg_df[VOLUME]
+            cells_agg_df = cells_agg_df[[*ANNOTATED_COLUMNS_FINAL, *CELL_COLUMNS]]
             write_parquet(cells_agg_df, self.pfm.cells_agg_df)
 
     @trace
@@ -698,7 +686,7 @@ class Pipeline(AbstractPipeline):
 
     @trace
     @staticmethod
-    def combine(root_dir: Path | str, *, overwrite: bool = False) -> None:
+    def combine(root_dir: Path, *, overwrite: bool = False) -> None:
         """Combine image data into single table and save."""
         combine_root(root_dir, root_dir.parent, overwrite=overwrite)
 
@@ -725,7 +713,7 @@ class Pipeline(AbstractPipeline):
 
     def run_pipeline_steps(
         self,
-        in_fp: str,
+        in_fp: Path,
         *,
         steps: list[str] | None = None,
         overwrite: bool = False,

@@ -2,13 +2,18 @@ from pathlib import Path
 
 from pydantic import BaseModel
 
-from cellcounter.constants import ATLAS_DIR, AnnotVersions, MapVersions, RefVersions
+from cellcounter.constants import (
+    ABA_ANNOTATIONS,
+    ATLAS_DIR,
+    AVERAGE_TEMPLATE_25,
+    CCF_2016_25,
+)
 
 
 class ReferenceConfig(BaseModel):
     """Reference atlas and annotation settings."""
 
     atlas_dir: Path = ATLAS_DIR
-    ref_version: str = RefVersions.AVERAGE_TEMPLATE_25.value
-    annot_version: str = AnnotVersions.CCF_2016_25.value
-    map_version: str = MapVersions.ABA_ANNOTATIONS.value
+    ref_version: str = AVERAGE_TEMPLATE_25
+    annot_version: str = CCF_2016_25
+    map_version: str = ABA_ANNOTATIONS

@@ -16,13 +16,24 @@ import numpy.typing as npt
 import pandas as pd
 
 from cellcounter.constants import (
-    ANNOT_COLUMNS_TYPES,
+    ACRONYM,
+    ANNOTATED_COLUMNS,
+    ANNOTATED_COLUMNS_TYPES,
     CELL_IDX_NAME,
-    AnnotColumns,
-    AnnotExtraColumns,
-    CellColumns,
-    Coords,
-    SpecialRegions,
+    CHILDREN,
+    COUNT,
+    ID,
+    INVALID,
+    NAME,
+    NO_LABEL,
+    PARENT_ACRONYM,
+    PARENT_STRUCTURE_ID,
+    SUM_INTENSITY,
+    UNIVERSE,
+    VOLUME,
+    X,
+    Y,
+    Z,
 )
 
 
@@ -59,16 +70,13 @@ def annot_dict2df(data_dict: dict) -> pd.DataFrame:
     def recursive_gen(annot_dict: dict) -> pd.DataFrame:
         # Initialising current region as a df with a single row
         curr_row = pd.DataFrame(
-            {i.value: [annot_dict[i.value]] for i in AnnotColumns},
+            {i: [annot_dict[i]] for i in ANNOTATED_COLUMNS},
         )
         # Recursively concatenating all children
         return pd.concat(
             [
                 curr_row,
-                *[
-                    recursive_gen(i)
-                    for i in annot_dict[AnnotExtraColumns.CHILDREN.value]
-                ],
+                *[recursive_gen(i) for i in annot_dict[CHILDREN]],
             ]
         )
 
@@ -76,10 +84,10 @@ def annot_dict2df(data_dict: dict) -> pd.DataFrame:
     # using function defined in this block
     annot_df = pd.concat([recursive_gen(i) for i in data_dict["msg"]])
     # Cast columns to given types
-    for k, v in ANNOT_COLUMNS_TYPES.items():
+    for k, v in ANNOTATED_COLUMNS_TYPES.items():
         annot_df[k] = annot_df[k].astype(v)
     # Set region ID as index
-    annot_df = annot_df.set_index(AnnotColumns.ID.value)
+    annot_df = annot_df.set_index(ID)
     return annot_df
 
 
@@ -98,10 +106,10 @@ def annot_df_get_parents(annot_df: pd.DataFrame) -> pd.DataFrame:
     annot_df = annot_df.merge(
         right=annot_df.rename(
             columns={
-                AnnotColumns.ACRONYM.value: AnnotExtraColumns.PARENT_ACRONYM.value,
+                ACRONYM: PARENT_ACRONYM,
             }
-        )[[AnnotExtraColumns.PARENT_ACRONYM.value]],
-        left_on=AnnotColumns.PARENT_STRUCTURE_ID.value,
+        )[[PARENT_ACRONYM]],
+        left_on=PARENT_STRUCTURE_ID,
         right_index=True,
         how="left",
     )
@@ -120,13 +128,13 @@ def annot_df_get_children(annot_df: pd.DataFrame) -> pd.DataFrame:
     # Making copy
     annot_df = annot_df.copy()
     # Making a children list column in cells_agg
-    annot_df[AnnotExtraColumns.CHILDREN.value] = [[] for i in range(annot_df.shape[0])]
+    annot_df[CHILDREN] = [[] for i in range(annot_df.shape[0])]
     # For each row (i.e. region), adding the current row ID to the parent's (by ID)
     # children column list
     for i in annot_df.index:
-        i_parent = annot_df.loc[i, AnnotColumns.PARENT_STRUCTURE_ID.value]
+        i_parent = annot_df.loc[i, PARENT_STRUCTURE_ID]
         if not pd.isna(i_parent):
-            annot_df.at[i_parent, AnnotExtraColumns.CHILDREN.value].append(i)
+            annot_df.at[i_parent, CHILDREN].append(i)
     return annot_df
 
 
@@ -167,12 +175,7 @@ def combine_nested_regions(
         # BASE CASE: no children - use current values
         # REC CASE: has children - recursively sum children values + current values
         cells_agg_df.loc[row_id, sum_cols] += np.sum(
-            [
-                recursive_sum(child_id)
-                for child_id in cells_agg_df.at[
-                    row_id, AnnotExtraColumns.CHILDREN.value
-                ]
-            ],
+            [recursive_sum(child_id) for child_id in cells_agg_df.at[row_id, CHILDREN]],
             axis=0,
         )
         return cells_agg_df.loc[row_id, sum_cols]
@@ -181,12 +184,10 @@ def combine_nested_regions(
     # recursively summing (i.e. top-down recursive approach)
     [
         recursive_sum(row_id)
-        for row_id in cells_agg_df[
-            cells_agg_df[AnnotColumns.PARENT_STRUCTURE_ID.value].isna()
-        ].index
+        for row_id in cells_agg_df[cells_agg_df[PARENT_STRUCTURE_ID].isna()].index
     ]
-    # Removing unnecessary columns (AnnotExtraColumns.CHILDREN.value column)
-    cells_agg_df = cells_agg_df.drop(columns=[AnnotExtraColumns.CHILDREN.value])
+    # Removing unnecessary columns (CHILDREN column)
+    cells_agg_df = cells_agg_df.drop(columns=[CHILDREN])
     return cells_agg_df
 
 
@@ -210,16 +211,13 @@ def annot_df2dict(annot_df: pd.DataFrame) -> list:
         tree = annot_df.loc[i].to_dict()
         # RECURSIVE CASE: has children - recursively get children info
         # NOTE: also covers base case (no children)
-        tree[AnnotExtraColumns.CHILDREN.value] = [
-            recursive_gen(j) for j in annot_df.at[i, AnnotExtraColumns.CHILDREN.value]
-        ]
+        tree[CHILDREN] = [recursive_gen(j) for j in annot_df.at[i, CHILDREN]]
         return tree
 
     # For each root (i.e. nodes with no parent region),
     # recursively storing (i.e. top-down recursive approach)
     tree = [
-        recursive_gen(i)
-        for i in annot_df[annot_df[AnnotColumns.PARENT_STRUCTURE_ID.value].isna()].index
+        recursive_gen(i) for i in annot_df[annot_df[PARENT_STRUCTURE_ID].isna()].index
     ]
     return tree
 
@@ -236,11 +234,7 @@ def df_map_ids(cells_df: pd.DataFrame, annot_df: pd.DataFrame) -> pd.DataFrame:
     """
     # Getting the annotation name for every cell (zyx coord)
     # Left-joining the cells dataframe with the annotation mappings dataframe
-    cells_df = cells_df.merge(
-        right=annot_df,
-        how="left",
-        on=AnnotColumns.ID.value,
-    )
+    cells_df = cells_df.merge(right=annot_df, how="left", on=ID)
     # Including special ids
     cells_df = df_include_special_ids(cells_df)
     return cells_df
@@ -258,15 +252,15 @@ def df_include_special_ids(cells_df: pd.DataFrame) -> pd.DataFrame:
         DataFrame with special region names filled in.
     """
     cells_df = cells_df.copy()
-    id_col = AnnotColumns.ID.value
-    name_col = AnnotColumns.NAME.value
+    id_col = ID
+    name_col = NAME
     # Setting points with ID == -1 as "invalid" label
-    cells_df.loc[cells_df[id_col] == -1, name_col] = SpecialRegions.INVALID.value
+    cells_df.loc[cells_df[id_col] == -1, name_col] = INVALID
     # Setting points with ID == 0 as "universe" label
-    cells_df.loc[cells_df[id_col] == 0, name_col] = SpecialRegions.UNIVERSE.value
+    cells_df.loc[cells_df[id_col] == 0, name_col] = UNIVERSE
     # Setting points with no region map name
     # but have a positive ID value as "no label" label
-    cells_df.loc[cells_df[name_col].isna(), name_col] = SpecialRegions.NO_LABEL.value
+    cells_df.loc[cells_df[name_col].isna(), name_col] = NO_LABEL
     return cells_df
 
 
@@ -323,24 +317,24 @@ def get_cells(
     # Build cells DataFrame with offset coordinates
     cells_df = pd.DataFrame(
         {
-            Coords.Z.value: _to_numpy(z) + z_offset,
-            Coords.Y.value: _to_numpy(y) + y_offset,
-            Coords.X.value: _to_numpy(x) + x_offset,
+            Z: _to_numpy(z) + z_offset,
+            Y: _to_numpy(y) + y_offset,
+            X: _to_numpy(x) + x_offset,
         },
         index=pd.Index(_to_numpy(labels).astype(np.uint32), name=CELL_IDX_NAME),
     ).astype(np.uint32)
     # Set count of 1 for each cell
-    cells_df[CellColumns.COUNT.value] = 1
+    cells_df[COUNT] = 1
     # Get volume at each maxima position
-    cells_df[CellColumns.VOLUME.value] = _to_numpy(wshed_filt[z, y, x])
+    cells_df[VOLUME] = _to_numpy(wshed_filt[z, y, x])
     # Remove background label (label 0) if present
     if cells_df.shape[0] > 0:
         cells_df = cells_df.drop(index=0, errors="ignore")
     # Filter out cells with 0 volume
-    cells_df = cells_df[cells_df[CellColumns.VOLUME.value] > 0]
+    cells_df = cells_df[cells_df[VOLUME] > 0]
     # Compute summed intensities per watershed label
     if cells_df.empty:
-        cells_df[CellColumns.SUM_INTENSITY.value] = 0.0
+        cells_df[SUM_INTENSITY] = 0.0
         return cells_df
     # Get unique watershed labels and their corresponding summed intensities
     fg_labels, inverse = xp.unique(wshed_labels[mask].ravel(), return_inverse=True)
@@ -348,8 +342,6 @@ def get_cells(
     label_to_intensity = dict(
         zip(_to_numpy(fg_labels), _to_numpy(intensities), strict=True)
     )
-    cells_df[CellColumns.SUM_INTENSITY.value] = cells_df.index.map(
-        label_to_intensity.get
-    ).fillna(0.0)
+    cells_df[SUM_INTENSITY] = cells_df.index.map(label_to_intensity.get).fillna(0.0)
     # Return cells DataFrame
     return cells_df

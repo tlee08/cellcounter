@@ -50,7 +50,6 @@ class ProjConfig(BaseModel):
     model_config = ConfigDict(
         extra="ignore",
         validate_default=True,
-        use_enum_values=True,
         frozen=True,
     )
 

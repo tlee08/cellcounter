@@ -1,9 +1,5 @@
-from enum import Enum
+Z = "z"
+Y = "y"
+X = "x"
 
-
-class Coords(Enum):
-    """The de facto order of the 3d dimensions (for tiff and zarr)."""
-
-    Z = "z"
-    Y = "y"
-    X = "x"
+COORDS = [Z, Y, X]
