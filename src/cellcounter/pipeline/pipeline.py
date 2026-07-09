@@ -8,9 +8,10 @@ Coordinates the full workflow:
 All pipeline methods use @check_overwrite decorator for file safety.
 """
 
+import functools
 import re
 import shutil
-import time
+from collections.abc import Callable
 from pathlib import Path
 
 import dask
@@ -19,7 +20,7 @@ import dask.dataframe as dd
 import numpy as np
 import pandas as pd
 import tifffile
-from dask.distributed import LocalCluster
+from dask.distributed import LocalCluster, SpecCluster
 from loguru import logger
 from natsort import natsorted
 
@@ -27,6 +28,8 @@ from cellcounter.constants import (
     ANNOTATED_COLUMNS_FINAL,
     CELL_AGG_MAPPINGS,
     CELL_COLUMNS,
+    CUPY_ENABLED,
+    DASK_CUDA_ENABLED,
     ID,
     IOV,
     SUM_INTENSITY,
@@ -37,6 +40,7 @@ from cellcounter.constants import (
     Z,
 )
 from cellcounter.funcs import (
+    CpuCellcFuncs,
     annot_fp2df,
     btiff2zarr,
     combine_nested_regions,
@@ -47,65 +51,139 @@ from cellcounter.funcs import (
     silent_remove,
     tiffs2zarr,
     transformation_coords,
+    visual_check_funcs_dask,
+    visual_check_funcs_tiff,
     write_parquet,
     write_tiff,
 )
+from cellcounter.funcs.io_funcs import combine_arrs
 from cellcounter.models import ProjConfig, ProjFp, RefFp
 from cellcounter.utils import UnionFind, cluster_process, disk_cache, trace
 
-from .abstract_pipeline import AbstractPipeline, _check_overwrite
+# ===========================================
+# Helper Funcs and Decorators
+# ===========================================
 
 
-class Pipeline(AbstractPipeline):
+def _check_overwrite(*fp_attrs: str) -> Callable:
+    """Decorator to check if output files exist before running a pipeline step.
+
+    Args:
+        *fp_attrs: Names of pfm attributes to check for existence.
+    """
+
+    def decorator(func: Callable) -> Callable:
+        @functools.wraps(func)
+        def wrapper(self, *args, overwrite: bool = False, **kwargs) -> object:  # noqa: ANN001
+            if not overwrite:
+                for attr in fp_attrs:
+                    fp = getattr(self.pfm, attr)
+                    if fp.exists():
+                        logger.warning(
+                            "Output file, {}, already exists - "
+                            "not overwriting file. "
+                            "To overwrite, specify overwrite=True.",
+                            fp,
+                        )
+                        return None
+            return func(self, *args, overwrite=overwrite, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+
+# ===========================================
+# Pipeline Class
+# ===========================================
+class Pipeline:
     """Cell counting pipeline orchestrator.
 
     Coordinates registration, cell counting, and mapping workflows.
     All pipeline methods use @check_overwrite decorator for file safety.
-
-    Attributes:
-        STEPS_REGISTRATION: Tuple of registration step method names.
-        STEPS_CELL_COUNTING: Tuple of cell counting step method names.
-        STEPS_MAPPING: Tuple of mapping step method names.
     """
 
-    # Pipeline step registry for declarative execution
-    STEPS_LOAD_RAW = (
-        "tiff2zarr",
-        "rechunk_raw",
-    )
-    STEPS_REGISTRATION = (
-        "reg_ref_prepare",
-        "reg_img_rough",
-        "reg_img_fine",
-        "reg_img_trim",
-        "reg_img_bound",
-        "reg_elastix",
-    )
-    STEPS_CELL_COUNTING = (
-        "tophat_filter",
-        "dog_filter",
-        "adaptive_threshold_prep",
-        "threshold",
-        "label_thresholded",
-        "compute_thresholded_volumes",
-        "filter_thresholded",
-        "detect_maxima",
-        "label_maxima",
-        "watershed",
-        "compute_watershed_volumes",
-        "filter_watershed",
-        "save_cells_table",
-    )
-    STEPS_MAPPING = (
-        "transform_coords",
-        "cell_mapping",
-        "group_cells",
-        "cells2csv",
-    )
+    cellc_funcs: CpuCellcFuncs
+    _gpu_cluster: Callable[..., SpecCluster]
+    _tuning: bool
+    _pfm: ProjFp
 
-    #############################################
+    def __init__(self, proj_dir: Path | str, *, tuning: bool = False) -> None:
+        """Initialize pipeline with project directory.
+
+        Args:
+            proj_dir: Path to project directory.
+            tuning: If True, use tuning subdirectory for parameters.
+        """
+        self._tuning = tuning
+        self._pfm = ProjFp(proj_dir, tuning=tuning)
+        self._set_gpu(enabled=True)
+
+    def get_log_context(self) -> dict:
+        """Log context for loguru context."""
+        return {"experiment": str(self.pfm.root_dir)}
+
+    @property
+    def pfm(self) -> ProjFp:
+        """Project filepath model."""
+        return self._pfm
+
+    @property
+    def tuning(self) -> bool:
+        """Is project in tuning version or raw version."""
+        return self._tuning
+
+    @property
+    def config(self) -> ProjConfig:
+        """Project configuration."""
+        return ProjConfig.read_yaml(self._pfm.config_fp)
+
+    @staticmethod
+    def _cluster(n_workers: int, threads_per_worker: int) -> SpecCluster:
+        return LocalCluster(n_workers=n_workers, threads_per_worker=threads_per_worker)
+
+    def heavy_cluster(self) -> SpecCluster:
+        """Create cluster with few workers and high memory per worker."""
+        return self._cluster(
+            self.config.cluster.heavy_n_workers,
+            self.config.cluster.heavy_threads_per_worker,
+        )
+
+    def busy_cluster(self) -> SpecCluster:
+        """Create cluster with many workers and low memory per worker."""
+        return self._cluster(
+            self.config.cluster.busy_n_workers,
+            self.config.cluster.busy_threads_per_worker,
+        )
+
+    def gpu_cluster(self) -> SpecCluster:
+        """Create GPU-enabled cluster for CUDA operations."""
+        return self._gpu_cluster()
+
+    def _set_gpu(self, *, enabled: bool = True) -> None:
+        """Switch between GPU and CPU mode at runtime."""
+        if enabled:
+            if DASK_CUDA_ENABLED:
+                from dask_cuda import LocalCUDACluster  # noqa: PLC0415
+
+                self._gpu_cluster = LocalCUDACluster
+            else:
+                self._gpu_cluster = lambda: LocalCluster(
+                    n_workers=1, threads_per_worker=1
+                )
+            if CUPY_ENABLED:
+                from cellcounter.funcs.gpu_cellc_funcs import GpuCellcFuncs  # noqa: PLC0415, I001
+
+                self.cellc_funcs = GpuCellcFuncs()
+            else:
+                self.cellc_funcs = CpuCellcFuncs()
+        else:
+            self._gpu_cluster = lambda: LocalCluster(n_workers=2, threads_per_worker=1)
+            self.cellc_funcs = CpuCellcFuncs()
+
+    # ===========================================
     # HELPER: GENERIC ZARR PROCESSING STEP
-    #############################################
+    # ===========================================
 
     def _spatial_connect_count(self, label_arr: da.array) -> da.array:
         """Connect contiguous foreground components across chunk boundaries.
@@ -161,9 +239,9 @@ class Pipeline(AbstractPipeline):
             dtype=np.uint64,
         )
 
-    #############################################
+    # ===========================================
     # STATIC UTILITIES
-    #############################################
+    # ===========================================
 
     @staticmethod
     def get_imgs_ls(imgs_dir: Path) -> list:
@@ -177,22 +255,24 @@ class Pipeline(AbstractPipeline):
         """
         return natsorted([fp.name for fp in imgs_dir.iterdir() if fp.is_dir()])
 
-    #############################################
-    # UPDATE CONFIG METHOD
-    #############################################
+    # ===========================================
+    # UPDATE CONFIGS
+    # ===========================================
 
     @trace
-    def update_config(self, updates: dict) -> None:
-        """Update project configuration with new values.
+    def update_config(
+        self,
+        default_config_fp: Path,
+    ) -> None:
+        """Copy the default configs to this project."""
+        # Parsing in the new config to see if it is valid
+        ProjConfig.read_yaml(default_config_fp)
+        # Overwriting the config file with the new config
+        shutil.copyfile(default_config_fp, self.pfm.config_fp)
 
-        Args:
-            updates: Key-value pairs to update in config.
-        """
-        ProjConfig.ensure(self.pfm.config_fp, updates)
-
-    #############################################
+    # ===========================================
     # CONVERT TIFF TO ZARR
-    #############################################
+    # ===========================================
 
     @trace
     @_check_overwrite("raw")
@@ -229,9 +309,9 @@ class Pipeline(AbstractPipeline):
                 err_msg = f'Input file path, "{in_fp}" does not exist.'
                 raise ValueError(err_msg)
 
-    #############################################
+    # ===========================================
     # RECHUNK
-    #############################################
+    # ===========================================
 
     @trace
     def rechunk_raw(self, *, overwrite: bool = False) -> None:
@@ -254,9 +334,9 @@ class Pipeline(AbstractPipeline):
             silent_remove(self.pfm.raw)
             shutil.move(temp_fp, self.pfm.raw)
 
-    #############################################
+    # ===========================================
     # REGISTRATION PIPELINE FUNCS
-    #############################################
+    # ===========================================
 
     @trace
     @_check_overwrite("ref", "annot", "map", "affine", "bspline")
@@ -361,9 +441,9 @@ class Pipeline(AbstractPipeline):
             bspline_fp=self.pfm.bspline,
         )
 
-    #############################################
+    # ===========================================
     # CROP RAW ZARR TO MAKE TUNING ZARR
-    #############################################
+    # ===========================================
 
     @trace
     def make_tuning_arr(self, *, overwrite: bool = False) -> None:
@@ -385,9 +465,9 @@ class Pipeline(AbstractPipeline):
             raw_arr = raw_arr.rechunk(self.config.chunks.to_tuple())
             disk_cache(raw_arr, pfm_tuning.raw)
 
-    #############################################
+    # ===========================================
     # CELL COUNTING PIPELINE FUNCS
-    #############################################
+    # ===========================================
 
     @trace
     @_check_overwrite("bgrm")
@@ -583,9 +663,9 @@ class Pipeline(AbstractPipeline):
             cells_df = cells_df.compute()
             write_parquet(cells_df, self.pfm.cells_raw_df)
 
-    #############################################
+    # ===========================================
     # CELL MAPPING FUNCS
-    #############################################
+    # ===========================================
 
     @trace
     @_check_overwrite("cells_trfm_df")
@@ -680,9 +760,9 @@ class Pipeline(AbstractPipeline):
         cells_agg_df = pd.read_parquet(self.pfm.cells_agg_df)
         cells_agg_df.to_csv(self.pfm.cells_agg_csv)
 
-    #############################################
+    # ===========================================
     # HELPER WRAPPER FOR COMBINE IMAGE DATA
-    #############################################
+    # ===========================================
 
     @trace
     @staticmethod
@@ -690,9 +770,9 @@ class Pipeline(AbstractPipeline):
         """Combine image data into single table and save."""
         combine_root(root_dir, root_dir.parent, overwrite=overwrite)
 
-    #############################################
+    # ===========================================
     # CLEAN
-    #############################################
+    # ===========================================
 
     @trace
     def clean_proj(self) -> None:
@@ -707,61 +787,84 @@ class Pipeline(AbstractPipeline):
         silent_remove(pfm_tuning.root_dir / pfm_tuning.cellcount_sdir)
         logger.info("Project {} cleaned.", self.pfm.root_dir)
 
-    #############################################
-    # RUN PIPELINE
-    #############################################
+    # ===========================================
+    # VISUAL CHECKS
+    # ===========================================
 
-    def run_pipeline_steps(
-        self,
-        in_fp: Path,
-        *,
-        steps: list[str] | None = None,
-        overwrite: bool = False,
-    ) -> None:
-        """Run pipeline steps in order.
+    @_check_overwrite("points_raw")
+    def coords2points_raw(self, *, overwrite: bool = False) -> None:
+        """Generate single-voxel markers at raw cell coordinates."""
+        with cluster_process(self.busy_cluster()):
+            visual_check_funcs_dask.coords2points(
+                coords=pd.read_parquet(self.pfm.cells_raw_df),
+                shape=da.from_zarr(self.pfm.raw).shape,
+                out_fp=self.pfm.points_raw,
+                chunks=self.config.chunks.to_tuple(),
+            )
 
-        Args:
-            in_fp: Input file path for tiff2zarr.
-            steps: Optional list of steps to run. If None, runs full pipeline.
-            overwrite: If True, overwrite existing outputs.
-        """
-        # Define steps to run
-        steps = (
-            steps
-            if steps is not None
-            else [
-                *list(self.STEPS_LOAD_RAW),
-                *list(self.STEPS_REGISTRATION),
-                *["make_tuning_arr"],
-                *list(self.STEPS_CELL_COUNTING),
-                *list(self.STEPS_MAPPING),
-            ]
+    @_check_overwrite("heatmap_raw")
+    def coords2heatmap_raw(self, *, overwrite: bool = False) -> None:
+        """Generate spherical heatmap at raw cell coordinates."""
+        with cluster_process(self.busy_cluster()):
+            visual_check_funcs_dask.coords2heatmap(
+                coords=pd.read_parquet(self.pfm.cells_raw_df),
+                shape=da.from_zarr(self.pfm.raw).shape,
+                out_fp=self.pfm.heatmap_raw,
+                radius=self.config.visual_check.heatmap_raw_radius,
+                chunks=self.config.chunks.to_tuple(),
+            )
+
+    @_check_overwrite("points_trfm")
+    def coords2points_trfm(self, *, overwrite: bool = False) -> None:
+        """Generate single-voxel markers at transformed cell coordinates."""
+        visual_check_funcs_tiff.coords2points(
+            coords=pd.read_parquet(self.pfm.cells_trfm_df),
+            shape=tifffile.imread(self.pfm.ref).shape,
+            out_fp=self.pfm.points_trfm,
         )
-        # Generate a unique run ID for logging context
-        logger.info("Pipeline start — {} steps, overwrite={}", len(steps), overwrite)
-        # Run each step and log time taken, with error handling
-        t_total = time.perf_counter()
-        for i, step in enumerate(steps, 1):
-            tag = f"[{i}/{len(steps)}]"
-            t0 = time.perf_counter()
-            logger.info("{} Step: {}", tag, step)
-            # Run function
-            try:
-                if step == "tiff2zarr":
-                    self.tiff2zarr(in_fp, overwrite=overwrite)
-                else:
-                    getattr(self, step)(overwrite=overwrite)
-            except Exception:
-                # If a step fails, log the error with time taken and re-raise
-                elapsed = time.perf_counter() - t0
-                logger.exception("{} Step {} FAILED after {:.1f}s", tag, step, elapsed)
-                raise
-            # If successful, log time taken
-            elapsed = time.perf_counter() - t0
-            logger.info("{} Step {} done ({:.1f}s)", tag, step, elapsed)
-        # Log total pipeline time
-        logger.info(
-            "Pipeline complete — {} steps, total {:.1f}s",
-            len(steps),
-            time.perf_counter() - t_total,
+
+    @_check_overwrite("heatmap_trfm")
+    def coords2heatmap_trfm(self, *, overwrite: bool = False) -> None:
+        """Generate spherical heatmap at transformed cell coordinates."""
+        visual_check_funcs_tiff.coords2heatmap(
+            coords=pd.read_parquet(self.pfm.cells_trfm_df),
+            shape=tifffile.imread(self.pfm.ref).shape,
+            out_fp=self.pfm.heatmap_trfm,
+            radius=self.config.visual_check.heatmap_trfm_radius,
+        )
+
+    @_check_overwrite("comb_reg")
+    def combine_reg(self, *, overwrite: bool = False) -> None:
+        """Combine registration images into multi-channel TIFF for viewing."""
+        combine_arrs(
+            fp_in_ls=(self.pfm.trimmed, self.pfm.bounded, self.pfm.regresult),
+            fp_out=self.pfm.comb_reg,
+        )
+
+    @_check_overwrite("comb_cellc")
+    def combine_cellc(self, *, overwrite: bool = False) -> None:
+        """Combine cell counting images into multi-channel TIFF for viewing.
+
+        If not tuning (i.e. is prod), then we have to trim anyway
+        - otherwise image is too large.
+        """
+        z_trim = slice(None)
+        y_trim = slice(None)
+        x_trim = slice(None)
+        if not self.tuning:
+            z_trim = self.config.visual_check.cellcount_trim.z.to_slice()
+            y_trim = self.config.visual_check.cellcount_trim.y.to_slice()
+            x_trim = self.config.visual_check.cellcount_trim.x.to_slice()
+        combine_arrs(
+            fp_in_ls=(self.pfm.raw, self.pfm.threshd_filt, self.pfm.wshed_filt),
+            fp_out=self.pfm.comb_cellc,
+            trimmer=(z_trim, y_trim, x_trim),
+        )
+
+    @_check_overwrite("comb_heatmap")
+    def combine_heatmap_trfm(self, *, overwrite: bool = False) -> None:
+        """Combine heatmap image into multi-channel TIFF for viewing."""
+        combine_arrs(
+            fp_in_ls=(self.pfm.ref, self.pfm.annot, self.pfm.heatmap_trfm),
+            fp_out=self.pfm.comb_heatmap,
         )

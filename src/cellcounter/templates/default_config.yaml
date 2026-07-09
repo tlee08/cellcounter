@@ -1,0 +1,167 @@
+# =============================================================================
+# CellCounter Pipeline Configuration
+# =============================================================================
+# Copy this file to your project directory and edit as needed.
+# All values shown are the pipelinue defaults.
+#
+# Usage:
+#   from cellcounter.models import ProjConfig
+#   config = ProjConfig.read_yaml("default_config.yaml")
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# Zarr chunk sizes (voxels). Larger chunks = more memory, fewer I/O calls.
+# ---------------------------------------------------------------------------
+chunks:
+  z: 500
+  y: 500
+  x: 500
+
+# ---------------------------------------------------------------------------
+# Tuning crop — subset extracted for parameter exploration.
+# Set start/stop/step per axis; None means full range.
+# ---------------------------------------------------------------------------
+tuning_trim:
+  z:
+    start: 0
+    stop: 100
+    step: null
+  y:
+    start: 0
+    stop: 2000
+    step: null
+  x:
+    start: 0
+    stop: 2000
+    step: null
+
+# ---------------------------------------------------------------------------
+# Dask cluster sizing for parallel processing.
+#   heavy_* — few workers, high memory (registration, elastix)
+#   busy_*  — many workers, lower memory (cell counting)
+# ---------------------------------------------------------------------------
+cluster:
+  heavy_n_workers: 2
+  heavy_threads_per_worker: 1
+  busy_n_workers: 6
+  busy_threads_per_worker: 2
+
+# ---------------------------------------------------------------------------
+# Reference atlas paths. Set atlas_dir to your local atlas resources.
+# ref_version, annot_version, map_version select which atlas to use.
+# ---------------------------------------------------------------------------
+reference:
+  atlas_dir: /path/to/atlas_resources
+  ref_version: average_template_25
+  annot_version: ccf_2016_25
+  map_version: aba_annotations
+
+# ---------------------------------------------------------------------------
+# Registration parameters.
+#
+# ref_orientation — flips/permutes axes to match atlas orientation.
+#   Values must be 1, 2, 3 (optionally negated), one per axis.
+#   Positive = same direction; negative = flipped.
+#
+# ref_trim / reg_trim — crop before/after registration.
+#
+# downsample_rough — initial coarse downsample (integer factors).
+# downsample_fine — final sub-voxel downsample (0 < factor <= 1).
+#
+# lower/upper_bound — intensity clipping range.
+# ---------------------------------------------------------------------------
+registration:
+  ref_orientation:
+    z: 1
+    y: 2
+    x: 3
+  ref_trim:
+    z:
+      start: null
+      stop: null
+      step: null
+    y:
+      start: null
+      stop: null
+      step: null
+    x:
+      start: null
+      stop: null
+      step: null
+  downsample_rough:
+    z: 3
+    y: 6
+    x: 6
+  downsample_fine:
+    z: 1.0
+    y: 0.6
+    x: 0.6
+  reg_trim:
+    z:
+      start: null
+      stop: null
+      step: null
+    y:
+      start: null
+      stop: null
+      step: null
+    x:
+      start: null
+      stop: null
+      step: null
+  lower_bound: 100
+  lower_bound_mapto: 0
+  upper_bound: 5000
+  upper_bound_mapto: 5000
+
+# ---------------------------------------------------------------------------
+# Cell counting parameters.
+#
+# tophat_radius — radius for top-hat background subtraction.
+# dog_sigma1 / dog_sigma2 — Difference-of-Gaussian bandpass.
+#   Must satisfy: dog_sigma1 < dog_sigma2.
+# large_gauss_radius — radius for large-scale background estimation.
+#
+# threshd_value — absolute intensity threshold.
+# min/max_threshd_size — size filter on thresholded blobs (voxels).
+#   Must satisfy: min_threshd_size < max_threshd_size.
+#
+# maxima_radius — radius for local maxima detection.
+# min/max_wshed_size — size filter after watershed (voxels).
+#   Must satisfy: min_wshed_size < max_wshed_size.
+# ---------------------------------------------------------------------------
+cell_counting:
+  tophat_radius: 10
+  dog_sigma1: 1
+  dog_sigma2: 4
+  large_gauss_radius: 101
+  threshd_value: 100
+  min_threshd_size: 1
+  max_threshd_size: 15000
+  maxima_radius: 5
+  min_wshed_size: 1
+  max_wshed_size: 1000
+
+# ---------------------------------------------------------------------------
+# Visual QC settings.
+#
+# heatmap_raw_radius — radius for raw-coordinate heatmap kernel.
+# heatmap_trfm_radius — radius for transformed-coordinate heatmap kernel.
+# cellcount_trim — crop region for visual inspection of cell detection.
+# ---------------------------------------------------------------------------
+visual_check:
+  heatmap_raw_radius: 5
+  heatmap_trfm_radius: 3
+  cellcount_trim:
+    z:
+      start: 500
+      stop: 510
+      step: null
+    y:
+      start: null
+      stop: null
+      step: null
+    x:
+      start: null
+      stop: null
+      step: null

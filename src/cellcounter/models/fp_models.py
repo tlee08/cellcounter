@@ -36,7 +36,7 @@ class ProjFp:
     @property
     def config_fp(self) -> Path:
         """Config filepath."""
-        return self.root_dir / "config_params.json"
+        return self.root_dir / "config.yaml"
 
     @property
     def diagnostics(self) -> Path:

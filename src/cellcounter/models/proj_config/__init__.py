@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """ProjConfig pydantic model."""
 
 import json
@@ -18,26 +20,6 @@ from cellcounter.models.proj_config.dims_config import (
 from cellcounter.models.proj_config.reference_config import ReferenceConfig
 from cellcounter.models.proj_config.registration_config import RegistrationConfig
 from cellcounter.models.proj_config.visual_check_config import VisualCheckConfig
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# Helper Funcs
-# ═══════════════════════════════════════════════════════════════════════════════
-
-
-def _deep_merge(target: dict, source: dict) -> dict:
-    """Recursively merge source dict into target dict.
-
-    Source values will overwrite target values,
-    except when both values are dicts,
-    in which case the merge is applied recursively.
-    """
-    for key, value in source.items():
-        if isinstance(value, dict) and key in target and isinstance(target[key], dict):
-            target[key] = _deep_merge(target[key], value)
-        else:
-            target[key] = value
-    return target
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Main Config Model
@@ -79,41 +61,6 @@ class ProjConfig(BaseModel):
         """Write the config to a yaml file."""
         fp.parent.mkdir(parents=True, exist_ok=True)
         fp.write_text(yaml.dump(self.model_dump(), default_flow_style=False))
-
-    def update(self, **kwargs) -> Self:
-        """Update configs and return new instance."""
-        merged = _deep_merge(self.model_dump(), kwargs)
-        return self.model_validate(merged)
-
-    @classmethod
-    def ensure(cls, config_fp: Path | str, updates: dict) -> Self:
-        """Load config from file, creating default if needed, and apply updates.
-
-        Args:
-            config_fp: Path to config file.
-            updates: Fields to update in the config.
-
-        Returns:
-            The loaded or created config.
-        """
-        should_write = False
-        config_fp = Path(config_fp)
-        # Load existing config or create default if file doesn't exist
-        try:
-            config = cls.read_yaml(config_fp)
-        except FileNotFoundError:
-            logger.info("Config file not found at {} — creating default", config_fp)
-            config = cls()
-            should_write = True
-        # Update the config with any provided updates and pydantic validate
-        # Write back to file if updates to ensure the file is always in sync
-        if updates:
-            config = config.update(**updates)
-            should_write = True
-        # Write back to file if we modified config
-        if should_write:
-            config.write_yaml(config_fp)
-        return config
 
 
 __all__ = [
