@@ -1,11 +1,10 @@
 """Pydantic models."""
 
-from .fp_models import ProjFp, RefFp, get_proj_fp
+from .fp_models import ProjFp, RefFp
 from .proj_config import ProjConfig
 
 __all__ = [
     "ProjConfig",
     "ProjFp",
     "RefFp",
-    "get_proj_fp",
 ]

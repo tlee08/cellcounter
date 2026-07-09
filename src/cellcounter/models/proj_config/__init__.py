@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 from typing import Self
 
+import yaml
 from loguru import logger
 from pydantic import BaseModel, ConfigDict, PositiveInt
 
@@ -17,6 +18,10 @@ from cellcounter.models.proj_config.dims_config import (
 from cellcounter.models.proj_config.reference_config import ReferenceConfig
 from cellcounter.models.proj_config.registration_config import RegistrationConfig
 from cellcounter.models.proj_config.visual_check_config import VisualCheckConfig
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Helper Funcs
+# ═══════════════════════════════════════════════════════════════════════════════
 
 
 def _deep_merge(target: dict, source: dict) -> dict:
@@ -32,6 +37,11 @@ def _deep_merge(target: dict, source: dict) -> dict:
         else:
             target[key] = value
     return target
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Main Config Model
+# ═══════════════════════════════════════════════════════════════════════════════
 
 
 class ProjConfig(BaseModel):
@@ -61,25 +71,20 @@ class ProjConfig(BaseModel):
     cell_counting: CellCountingConfig = CellCountingConfig()
     visual_check: VisualCheckConfig = VisualCheckConfig()
 
+    @classmethod
+    def read_yaml(cls, fp: Path) -> ProjConfig:
+        """Read the config from a yaml file."""
+        return cls.model_validate(yaml.safe_load(fp.read_text()))
+
+    def write_yaml(self, fp: Path) -> None:
+        """Write the config to a yaml file."""
+        fp.parent.mkdir(parents=True, exist_ok=True)
+        fp.write_text(yaml.dump(self.model_dump(), default_flow_style=False))
+
     def update(self, **kwargs) -> Self:
         """Update configs and return new instance."""
         merged = _deep_merge(self.model_dump(), kwargs)
         return self.model_validate(merged)
-
-    @classmethod
-    def read_file(cls, fp: Path | str) -> Self:
-        """Read configs from JSON file."""
-        fp = Path(fp)
-        with fp.open(mode="r", encoding="utf-8") as f:
-            content = json.load(f)
-        return cls.model_validate(content)
-
-    def write_file(self, fp: Path | str) -> None:
-        """Write configs to JSON file."""
-        fp = Path(fp)
-        fp.parent.mkdir(parents=True, exist_ok=True)
-        with fp.open(mode="w", encoding="utf-8") as f:
-            f.write(self.model_dump_json(indent=2))
 
     @classmethod
     def ensure(cls, config_fp: Path | str, updates: dict) -> Self:
@@ -96,7 +101,7 @@ class ProjConfig(BaseModel):
         config_fp = Path(config_fp)
         # Load existing config or create default if file doesn't exist
         try:
-            config = cls.read_file(config_fp)
+            config = cls.read_yaml(config_fp)
         except FileNotFoundError:
             logger.info("Config file not found at {} — creating default", config_fp)
             config = cls()
@@ -108,7 +113,7 @@ class ProjConfig(BaseModel):
             should_write = True
         # Write back to file if we modified config
         if should_write:
-            config.write_file(config_fp)
+            config.write_yaml(config_fp)
         return config
 
 

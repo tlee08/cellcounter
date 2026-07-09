@@ -16,7 +16,7 @@ from loguru import logger
 
 from cellcounter.constants import CUPY_ENABLED, DASK_CUDA_ENABLED
 from cellcounter.funcs import CpuCellcFuncs
-from cellcounter.models import ProjConfig, ProjFp, get_proj_fp
+from cellcounter.models import ProjConfig, ProjFp
 
 
 def _get_gpu_cluster_factory() -> Callable[..., SpecCluster]:
@@ -94,7 +94,7 @@ class AbstractPipeline(ABC):
             tuning: If True, use tuning subdirectory for parameters.
         """
         self._tuning = tuning
-        self._pfm = get_proj_fp(proj_dir, tuning=tuning)
+        self._pfm = ProjFp(proj_dir, tuning=tuning)
         self.set_gpu(enabled=True)
 
     def get_log_context(self) -> dict:

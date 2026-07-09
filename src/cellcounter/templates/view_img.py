@@ -1,6 +1,6 @@
 """View pipeline outputs in Napari."""
 
-from cellcounter.models import get_proj_fp
+from cellcounter.models import ProjFp
 from cellcounter.viewer import view_images
 
 if __name__ == "__main__":
@@ -10,7 +10,7 @@ if __name__ == "__main__":
     tuning = False
     # =========================================
 
-    pfm = get_proj_fp(proj_dir, tuning=tuning)
+    pfm = ProjFp(proj_dir, tuning=tuning)
     view_images(
         imgs_fp_ls=[
             # Raw

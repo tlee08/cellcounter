@@ -24,7 +24,7 @@ from cellcounter.constants import (
 )
 from cellcounter.constants.annotations import CombinedColumns
 from cellcounter.funcs.map_funcs import annot_df_get_parents, annot_fp2df
-from cellcounter.models.fp_models.proj_fp import ProjFp
+from cellcounter.models.fp_models import ProjFp
 from cellcounter.utils.misc_utils import enum2list
 
 COMBINED_FP = "combined_df"

@@ -45,7 +45,7 @@ from cellcounter.funcs import (
     write_parquet,
     write_tiff,
 )
-from cellcounter.models import ProjConfig, RefFp, get_proj_fp
+from cellcounter.models import ProjConfig, ProjFp, RefFp
 from cellcounter.utils import UnionFind, cluster_process, disk_cache, enum2list, trace
 
 from .abstract_pipeline import AbstractPipeline, _check_overwrite
@@ -365,8 +365,8 @@ class Pipeline(AbstractPipeline):
     @trace
     def make_tuning_arr(self, *, overwrite: bool = False) -> None:
         """Crop raw zarr to make a smaller zarr for tuning."""
-        pfm_prod = get_proj_fp(self.pfm.root_dir, tuning=False)
-        pfm_tuning = get_proj_fp(self.pfm.root_dir, tuning=True)
+        pfm_prod = ProjFp(self.pfm.root_dir, tuning=False)
+        pfm_tuning = ProjFp(self.pfm.root_dir, tuning=True)
         # If tuning zarr already exists and overwrite is False, skip processing
         if pfm_tuning.raw.exists() and not overwrite:
             logger.warning("Tuning raw zarr already exists. Not overwriting.")
@@ -713,9 +713,9 @@ class Pipeline(AbstractPipeline):
         Warning: This will delete all intermediate
         outputs of the cell counting pipeline.
         """
-        pfm_prod = get_proj_fp(self.pfm.root_dir, tuning=False)
+        pfm_prod = ProjFp(self.pfm.root_dir, tuning=False)
         silent_remove(pfm_prod.root_dir / pfm_prod.cellcount_sdir)
-        pfm_tuning = get_proj_fp(self.pfm.root_dir, tuning=True)
+        pfm_tuning = ProjFp(self.pfm.root_dir, tuning=True)
         silent_remove(pfm_tuning.root_dir / pfm_tuning.cellcount_sdir)
         logger.info("Project {} cleaned.", self.pfm.root_dir)
 
