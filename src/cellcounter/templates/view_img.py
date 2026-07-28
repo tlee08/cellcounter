@@ -5,10 +5,12 @@ app = marimo.App(width="medium")
 
 with app.setup:
     from pathlib import Path
+
     import marimo as mo
+
     from cellcounter.models import ProjFp
-    from cellcounter.viewer import view_images
     from cellcounter.utils import configure_logger, setup_dask_configs
+    from cellcounter.viewer import view_images
 
     configure_logger()
     setup_dask_configs()
@@ -16,7 +18,7 @@ with app.setup:
 
 @app.cell
 def _():
-    IMG_CATEGORIES = {
+    img_categories = {
         "Raw": ["raw"],
         "Registration": [
             "ref",
@@ -48,7 +50,7 @@ def _():
             "heatmap_trfm",
         ],
     }
-    return (IMG_CATEGORIES,)
+    return (img_categories,)
 
 
 @app.cell(hide_code=True)
@@ -56,7 +58,6 @@ def _():
     mo.md("""
     ## Project
     """)
-    return
 
 
 @app.cell
@@ -76,21 +77,21 @@ def _():
     mo.md("""
     ## Images to view
     """)
-    return
 
 
 @app.cell
-def _(IMG_CATEGORIES, proj_dir, tuning):
+def _(img_categories, proj_dir, tuning):
     dir_path = Path(proj_dir.value)
-    if not dir_path.is_dir():
-        mo.md(f"Directory not found: `{dir_path}`")
-        mo.stop(True)
+    mo.stop(
+        predicate=not dir_path.is_dir(),
+        output=mo.md(f"Directory not found: `{dir_path}`"),
+    )
 
     pfm = ProjFp(dir_path, tuning=tuning.value)
 
     # Build options grouped by category
     available = {}
-    for category, keys in IMG_CATEGORIES.items():
+    for category, keys in img_categories.items():
         members = {}
         for k in keys:
             fp = getattr(pfm, k)
@@ -99,9 +100,7 @@ def _(IMG_CATEGORIES, proj_dir, tuning):
             members[label] = k
         available[category] = members
 
-    mo.md(
-        f"Project: `{dir_path}` — {'tuning' if tuning.value else 'production'} mode"
-    )
+    mo.md(f"Project: `{dir_path}` — {'tuning' if tuning.value else 'production'} mode")
     return (available,)
 
 
@@ -119,14 +118,12 @@ def _(available):
         full_width=True,
     )
     selected_imgs
-    return
 
 
 @app.cell(hide_code=True)
 def _():
     mo.md("## Trimmer (optional)")
     mo.md("Crop region-of-interest per axis. Leave blank for full range.")
-    return
 
 
 @app.cell
@@ -142,12 +139,9 @@ def _():
     mo.vstack(
         [
             use_trimmer,
-            mo.hstack(
-                [z_start, z_stop, y_start, y_stop, x_start, x_stop], gap=0.5
-            ),
+            mo.hstack([z_start, z_stop, y_start, y_stop, x_start, x_stop], gap=0.5),
         ]
     )
-    return
 
 
 @app.cell(hide_code=True)
@@ -158,18 +152,28 @@ def _():
     Napari opens in a **separate window**.
     The notebook will wait until you close Napari.
     """)
-    return
 
 
 @app.cell
 def _():
     view_btn = mo.ui.run_button(label="Open in Napari")
-    view_btn
-    return
+    mo.vstack([view_btn])
+    return (view_btn,)
 
 
-app._unparsable_cell(
-    r"""
+@app.cell
+def _(
+    view_btn,
+    selected_imgs,
+    use_trimmer,
+    z_start,
+    y_start,
+    x_start,
+    z_stop,
+    y_stop,
+    pfm,
+    x_stop,
+):
     mo.stop(
         not view_btn.value,
         mo.md("Click **Open in Napari** to view selected images."),
@@ -177,7 +181,6 @@ app._unparsable_cell(
 
     if not selected_imgs.value:
         mo.md("No images selected.")
-        return
 
     # Resolve file paths from selected image types
     imgs_fp_ls = [getattr(pfm, name) for name in selected_imgs.value]
@@ -195,9 +198,6 @@ app._unparsable_cell(
     mo.md(f"Opening {len(imgs_fp_ls)} image(s) in Napari...")
     view_images(imgs_fp_ls=imgs_fp_ls, trimmer=trimmer)
     mo.md("Napari closed. You may re-launch or adjust selections.")
-    """,
-    name="_"
-)
 
 
 if __name__ == "__main__":

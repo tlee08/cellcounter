@@ -33,14 +33,11 @@ def _():
         label="Config file path",
         full_width=True,
     )
-    config_path
 
     fp = Path(config_path.value)
-    if not fp.exists():
-        mo.md(f"Config file not found: `{fp}`")
-        mo.stop(True)
+    mo.stop(predicate=not fp.exists(), output=mo.md(f"Config file not found: `{fp}`"))
 
-    config = ProjConfig.read_yaml(fp)
+    ProjConfig.read_yaml(fp)
 
     mo.md(f"Loaded config from `{fp}`")
     return (config_path,)
@@ -74,14 +71,13 @@ def _():
 def _(stitched_imgs_dir):
     dir_path = Path(stitched_imgs_dir.value)
 
-    if not dir_path.is_dir():
-        mo.md(f"Directory not found: `{dir_path}`")
-        mo.stop(True)
+    mo.stop(
+        predicate=not dir_path.is_dir(),
+        output=mo.md(f"Directory not found: `{dir_path}`"),
+    )
 
     imgs_ls = Pipeline.get_imgs_ls(dir_path)
-    if not imgs_ls:
-        mo.md("No images found in directory")
-        mo.stop(True)
+    mo.stop(predicate=not imgs_ls, output=mo.md("No images found in directory"))
 
     mo.md(f"Found **{len(imgs_ls)}** image(s)")
     return (imgs_ls,)
@@ -95,7 +91,7 @@ def _(imgs_ls):
         label="Images to process",
         full_width=True,
     )
-    selected_imgs
+    mo.vstack([selected_imgs])
     return (selected_imgs,)
 
 

@@ -30,7 +30,7 @@ def configure_logger(
     # Clear defaults
     logger.remove()
     # Set configs
-    logger.configure(extra={"func_name": "-"})
+    logger.configure()
     # Console: human-readable format
     logger.add(
         sys.stderr,
