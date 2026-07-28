@@ -74,7 +74,7 @@ def _check_overwrite(*fp_attrs: str) -> Callable:
 
     def decorator(func: Callable) -> Callable:
         @functools.wraps(func)
-        def wrapper(self: Pipeline, *args, overwrite: bool = False, **kwargs) -> object:
+        def wrapper(self, *args, overwrite: bool = False, **kwargs) -> object:
             if not overwrite:
                 for attr in fp_attrs:
                     fp = getattr(self.pfm, attr)
