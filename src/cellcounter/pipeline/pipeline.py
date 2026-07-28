@@ -74,7 +74,7 @@ def _check_overwrite(*fp_attrs: str) -> Callable:
 
     def decorator(func: Callable) -> Callable:
         @functools.wraps(func)
-        def wrapper(self, *args, overwrite: bool = False, **kwargs) -> object:  # noqa: ANN001
+        def wrapper(self: Pipeline, *args, overwrite: bool = False, **kwargs) -> object:
             if not overwrite:
                 for attr in fp_attrs:
                     fp = getattr(self.pfm, attr)
@@ -260,9 +260,9 @@ class Pipeline:
     # ===========================================
 
     @trace
+    @_check_overwrite("config_fp")
     def update_config(
-        self,
-        default_config_fp: Path,
+        self, default_config_fp: Path, *, overwrite: bool = False
     ) -> None:
         """Copy the default configs to this project."""
         # Parsing in the new config to see if it is valid

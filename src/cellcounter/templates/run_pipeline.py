@@ -19,32 +19,6 @@ with app.setup:
 
 @app.cell(hide_code=True)
 def _():
-    mo.md(r"""
-    ## Configuration
-
-    Load your config YAML (copy `templates/default_config.yaml` and edit).
-    """)
-
-
-@app.cell
-def _():
-    config_path = mo.ui.text(
-        value=str(Path.cwd() / "default_config.yaml"),
-        label="Config file path",
-        full_width=True,
-    )
-
-    fp = Path(config_path.value)
-    mo.stop(predicate=not fp.exists(), output=mo.md(f"Config file not found: `{fp}`"))
-
-    ProjConfig.read_yaml(fp)
-
-    mo.md(f"Loaded config from `{fp}`")
-    return (config_path,)
-
-
-@app.cell(hide_code=True)
-def _():
     mo.md("""
     ## Inputs
     """)
@@ -93,6 +67,36 @@ def _(imgs_ls):
     )
     mo.vstack([selected_imgs])
     return (selected_imgs,)
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    ## Configuration
+
+    Load your config YAML (copy `templates/default_config.yaml`).
+    """)
+
+
+@app.cell
+def _():
+    config_path = mo.ui.text(
+        value=str(Path.cwd() / "default_config.yaml"),
+        label="Config file path",
+        full_width=True,
+    )
+    return (config_path,)
+
+
+@app.cell
+def _(config_path):
+    fp = Path(config_path.value)
+    mo.stop(predicate=not fp.exists(), output=mo.md(f"Config file not found: `{fp}`"))
+
+    ProjConfig.read_yaml(fp)
+
+    mo.md(f"Loaded config from `{fp}`")
+    return (config_path,)
 
 
 @app.cell(hide_code=True)
