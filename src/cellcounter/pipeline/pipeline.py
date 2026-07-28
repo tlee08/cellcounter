@@ -60,6 +60,17 @@ from cellcounter.funcs.io_funcs import combine_arrs
 from cellcounter.models import ProjConfig, ProjFp, RefFp
 from cellcounter.utils import UnionFind, cluster_process, disk_cache, trace
 
+if DASK_CUDA_ENABLED:
+    from dask_cuda import LocalCUDACluster
+else:
+    LocalCUDACluster = LocalCluster
+
+if CUPY_ENABLED:
+    from cellcounter.funcs.gpu_cellc_funcs import GpuCellcFuncs
+else:
+    GpuCellcFuncs = CpuCellcFuncs
+
+
 # ===========================================
 # Helper Funcs and Decorators
 # ===========================================
@@ -164,16 +175,12 @@ class Pipeline:
         """Switch between GPU and CPU mode at runtime."""
         if enabled:
             if DASK_CUDA_ENABLED:
-                from dask_cuda import LocalCUDACluster  # noqa: PLC0415
-
                 self._gpu_cluster = LocalCUDACluster
             else:
                 self._gpu_cluster = lambda: LocalCluster(
                     n_workers=1, threads_per_worker=1
                 )
             if CUPY_ENABLED:
-                from cellcounter.funcs.gpu_cellc_funcs import GpuCellcFuncs  # noqa: PLC0415, I001
-
                 self.cellc_funcs = GpuCellcFuncs()
             else:
                 self.cellc_funcs = CpuCellcFuncs()

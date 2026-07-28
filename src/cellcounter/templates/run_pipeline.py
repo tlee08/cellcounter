@@ -19,84 +19,34 @@ with app.setup:
 
 @app.cell(hide_code=True)
 def _():
-    mo.md("""
-    ## Inputs
-    """)
-
-
-@app.cell
-def _():
-    stitched_imgs_dir = mo.ui.text(
-        value="/path/to/tiff_imgs_folder",
-        label="TIFF images directory",
-        full_width=True,
-    )
-    analysis_root_dir = mo.ui.text(
-        value="analysis_images",
-        label="Analysis output directory",
-        full_width=True,
-    )
-    overwrite = mo.ui.checkbox(label="Overwrite existing outputs")
-    mo.vstack([stitched_imgs_dir, analysis_root_dir, overwrite])
-    return analysis_root_dir, overwrite, stitched_imgs_dir
-
-
-@app.cell
-def _(stitched_imgs_dir):
-    dir_path = Path(stitched_imgs_dir.value)
-
-    mo.stop(
-        predicate=not dir_path.is_dir(),
-        output=mo.md(f"Directory not found: `{dir_path}`"),
-    )
-
-    imgs_ls = Pipeline.get_imgs_ls(dir_path)
-    mo.stop(predicate=not imgs_ls, output=mo.md("No images found in directory"))
-
-    mo.md(f"Found **{len(imgs_ls)}** image(s)")
-    return (imgs_ls,)
-
-
-@app.cell
-def _(imgs_ls):
-    selected_imgs = mo.ui.multiselect(
-        options=imgs_ls,
-        value=imgs_ls,
-        label="Images to process",
-        full_width=True,
-    )
-    mo.vstack([selected_imgs])
-    return (selected_imgs,)
-
-
-@app.cell(hide_code=True)
-def _():
     mo.md(r"""
-    ## Configuration
+    # CellCounter — Run Pipeline
 
-    Load your config YAML (copy `templates/default_config.yaml`).
+    **Setup**
+    * Change the paths and config below as needed.
+    * Copy `templates/default_config.yaml` as a starting point.
+    * Click **Run Pipeline** when ready — it will take a while.
     """)
+    return
 
 
 @app.cell
 def _():
-    config_path = mo.ui.text(
-        value=str(Path.cwd() / "default_config.yaml"),
-        label="Config file path",
-        full_width=True,
+    overwrite = False
+    stitch_dir = Path("/path/to/tiff_imgs_folder")
+    analysis_dir = Path("analysis_images")
+    config_path = Path("default_config.yaml")
+    imgs_ls = Pipeline.get_imgs_ls(stitch_dir) if stitch_dir.is_dir() else []
+
+    mo.accordion(
+        {
+            "Images": imgs_ls or "No images found",
+            "Config": ProjConfig.read_yaml(config_path).model_dump()
+            if config_path.exists()
+            else "Config file not found",
+        }
     )
-    return (config_path,)
-
-
-@app.cell
-def _(config_path):
-    fp = Path(config_path.value)
-    mo.stop(predicate=not fp.exists(), output=mo.md(f"Config file not found: `{fp}`"))
-
-    ProjConfig.read_yaml(fp)
-
-    mo.md(f"Loaded config from `{fp}`")
-    return (config_path,)
+    return analysis_dir, config_path, imgs_ls, overwrite, stitch_dir
 
 
 @app.cell(hide_code=True)
@@ -104,6 +54,7 @@ def _():
     mo.md("""
     ## Run Pipeline
     """)
+    return
 
 
 @app.cell
@@ -114,28 +65,18 @@ def _():
 
 
 @app.cell
-def _(
-    analysis_root_dir,
-    config_path,
-    overwrite,
-    run_btn,
-    selected_imgs,
-    stitched_imgs_dir,
-):
+def _(analysis_dir, config_path, imgs_ls, overwrite, run_btn, stitch_dir):
     mo.stop(not run_btn.value, mo.md("Click **Run Pipeline** to start."))
 
-    stitch_dir = Path(stitched_imgs_dir.value)
-    analysis_dir = Path(analysis_root_dir.value)
-
+    mo.stop(not imgs_ls, mo.md(f"No images found in `{stitch_dir}`"))
     mo.stop(
         stitch_dir == analysis_dir,
         mo.md("Input and output directories must be different"),
     )
 
-    _is_overwrite = overwrite.value
-    n_imgs = len(selected_imgs.value)
+    n_imgs = len(imgs_ls)
 
-    for i, img_name in enumerate(selected_imgs.value):
+    for i, img_name in enumerate(imgs_ls):
         try:
             proj_dir = analysis_dir / img_name
             in_fp = stitch_dir / img_name
@@ -143,17 +84,17 @@ def _(
             pipeline = Pipeline(proj_dir)
             pipeline.update_config(config_path)
 
-            with mo.status.progress_bar(total=28) as bar:
+            with mo.status.progress_bar(total=) as bar:
                 bar.update(subtitle=f"({i + 1}/{n_imgs}) {img_name}: tiff2zarr")
                 pipeline.tiff2zarr(in_fp, overwrite=False)
 
                 bar.update(subtitle=f"({i + 1}/{n_imgs}) {img_name}: registration")
                 pipeline.reg_ref_prepare(overwrite=False)
                 pipeline.reg_img_rough(overwrite=False)
-                pipeline.reg_img_fine(overwrite=_is_overwrite)
-                pipeline.reg_img_trim(overwrite=_is_overwrite)
-                pipeline.reg_img_bound(overwrite=_is_overwrite)
-                pipeline.reg_elastix(overwrite=_is_overwrite)
+                pipeline.reg_img_fine(overwrite=overwrite)
+                pipeline.reg_img_trim(overwrite=overwrite)
+                pipeline.reg_img_bound(overwrite=overwrite)
+                pipeline.reg_elastix(overwrite=overwrite)
 
                 bar.update(subtitle=f"({i + 1}/{n_imgs}) {img_name}: tuning arr")
                 pipeline.make_tuning_arr(overwrite=False)
@@ -165,36 +106,36 @@ def _(
                     bar.update(
                         subtitle=f"({i + 1}/{n_imgs}) {img_name}: cellc ({mode})"
                     )
-                    p.tophat_filter(overwrite=_is_overwrite)
-                    p.dog_filter(overwrite=_is_overwrite)
-                    p.adaptive_threshold_prep(overwrite=_is_overwrite)
-                    p.threshold(overwrite=_is_overwrite)
-                    p.label_thresholded(overwrite=_is_overwrite)
-                    p.compute_thresholded_volumes(overwrite=_is_overwrite)
-                    p.filter_thresholded(overwrite=_is_overwrite)
-                    p.detect_maxima(overwrite=_is_overwrite)
-                    p.label_maxima(overwrite=_is_overwrite)
-                    p.watershed(overwrite=_is_overwrite)
-                    p.compute_watershed_volumes(overwrite=_is_overwrite)
-                    p.filter_watershed(overwrite=_is_overwrite)
-                    p.save_cells_table(overwrite=_is_overwrite)
+                    p.tophat_filter(overwrite=overwrite)
+                    p.dog_filter(overwrite=overwrite)
+                    p.adaptive_threshold_prep(overwrite=overwrite)
+                    p.threshold(overwrite=overwrite)
+                    p.label_thresholded(overwrite=overwrite)
+                    p.compute_thresholded_volumes(overwrite=overwrite)
+                    p.filter_thresholded(overwrite=overwrite)
+                    p.detect_maxima(overwrite=overwrite)
+                    p.label_maxima(overwrite=overwrite)
+                    p.watershed(overwrite=overwrite)
+                    p.compute_watershed_volumes(overwrite=overwrite)
+                    p.filter_watershed(overwrite=overwrite)
+                    p.save_cells_table(overwrite=overwrite)
 
                     bar.update(
                         subtitle=f"({i + 1}/{n_imgs}) {img_name}: mapping ({mode})"
                     )
-                    p.transform_coords(overwrite=_is_overwrite)
-                    p.cell_mapping(overwrite=_is_overwrite)
-                    p.group_cells(overwrite=_is_overwrite)
-                    p.cells2csv(overwrite=_is_overwrite)
+                    p.transform_coords(overwrite=overwrite)
+                    p.cell_mapping(overwrite=overwrite)
+                    p.group_cells(overwrite=overwrite)
+                    p.cells2csv(overwrite=overwrite)
 
                 bar.update(subtitle=f"({i + 1}/{n_imgs}) {img_name}: visual checks")
-                pipeline.combine_reg(overwrite=_is_overwrite)
+                pipeline.combine_reg(overwrite=overwrite)
 
                 for is_tuning in [True, False]:
                     p = Pipeline(proj_dir, tuning=is_tuning)
-                    p.combine_cellc(overwrite=_is_overwrite)
-                    p.coords2heatmap_trfm(overwrite=_is_overwrite)
-                    p.combine_heatmap_trfm(overwrite=_is_overwrite)
+                    p.combine_cellc(overwrite=overwrite)
+                    p.coords2heatmap_trfm(overwrite=overwrite)
+                    p.combine_heatmap_trfm(overwrite=overwrite)
 
         except Exception:
             logger.exception(f"Error in {img_name}")

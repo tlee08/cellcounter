@@ -167,19 +167,28 @@ def _(pfm):
 @app.cell
 def _(raw_shape):
     z_slider = mo.ui.range_slider(
-        start=0, stop=raw_shape[0], step=1,
+        start=0,
+        stop=raw_shape[0],
+        step=1,
         value=[0, raw_shape[0]],
-        label="Z range", full_width=True,
+        label="Z range",
+        full_width=True,
     )
     y_slider = mo.ui.range_slider(
-        start=0, stop=raw_shape[1], step=1,
+        start=0,
+        stop=raw_shape[1],
+        step=1,
         value=[0, raw_shape[1]],
-        label="Y range", full_width=True,
+        label="Y range",
+        full_width=True,
     )
     x_slider = mo.ui.range_slider(
-        start=0, stop=raw_shape[2], step=1,
+        start=0,
+        stop=raw_shape[2],
+        step=1,
         value=[0, raw_shape[2]],
-        label="X range", full_width=True,
+        label="X range",
+        full_width=True,
     )
     use_trimmer = mo.ui.checkbox(label="Apply trimmer")
     mo.vstack(
@@ -193,7 +202,9 @@ def _(raw_shape):
 @app.cell(hide_code=True)
 def _(raw_shape):
     z_view_slider = mo.ui.slider(
-        start=0, stop=raw_shape[0] - 1, step=1,
+        start=0,
+        stop=raw_shape[0] - 1,
+        step=1,
         value=raw_shape[0] // 2,
         label="Preview Z slice (raw coords)",
         full_width=True,
@@ -202,12 +213,24 @@ def _(raw_shape):
 
 
 @app.cell(hide_code=True)
-def _(z_slider, y_slider, x_slider, z_view_slider, use_trimmer, downsmpl2_arr, ds_factor, preview_available, raw_shape):
+def _(
+    z_slider,
+    y_slider,
+    x_slider,
+    z_view_slider,
+    use_trimmer,
+    downsmpl2_arr,
+    ds_factor,
+    preview_available,
+    raw_shape,
+):
     from io import BytesIO
 
     mo.stop(
         predicate=not use_trimmer.value or not preview_available,
-        output=mo.md("Enable trimmer and ensure `downsmpl2` exists to see approximate preview."),
+        output=mo.md(
+            "Enable trimmer and ensure `downsmpl2` exists to see approximate preview."
+        ),
     )
 
     z_start, z_stop = z_slider.value
@@ -232,7 +255,9 @@ def _(z_slider, y_slider, x_slider, z_view_slider, use_trimmer, downsmpl2_arr, d
     ds_x_start = max(0, min(ds_x_start, ds_shape[2] - 1))
     ds_x_stop = max(1, min(ds_x_stop, ds_shape[2]))
 
-    cropped = downsmpl2_arr[ds_z_start:ds_z_stop, ds_y_start:ds_y_stop, ds_x_start:ds_x_stop]
+    cropped = downsmpl2_arr[
+        ds_z_start:ds_z_stop, ds_y_start:ds_y_stop, ds_x_start:ds_x_stop
+    ]
 
     if cropped.shape[1] == 0 or cropped.shape[2] == 0:
         return
