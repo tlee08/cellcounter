@@ -8,7 +8,6 @@ with app.setup:
 
     import dask.array as da
     import marimo as mo
-    import matplotlib.pyplot as plt
     import tifffile
 
     from cellcounter.models import ProjConfig, ProjFp
@@ -147,9 +146,9 @@ def _(pfm):
     rough = config.registration.downsample_rough
     fine = config.registration.downsample_fine
     ds_factor = (
-        rough.z * fine.z,
-        rough.y * fine.y,
-        rough.x * fine.x,
+        rough.z / fine.z,
+        rough.y / fine.y,
+        rough.x / fine.x,
     )
 
     preview_available = downsmpl2_arr = downsmpl2_shape = None
@@ -218,19 +217,13 @@ def _(
     y_slider,
     x_slider,
     z_view_slider,
-    use_trimmer,
     downsmpl2_arr,
     ds_factor,
     preview_available,
-    raw_shape,
 ):
-    from io import BytesIO
-
     mo.stop(
-        predicate=not use_trimmer.value or not preview_available,
-        output=mo.md(
-            "Enable trimmer and ensure `downsmpl2` exists to see approximate preview."
-        ),
+        predicate=not preview_available,
+        output=mo.md("No `downsmpl2` image available for preview."),
     )
 
     z_start, z_stop = z_slider.value
@@ -266,26 +259,19 @@ def _(
     z_view_cropped = int(round((z_view_raw - z_start) / ds_factor[0]))
     z_view_cropped = max(0, min(z_view_cropped, cropped.shape[0] - 1))
 
-    fig, ax = plt.subplots(figsize=(8, 6))
-    ax.imshow(cropped[z_view_cropped, :, :], cmap="gray")
-    ax.set_title(f"Preview (raw z≈{z_view_raw}, ds crop shape={cropped.shape})")
-    ax.set_xlabel("X (downsampled)")
-    ax.set_ylabel("Y (downsampled)")
-
-    buf = BytesIO()
-    fig.savefig(buf, format="png", bbox_inches="tight", dpi=80)
-    buf.seek(0)
-    plt.close(fig)
-
     mo.vstack(
         [
             mo.md(
-                f"Raw trim: Z[{z_start}:{z_stop}]"
-                f" Y[{y_start}:{y_stop}]"
-                f" X[{x_start}:{x_stop}]"
+                f"Raw trim: Z[{z_start}:{z_stop}] "
+                f"Y[{y_start}:{y_stop}] "
+                f"X[{x_start}:{x_stop}]"
             ),
             mo.md(f"Downsampled crop shape: {cropped.shape}"),
-            mo.image(src=buf, width="100%"),
+            mo.image(
+                cropped[z_view_cropped, :, :],
+                width="100%",
+                caption=f"z≈{z_view_raw} (raw coords, crop z-idx={z_view_cropped})",
+            ),
         ]
     )
 

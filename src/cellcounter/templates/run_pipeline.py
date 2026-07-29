@@ -27,7 +27,6 @@ def _():
     * Copy `templates/default_config.yaml` as a starting point.
     * Click **Run Pipeline** when ready — it will take a while.
     """)
-    return
 
 
 @app.cell
@@ -54,7 +53,6 @@ def _():
     mo.md("""
     ## Run Pipeline
     """)
-    return
 
 
 @app.cell
@@ -84,9 +82,11 @@ def _(analysis_dir, config_path, imgs_ls, overwrite, run_btn, stitch_dir):
             pipeline = Pipeline(proj_dir)
             pipeline.update_config(config_path)
 
-            with mo.status.progress_bar(total=) as bar:
+            with mo.status.progress_bar(total=28) as bar:
                 bar.update(subtitle=f"({i + 1}/{n_imgs}) {img_name}: tiff2zarr")
                 pipeline.tiff2zarr(in_fp, overwrite=False)
+
+                pipeline.rechunk_raw(overwrite=overwrite)
 
                 bar.update(subtitle=f"({i + 1}/{n_imgs}) {img_name}: registration")
                 pipeline.reg_ref_prepare(overwrite=False)
@@ -99,7 +99,10 @@ def _(analysis_dir, config_path, imgs_ls, overwrite, run_btn, stitch_dir):
                 bar.update(subtitle=f"({i + 1}/{n_imgs}) {img_name}: tuning arr")
                 pipeline.make_tuning_arr(overwrite=False)
 
-                for is_tuning in [True, False]:
+                for is_tuning in [
+                    True,
+                    False,
+                ]:
                     mode = "tuning" if is_tuning else "production"
                     p = Pipeline(proj_dir, tuning=is_tuning)
 
@@ -131,7 +134,10 @@ def _(analysis_dir, config_path, imgs_ls, overwrite, run_btn, stitch_dir):
                 bar.update(subtitle=f"({i + 1}/{n_imgs}) {img_name}: visual checks")
                 pipeline.combine_reg(overwrite=overwrite)
 
-                for is_tuning in [True, False]:
+                for is_tuning in [
+                    True,
+                    False,
+                ]:
                     p = Pipeline(proj_dir, tuning=is_tuning)
                     p.combine_cellc(overwrite=overwrite)
                     p.coords2heatmap_trfm(overwrite=overwrite)
