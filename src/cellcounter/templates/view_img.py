@@ -29,7 +29,7 @@ def _():
 
 @app.cell
 def _():
-    img_dir = Path("images/T22_M10")
+    img_dir = Path("path/to/image_dir")
 
     pfm = ProjFp(img_dir, tuning=False)
 
