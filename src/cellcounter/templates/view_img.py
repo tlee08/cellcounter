@@ -287,27 +287,7 @@ def _():
 
 
 @app.cell
-def _():
-    view_btn = mo.ui.run_button(label="Open in Napari")
-    mo.vstack([view_btn])
-    return (view_btn,)
-
-
-@app.cell
-def _(
-    view_btn,
-    selected_imgs,
-    use_trimmer,
-    z_slider,
-    y_slider,
-    x_slider,
-    pfm,
-):
-    mo.stop(
-        not view_btn.value,
-        mo.md("Click **Open in Napari** to view selected images."),
-    )
-
+def _(selected_imgs, use_trimmer, z_slider, y_slider, x_slider, pfm):
     if not selected_imgs.value:
         mo.md("No images selected.")
 

@@ -58,16 +58,7 @@ def _():
 
 
 @app.cell
-def _():
-    run_btn = mo.ui.run_button(label="Run Pipeline")
-    run_btn
-    return (run_btn,)
-
-
-@app.cell
-def _(analysis_dir, config_path, imgs_ls, overwrite, run_btn, stitch_dir):
-    mo.stop(not run_btn.value, mo.md("Click **Run Pipeline** to start."))
-
+def _(analysis_dir, config_path, imgs_ls, overwrite, stitch_dir):
     mo.stop(not imgs_ls, mo.md(f"No images found in `{stitch_dir}`"))
     mo.stop(
         stitch_dir == analysis_dir,
