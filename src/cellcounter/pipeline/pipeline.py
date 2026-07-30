@@ -253,9 +253,9 @@ class Pipeline:
                 tiffs2zarr(
                     src_fp_ls=tuple(
                         natsorted(
-                            in_fp / i
-                            for i in in_fp.iterdir()
-                            if re.search(r".tif$", str(i))
+                            _fp
+                            for _fp in in_fp.iterdir()
+                            if re.search(r".tif$", str(_fp))
                         ),
                     ),
                     dst_fp=self.pfm.raw,
