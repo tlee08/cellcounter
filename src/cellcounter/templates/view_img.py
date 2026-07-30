@@ -10,6 +10,7 @@ with app.setup:
     import marimo as mo
     import tifffile
 
+    from cellcounter.constants import IMAGE_CATEGORIES
     from cellcounter.models import ProjConfig, ProjFp
     from cellcounter.utils import configure_logger, setup_dask_configs
     from cellcounter.viewer import view_images
@@ -18,44 +19,7 @@ with app.setup:
     setup_dask_configs()
 
 
-@app.cell
-def _():
-    img_categories = {
-        "Raw": ["raw"],
-        "Registration": [
-            "ref",
-            "annot",
-            "downsmpl1",
-            "downsmpl2",
-            "trimmed",
-            "bounded",
-            "regresult",
-        ],
-        "Cell Counting": [
-            "bgrm",
-            "dog",
-            "adaptv",
-            "threshd",
-            "threshd_labels",
-            "threshd_volumes",
-            "threshd_filt",
-            "maxima",
-            "maxima_labels",
-            "wshed_labels",
-            "wshed_volumes",
-            "wshed_filt",
-        ],
-        "Visual QC": [
-            "points_raw",
-            "heatmap_raw",
-            "points_trfm",
-            "heatmap_trfm",
-        ],
-    }
-    return (img_categories,)
-
-
-@app.cell(hide_code=True)
+@app.cell()
 def _():
     mo.md("""
     ## Project
@@ -64,36 +28,12 @@ def _():
 
 @app.cell
 def _():
-    proj_dir = mo.ui.text(
-        value="/path/to/project",
-        label="Project directory",
-        full_width=True,
-    )
-    tuning = mo.ui.switch(label="Tuning mode")
-    mo.vstack([proj_dir, tuning])
-    return proj_dir, tuning
+    img_dir = Path("path/to/img_dir")
 
-
-@app.cell(hide_code=True)
-def _():
-    mo.md("""
-    ## Images to view
-    """)
-
-
-@app.cell
-def _(img_categories, proj_dir, tuning):
-    dir_path = Path(proj_dir.value)
-    mo.stop(
-        predicate=not dir_path.is_dir(),
-        output=mo.md(f"Directory not found: `{dir_path}`"),
-    )
-
-    pfm = ProjFp(dir_path, tuning=tuning.value)
-
+    pfm = ProjFp(img_dir, tuning=False)
     # Build options grouped by category
     available = {}
-    for category, keys in img_categories.items():
+    for category, keys in IMAGE_CATEGORIES.items():
         members = {}
         for k in keys:
             fp = getattr(pfm, k)
@@ -102,46 +42,55 @@ def _(img_categories, proj_dir, tuning):
             members[label] = k
         available[category] = members
 
-    mo.md(f"Project: `{dir_path}` — {'tuning' if tuning.value else 'production'} mode")
-    return (available,)
+    mo.accordion(
+        {
+            "Image Directory": mo.md(
+                f"{img_dir} ({'exists' if img_dir.exists() else "doesn't exist"})"
+            ),
+            "Available Layers": available,
+        }
+    )
+    return (img_dir,)
 
 
 @app.cell
-def _(available):
-    flat_options = {}
-    for category, members in available.items():
-        for label, value in members.items():
-            flat_options[label] = value
-
-    selected_imgs = mo.ui.multiselect(
-        options=flat_options,
-        value=[],
-        label="Image types",
-        full_width=True,
-    )
-    selected_imgs
-
-
-@app.cell(hide_code=True)
 def _():
-    mo.md("## Trimmer (optional)")
+    selected_imgs = [
+        "raw",
+        "bgrm",
+        "dog",
+        "adaptv",
+        "threshd",
+        # "threshd_labels",
+        "threshd_volumes",
+        "threshd_filt",
+        "maxima",
+        # "maxima_labels",
+        # "wshed_labels",
+        "wshed_volumes",
+        "wshed_filt",
+    ]
+    return (selected_imgs,)
+
+
+@app.cell()
+def _():
+    mo.md("## Trimmer")
     mo.md("Crop region-of-interest per axis. Leave blank for full range.")
 
 
-@app.cell(hide_code=True)
+@app.cell()
 def _(pfm):
     mo.stop(
         predicate=not pfm.raw.exists(),
         output=mo.md(f"Raw file not found: `{pfm.raw}`"),
     )
-
-    raw_shape = da.from_zarr(pfm.raw).shape
-
     mo.stop(
         predicate=not pfm.config_fp.exists(),
         output=mo.md(f"Config file not found: `{pfm.config_fp}`"),
     )
 
+    raw_shape = da.from_zarr(pfm.raw).shape
     config = ProjConfig.read_yaml(pfm.config_fp)
     rough = config.registration.downsample_rough
     fine = config.registration.downsample_fine
@@ -153,14 +102,11 @@ def _(pfm):
 
     preview_available = downsmpl2_arr = downsmpl2_shape = None
     if pfm.downsmpl2.exists():
-        try:
-            downsmpl2_arr = tifffile.imread(str(pfm.downsmpl2))
-            downsmpl2_shape = downsmpl2_arr.shape
-            preview_available = True
-        except Exception:
-            pass
+        downsmpl2_arr = tifffile.imread(str(pfm.downsmpl2))
+        downsmpl2_shape = downsmpl2_arr.shape
+        preview_available = True
 
-    ds_factor, preview_available, raw_shape, downsmpl2_shape, downsmpl2_arr
+    mo.vstack([ds_factor, preview_available, raw_shape, downsmpl2_shape, downsmpl2_arr])
 
 
 @app.cell
@@ -198,7 +144,7 @@ def _(raw_shape):
     )
 
 
-@app.cell(hide_code=True)
+@app.cell()
 def _(raw_shape):
     z_view_slider = mo.ui.slider(
         start=0,
@@ -211,7 +157,7 @@ def _(raw_shape):
     z_view_slider
 
 
-@app.cell(hide_code=True)
+@app.cell()
 def _(
     z_slider,
     y_slider,
@@ -276,7 +222,7 @@ def _(
     )
 
 
-@app.cell(hide_code=True)
+@app.cell()
 def _():
     mo.md("""
     ## View in Napari

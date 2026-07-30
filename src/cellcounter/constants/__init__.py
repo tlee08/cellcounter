@@ -45,7 +45,7 @@ from cellcounter.constants.cells import (
 )
 from cellcounter.constants.config import CUPY_ENABLED, DASK_CUDA_ENABLED
 from cellcounter.constants.coords import COORDS, X, Y, Z
-from cellcounter.constants.paths import ATLAS_DIR, CACHE_DIR
+from cellcounter.constants.paths import ATLAS_DIR, CACHE_DIR, IMAGE_CATEGORIES
 from cellcounter.constants.processing import ROWS_PARTITION, TRFM
 
 __all__ = [
@@ -76,6 +76,7 @@ __all__ = [
     "GRAPH_ORDER",
     "HEMISPHERE_ID",
     "ID",
+    "IMAGE_CATEGORIES",
     "INVALID",
     "IOV",
     "MEASURE",
