@@ -229,6 +229,7 @@ class Pipeline:
         if not overwrite and has_output_files(self.pfm.config_fp):
             return
         ProjConfig.read_yaml(default_config_fp)
+        self.pfm.config_fp.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(default_config_fp, self.pfm.config_fp)
 
     # ===========================================
