@@ -51,7 +51,7 @@ cluster:
 # ref_version, annot_version, map_version select which atlas to use.
 # ---------------------------------------------------------------------------
 reference:
-  atlas_dir: /path/to/atlas_resources
+  atlas_dir: ~/.cellcounter/atlas_resources
   ref_version: average_template_25
   annot_version: ccf_2016_25
   map_version: aba_annotations
