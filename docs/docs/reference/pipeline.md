@@ -535,36 +535,6 @@ pipeline.run_pipeline(
 
 ---
 
-## Class Methods
-
-### `get_imgs_ls`
-
-```python
-@staticmethod
-def get_imgs_ls(imgs_dir: Path | str) -> list[Path]
-```
-
-Get sorted list of subdirectories in a directory.
-
-Useful for batch processing multiple images.
-
-**Parameters**:
-
-| Parameter  | Type            | Description                        |
-| ---------- | --------------- | ---------------------------------- |
-| `imgs_dir` | `str` \| `Path` | Directory containing image folders |
-
-**Returns**: `list[Path]` — Naturally sorted subdirectory paths
-
-**Example**:
-
-```python
-imgs = Pipeline.get_imgs_ls("/path/to/stitched_imgs")
-# Returns: [Path("mouse_01"), Path("mouse_02"), ...]
-```
-
----
-
 ## Step Registries
 
 Class attributes listing available pipeline steps:

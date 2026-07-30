@@ -12,11 +12,7 @@ Use batch processing when you have:
 - Consistent imaging parameters across samples
 - Need for reproducible, automated analysis
 
-!!! tip "Advantages of Batch Processing"
-    - Consistent parameters across all samples
-    - Overnight/background processing
-    - Easy to rerun with different parameters
-    - Automatic result aggregation
+!!! tip "Advantages of Batch Processing" - Consistent parameters across all samples - Overnight/background processing - Easy to rerun with different parameters - Automatic result aggregation
 
 ---
 
@@ -44,7 +40,7 @@ analysis_outputs/                 # Results (auto-created)
 ```
 
 !!! note "Naming Matters"
-    Use descriptive, consistent folder names. These become your sample identifiers in the final aggregated results.
+Use descriptive, consistent folder names. These become your sample identifiers in the final aggregated results.
 
 ---
 
@@ -77,7 +73,7 @@ overwrite = False  # Set to True to reprocess existing files
 # =========================================
 
 # Get list of folders to process
-imgs_ls = Pipeline.get_imgs_ls(stitched_imgs_dir)
+imgs_ls = [fp.name for fp in stitched_imgs_dir.iterdir() if fp.is_dir()]
 # Or specify manually:
 # imgs_ls = ["mouse_01", "mouse_02"]
 
@@ -171,6 +167,7 @@ for img_name in imgs_ls:
 ```
 
 Check that:
+
 - Registration looks good for all
 - Cell detection works consistently
 - No unexpected errors
@@ -179,7 +176,8 @@ Check that:
 
 ```python
 # Process all images
-imgs_ls = Pipeline.get_imgs_ls(stitched_imgs_dir)
+imgs_ls = [fp.name for fp in stitched_imgs_dir.iterdir() if fp.is_dir()]
+# Or: imgs_ls = [fp.name for fp in analysis_root_dir.iterdir() if fp.is_dir()]
 # Or: imgs_ls = ["mouse_01", "mouse_02", "mouse_03", ... all]
 ```
 
@@ -278,6 +276,7 @@ combine_root(
 ```
 
 Output files:
+
 - `combined_cells_agg.csv` — All cells from all samples
 - `combined_summary.csv` — Summary statistics per sample
 
@@ -286,12 +285,13 @@ Output files:
 `combined_cells_agg.csv`:
 
 | sample_id | region_id | region_name | cell_count | volume | ... |
-|-----------|-----------|-------------|------------|--------|-----|
+| --------- | --------- | ----------- | ---------- | ------ | --- |
 | mouse_01  | 1         | isocortex   | 1523       | 6.2    | ... |
 | mouse_01  | 2         | hippocampus | 892        | 3.8    | ... |
 | mouse_02  | 1         | isocortex   | 1489       | 6.0    | ... |
 
 Use this for:
+
 - Group comparisons (control vs. treatment)
 - Correlation analyses
 - Export to statistical software (R, Prism, etc.)
@@ -418,7 +418,7 @@ def main():
     overwrite = False
 
     # Get images (or specify list)
-    imgs_ls = Pipeline.get_imgs_ls(stitched_imgs_dir)
+    imgs_ls = [fp.name for fp in stitched_imgs_dir.iterdir() if fp.is_dir()]
     print(f"Found {len(imgs_ls)} images to process")
 
     # Track stats

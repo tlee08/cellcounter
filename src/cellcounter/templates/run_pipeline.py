@@ -35,7 +35,9 @@ def _():
     stitch_dir = Path("/path/to/tiff_imgs_folder")
     analysis_dir = Path("analysis_images")
     config_path = Path("default_config.yaml")
-    imgs_ls = Pipeline.get_imgs_ls(stitch_dir) if stitch_dir.is_dir() else []
+    imgs_ls = [fp.name for fp in stitch_dir.iterdir() if fp.is_dir()]
+    # Or - imgs_ls = [fp.name for fp in analysis_dir.iterdir() if fp.is_dir()]
+    # or - imgs_ls = ["img_1", "img_2", ...]
 
     mo.accordion(
         {
@@ -80,12 +82,12 @@ def _(analysis_dir, config_path, imgs_ls, overwrite, run_btn, stitch_dir):
             in_fp = stitch_dir / img_name
 
             pipeline = Pipeline(proj_dir)
-            pipeline.update_config(config_path)
+
+            pipeline.update_config(config_path, overwrite=False)
 
             with mo.status.progress_bar(total=28) as bar:
                 bar.update(subtitle=f"({i + 1}/{n_imgs}) {img_name}: tiff2zarr")
                 pipeline.tiff2zarr(in_fp, overwrite=False)
-
                 pipeline.rechunk_raw(overwrite=overwrite)
 
                 bar.update(subtitle=f"({i + 1}/{n_imgs}) {img_name}: registration")

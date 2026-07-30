@@ -247,22 +247,6 @@ class Pipeline:
         )
 
     # ===========================================
-    # STATIC UTILITIES
-    # ===========================================
-
-    @staticmethod
-    def get_imgs_ls(imgs_dir: Path) -> list:
-        """Get sorted list of subdirectories in a directory.
-
-        Args:
-            imgs_dir: Directory path to list.
-
-        Returns:
-            Naturally sorted list of subdirectory paths.
-        """
-        return natsorted([fp.name for fp in imgs_dir.iterdir() if fp.is_dir()])
-
-    # ===========================================
     # UPDATE CONFIGS
     # ===========================================
 
