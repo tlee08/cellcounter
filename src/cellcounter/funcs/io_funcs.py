@@ -226,20 +226,20 @@ def tiffs2zarr(
     """
     # Getting shape and dtype
     arr0 = read_tiff(src_fp_ls[0])
-    shape = (len(src_fp_ls), *arr0.shape)
-    dtype = arr0.dtype
-    # Getting list of dask delayed tiffs
-    tiffs_ls = [dask.delayed(read_tiff)(i) for i in src_fp_ls]
     # Getting list of dask array tiffs and rechunking each (in prep later rechunking)
-    tiffs_ls = [
-        da.from_delayed(i, dtype=dtype, shape=shape[1:]).rechunk(chunks[1:])
-        for i in tiffs_ls
+    arrays = [
+        da.from_delayed(
+            dask.delayed(read_tiff)(fp),
+            shape=arr0.shape,
+            dtype=arr0.dtype,
+        )
+        for fp in src_fp_ls
     ]
     # Stacking tiffs and rechunking
-    arr = da.stack(tiffs_ls, axis=0).rechunk(chunks)
+    volume = da.stack(arrays, axis=0).rechunk(chunks)
     # Saving to zarr
     silent_remove(dst_fp)
-    arr.to_zarr(dst_fp, zarr_store_kwargs={"mode": "w"})
+    volume.to_zarr(dst_fp, zarr_store_kwargs={"mode": "w"})
 
 
 def zarr2tiff(src_fp: str, dst_fp: str) -> None:
