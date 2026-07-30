@@ -2,6 +2,7 @@
 
 from .dask_utils import cluster_process, coords2block, disk_cache, setup_dask_configs
 from .logger_utils import configure_logger, trace
+from .misc_utils import has_output_files, missing_input_files
 from .template_utils import confirm
 from .union_find import UnionFind
 
@@ -12,6 +13,8 @@ __all__ = [
     "confirm",
     "coords2block",
     "disk_cache",
+    "has_output_files",
+    "missing_input_files",
     "setup_dask_configs",
     "trace",
 ]

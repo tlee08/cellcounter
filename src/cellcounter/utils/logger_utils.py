@@ -1,3 +1,5 @@
+"""Logger utilities."""
+
 import functools
 import sys
 import time
@@ -91,6 +93,7 @@ def trace(_func: Callable | None = None, *, level: LogLevel = "INFO") -> Callabl
             with logger.contextualize(**extras):
                 t0 = time.perf_counter()
                 try:
+                    logger.log(level, "running...")
                     result = func(*args, **kwargs)
                     elapsed = time.perf_counter() - t0
                     logger.log(level, "← done ({:.2f}s)", elapsed)

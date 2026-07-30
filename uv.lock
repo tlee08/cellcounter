@@ -268,7 +268,6 @@ dependencies = [
     { name = "dask", extra = ["complete"] },
     { name = "ipykernel" },
     { name = "itk-elastix" },
-    { name = "jinja2" },
     { name = "loguru" },
     { name = "marimo", extra = ["recommended"] },
     { name = "napari", extra = ["all"] },
@@ -305,7 +304,6 @@ requires-dist = [
     { name = "dask-cuda", marker = "extra == 'gpu'", specifier = ">=26.2.0" },
     { name = "ipykernel", specifier = ">=7.2.0" },
     { name = "itk-elastix", specifier = ">=0.25.1" },
-    { name = "jinja2", specifier = ">=3.1.6" },
     { name = "loguru", specifier = ">=0.7.3" },
     { name = "marimo", extras = ["recommended"], specifier = ">=0.23.13" },
     { name = "napari", extras = ["all"], specifier = ">=0.6.5" },
@@ -344,7 +342,7 @@ name = "cffi"
 version = "2.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "pycparser", marker = "implementation_name != 'PyPy'" },
+    { name = "pycparser" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/eb/56/b1ba7935a17738ae8453301356628e8147c79dbb825bcbc73dc7401f9846/cffi-2.0.0.tar.gz", hash = "sha256:44d1b5909021139fe36001ae048dbdde8214afa20200eda0f64c068cac5d5529", size = 523588, upload-time = "2025-09-08T23:24:04.541Z" }
 wheels = [
