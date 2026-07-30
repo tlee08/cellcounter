@@ -11,7 +11,7 @@ from pathlib import Path
 import napari
 from loguru import logger
 
-from cellcounter.funcs.io_funcs import async_read_files, async_read_files_run, read_img
+from cellcounter.funcs.io_funcs import async_read_files, read_img
 from cellcounter.models.fp_models import ProjFp
 
 # Display defaults per image type
