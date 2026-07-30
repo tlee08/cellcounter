@@ -224,9 +224,9 @@ def tiffs2zarr(
         dst_fp: Output Zarr directory path.
         chunks: Chunk size for Zarr array.
     """
-    # Getting shape and dtype
+    # Determine shape and dtype
     arr0 = read_tiff(src_fp_ls[0])
-    # Getting list of dask array tiffs and rechunking each (in prep later rechunking)
+    # Lazily load each TIFF as a Dask array
     arrays = [
         da.from_delayed(
             dask.delayed(read_tiff)(fp),
@@ -235,9 +235,9 @@ def tiffs2zarr(
         )
         for fp in src_fp_ls
     ]
-    # Stacking tiffs and rechunking
+    # Stack into a 3D volume and rechunk for efficient storage
     volume = da.stack(arrays, axis=0).rechunk(chunks)
-    # Saving to zarr
+    # Write to Zarr
     silent_remove(dst_fp)
     volume.to_zarr(dst_fp, zarr_store_kwargs={"mode": "w"})
 

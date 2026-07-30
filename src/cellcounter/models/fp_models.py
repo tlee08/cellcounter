@@ -233,7 +233,7 @@ class RefFp:
         map_version: str,
     ) -> None:
         """Reference filepath model."""
-        self.root_dir = Path(root_dir)
+        self.root_dir = Path(root_dir).expanduser().resolve()
         self.ref_version = ref_version
         self.annot_version = annot_version
         self.map_version = map_version
