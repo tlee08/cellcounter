@@ -5,12 +5,13 @@ Provides:
 - view_images(): Display project images in Napari with sensible defaults
 """
 
+import asyncio
 from pathlib import Path
 
 import napari
 from loguru import logger
 
-from cellcounter.funcs.io_funcs import async_read_files_run, read_img
+from cellcounter.funcs.io_funcs import async_read_files, async_read_files_run, read_img
 from cellcounter.models.fp_models import ProjFp
 
 # Display defaults per image type
@@ -43,22 +44,10 @@ DISPLAY_DEFAULTS = {
 }
 
 
-def view_images(
-    imgs_fp_ls: list[Path | str],
-    trimmer: tuple[slice, ...] | None = None,
+def _build_display_kwargs(
+    names_ls: list[str],
     **kwargs,
-) -> None:
-    """Display project images in Napari with sensible defaults.
-
-    Args:
-        imgs_fp_ls: List of image attribute names from pfm (e.g., ["bgrm", "dog"]).
-        trimmer: Optional tuple of slices to crop region of interest.
-        **kwargs: Override default display settings per image.
-            e.g., contrast_limits={"bgrm": (0, 5000)}, colormap={"bgrm": "red"}
-    """
-    imgs_fp_ls = [Path(_i) for _i in imgs_fp_ls]
-    names_ls = [Path(_i).name for _i in imgs_fp_ls]
-    # Build file paths and display settings
+) -> tuple[list, list]:
     contrast_limits = []
     colormaps = []
     for name in names_ls:
@@ -69,9 +58,10 @@ def view_images(
         cm = kwargs.get("colormap", {}).get(name, defaults["colormap"])
         contrast_limits.append(cl)
         colormaps.append(cm)
-    # Read arrays in parallel
-    arr_ls = async_read_files_run(imgs_fp_ls, lambda fp: read_img(fp, trimmer))
-    # Build napari kwargs per image
+    return contrast_limits, colormaps
+
+
+def _show_in_napari(imgs_fp_ls, names_ls, arr_ls, contrast_limits, colormaps):
     kwargs_ls = [
         {
             "name": names_ls[i],
@@ -80,10 +70,52 @@ def view_images(
         }
         for i in range(len(names_ls))
     ]
-    # Create viewer and add images
     viewer = napari.Viewer()
     for i, arr in enumerate(arr_ls):
         logger.info("Adding image {} / {}: {}", i + 1, len(arr_ls), imgs_fp_ls[i])
         viewer.add_image(data=arr, blending="additive", **kwargs_ls[i])
-
     napari.run()
+
+
+def view_images(
+    imgs_fp_ls: list[Path | str],
+    trimmer: tuple[slice, ...] | None = None,
+    **kwargs,
+) -> None:
+    """Display project images in Napari with sensible defaults (sync).
+
+    Use in scripts or anywhere outside a running event loop.
+
+    Args:
+        imgs_fp_ls: List of image attribute names from pfm (e.g., ["bgrm", "dog"]).
+        trimmer: Optional tuple of slices to crop region of interest.
+        **kwargs: Override default display settings per image.
+            e.g., contrast_limits={"bgrm": (0, 5000)}, colormap={"bgrm": "red"}
+    """
+    imgs_fp_ls = [Path(_i) for _i in imgs_fp_ls]
+    names_ls = [Path(_i).name for _i in imgs_fp_ls]
+    contrast_limits, colormaps = _build_display_kwargs(names_ls, **kwargs)
+    arr_ls = asyncio.run(async_read_files(imgs_fp_ls, lambda fp: read_img(fp, trimmer)))
+    _show_in_napari(imgs_fp_ls, names_ls, arr_ls, contrast_limits, colormaps)
+
+
+async def async_view_images(
+    imgs_fp_ls: list[Path | str],
+    trimmer: tuple[slice, ...] | None = None,
+    **kwargs,
+) -> None:
+    """Display project images in Napari with sensible defaults (async).
+
+    Use in marimo notebooks or anywhere inside a running event loop.
+
+    Args:
+        imgs_fp_ls: List of image attribute names from pfm (e.g., ["bgrm", "dog"]).
+        trimmer: Optional tuple of slices to crop region of interest.
+        **kwargs: Override default display settings per image.
+            e.g., contrast_limits={"bgrm": (0, 5000)}, colormap={"bgrm": "red"}
+    """
+    imgs_fp_ls = [Path(_i) for _i in imgs_fp_ls]
+    names_ls = [Path(_i).name for _i in imgs_fp_ls]
+    contrast_limits, colormaps = _build_display_kwargs(names_ls, **kwargs)
+    arr_ls = await async_read_files(imgs_fp_ls, lambda fp: read_img(fp, trimmer))
+    _show_in_napari(imgs_fp_ls, names_ls, arr_ls, contrast_limits, colormaps)

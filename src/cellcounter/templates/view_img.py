@@ -14,7 +14,7 @@ with app.setup:
     from cellcounter.constants import IMAGE_CATEGORIES
     from cellcounter.models import ProjConfig, ProjFp
     from cellcounter.utils import configure_logger, setup_dask_configs
-    from cellcounter.viewer import view_images
+    from cellcounter.viewer import async_view_images
 
     configure_logger()
     setup_dask_configs()
@@ -321,12 +321,12 @@ def _(selected_imgs, x_start, x_stop, y_start, y_stop, z_start, z_stop):
 
 
 @app.cell
-def _(pfm, selected_imgs, x_start, x_stop, y_start, y_stop, z_start, z_stop):
+async def _(pfm, selected_imgs, x_start, x_stop, y_start, y_stop, z_start, z_stop):
     # Resolve file paths from selected image types
     imgs_fp_ls = [getattr(pfm, name) for name in selected_imgs]
 
     mo.md(f"Opening {len(imgs_fp_ls)} image(s) in Napari...")
-    view_images(
+    await async_view_images(
         imgs_fp_ls=imgs_fp_ls,
         trimmer=(
             slice(z_start, z_stop),

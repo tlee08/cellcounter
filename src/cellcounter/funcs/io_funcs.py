@@ -160,19 +160,6 @@ async def async_read_files(fp_ls: list[Path | str], read_func: Callable) -> list
         return await asyncio.gather(*tasks)
 
 
-def async_read_files_run(fp_ls: list[Path | str], read_func: Callable) -> list:
-    """Synchronously run async file reading.
-
-    Args:
-        fp_ls: List of file paths.
-        read_func: Function to read each file.
-
-    Returns:
-        List of results from read_func.
-    """
-    return asyncio.run(async_read_files(fp_ls, read_func))
-
-
 #############################################
 # Conversion between array file formats
 #############################################

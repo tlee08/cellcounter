@@ -18,7 +18,6 @@ from .gpu_cellc_funcs import GpuCellcFuncs
 from .io_funcs import (
     async_read,
     async_read_files,
-    async_read_files_run,
     btiff2niftygz,
     btiff2zarr,
     combine_arrs,
@@ -36,7 +35,6 @@ __all__ = [
     "annot_fp2df",
     "async_read",
     "async_read_files",
-    "async_read_files_run",
     "btiff2niftygz",
     "btiff2zarr",
     "combine_arrs",
