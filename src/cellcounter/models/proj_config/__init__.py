@@ -1,13 +1,10 @@
-from __future__ import annotations
-
 """ProjConfig pydantic model."""
 
-import json
+from __future__ import annotations
+
 from pathlib import Path
-from typing import Self
 
 import yaml
-from loguru import logger
 from pydantic import BaseModel, ConfigDict, PositiveInt
 
 from cellcounter.models.proj_config.cell_counting_config import CellCountingConfig
@@ -60,7 +57,7 @@ class ProjConfig(BaseModel):
     def write_yaml(self, fp: Path) -> None:
         """Write the config to a yaml file."""
         fp.parent.mkdir(parents=True, exist_ok=True)
-        fp.write_text(yaml.dump(self.model_dump(), default_flow_style=False))
+        fp.write_text(yaml.dump(self.model_dump(mode="json"), default_flow_style=False))
 
 
 __all__ = [

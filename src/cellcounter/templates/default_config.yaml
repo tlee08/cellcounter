@@ -132,8 +132,8 @@ registration:
 # ---------------------------------------------------------------------------
 cell_counting:
   tophat_radius: 10
-  dog_sigma1: 1
-  dog_sigma2: 4
+  dog_sigma1: 3
+  dog_sigma2: 5
   large_gauss_radius: 101
   threshd_value: 100
   min_threshd_size: 1
