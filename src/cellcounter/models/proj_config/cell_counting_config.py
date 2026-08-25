@@ -7,20 +7,20 @@ class CellCountingConfig(BaseModel):
     """Cell detection and filtering parameters."""
 
     # Filtering
-    tophat_radius: PositiveInt = 10
-    dog_sigma1: PositiveInt = 1
-    dog_sigma2: PositiveInt = 4
-    large_gauss_radius: PositiveInt = 101
+    tophat_radius: PositiveInt | None = 10
+    dog_sigma1: PositiveInt | None = 1
+    dog_sigma2: PositiveInt | None = 4
+    large_gauss_radius: PositiveInt | None = None
 
     # Thresholding
-    threshd_value: PositiveInt = 100
-    min_threshd_size: PositiveInt = 1
-    max_threshd_size: PositiveInt = 15000
+    threshd_value: PositiveInt | None = 100
+    min_threshd_size: PositiveInt | None = 1
+    max_threshd_size: PositiveInt | None = 15000
 
     # Watershed
-    maxima_radius: PositiveInt = 5
-    min_wshed_size: PositiveInt = 1
-    max_wshed_size: PositiveInt = 1000
+    maxima_radius: PositiveInt | None = 5
+    min_wshed_size: PositiveInt | None = 1
+    max_wshed_size: PositiveInt | None = 1000
 
     @model_validator(mode="after")
     def _validate_sigma(self) -> Self:
