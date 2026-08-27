@@ -138,14 +138,14 @@ registration:
 #   Must satisfy: min_wshed_size < max_wshed_size.
 # ---------------------------------------------------------------------------
 cell_counting:
-  tophat_radius: 10
-  dog_sigma1: 3
-  dog_sigma2: 5
+  tophat_radius: 11
+  dog_sigma1: 2
+  dog_sigma2: 4
   large_gauss_radius: null
   threshd_value: 100
   min_threshd_size: 1
   max_threshd_size: 15000
-  maxima_radius: 5
+  maxima_radius: 4
   min_wshed_size: 1
   max_wshed_size: 1000
 
