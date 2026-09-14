@@ -52,6 +52,10 @@ cellcounter-make-project = "cellcounter.scripts.make_project:main"
 requires = ["uv_build>=0.10.11,<0.11.0"]
 build-backend = "uv_build"
 
+[tool.ruff]
+# Exclude a variety of commonly ignored directories.
+exclude = ["**/templates/**"]
+
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [

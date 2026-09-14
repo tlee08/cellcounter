@@ -178,12 +178,12 @@ def _(
     y_start, y_stop = y_slider.value
     x_start, x_stop = x_slider.value
 
-    ds_z_start = int(round(z_start / ds_factor[0]))
-    ds_z_stop = int(round(z_stop / ds_factor[0]))
-    ds_y_start = int(round(y_start / ds_factor[1]))
-    ds_y_stop = int(round(y_stop / ds_factor[1]))
-    ds_x_start = int(round(x_start / ds_factor[2]))
-    ds_x_stop = int(round(x_stop / ds_factor[2]))
+    ds_z_start = round(z_start / ds_factor[0])
+    ds_z_stop = round(z_stop / ds_factor[0])
+    ds_y_start = round(y_start / ds_factor[1])
+    ds_y_stop = round(y_stop / ds_factor[1])
+    ds_x_start = round(x_start / ds_factor[2])
+    ds_x_stop = round(x_stop / ds_factor[2])
 
     cropped_arr = downsmpl2_arr[
         ds_z_start:ds_z_stop, ds_y_start:ds_y_stop, ds_x_start:ds_x_stop
