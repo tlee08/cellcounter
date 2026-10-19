@@ -14,7 +14,7 @@ Even with good parameters, always verify:
 4. **Cell separation** — Are touching cells split correctly?
 
 !!! tip "Golden Rule"
-    Visualize your results before trusting the CSV numbers. A few minutes of QC can save hours of reprocessing.
+Visualize your results before trusting the CSV numbers. A few minutes of QC can save hours of reprocessing.
 
 ---
 
@@ -69,6 +69,7 @@ vc.combine_reg()  # Creates combined_reg.tiff
 ```
 
 This creates a 3-channel TIFF:
+
 - **Channel 0 (Red)**: Your trimmed/bounded image
 - **Channel 1 (Green)**: Reference atlas
 - **Channel 2 (Blue)**: Registered image
@@ -89,26 +90,30 @@ napari.run()
 
 Tick the visibility (eye icon) of each channel to compare:
 
-| Check | Good | Bad |
-|-------|------|-----|
-| Brain outline matches | ✓ Contours align | ✗ Brain shape wrong |
-| Major structures | ✓ Hippocampus, cortex aligned | ✗ Structures don't overlap |
-| Ventricles | ✓ Dark regions align | ✗ Ventricles offset |
+| Check                 | Good                          | Bad                        |
+| --------------------- | ----------------------------- | -------------------------- |
+| Brain outline matches | ✓ Contours align              | ✗ Brain shape wrong        |
+| Major structures      | ✓ Hippocampus, cortex aligned | ✗ Structures don't overlap |
+| Ventricles            | ✓ Dark regions align          | ✗ Ventricles offset        |
 
 ### Troubleshooting Registration
 
 **Issue: Registration is flipped**
+
 - Check `ref_orientation` — one or more axes may need negation
 - Example: `{"z": -2, "y": 3, "x": 1}` instead of `{"z": 2, ...}`
 
 **Issue: Registration is rotated 90°**
+
 - Swap y and x in orientation: `{"z": 1, "y": 3, "x": 2}`
 
 **Issue: Brain not centered**
+
 - Adjust `reg_trim` to crop to brain region
 - Check `downsample_rough` values match your resolution
 
 **Issue: Registration failed/strange warping**
+
 - Adjust intensity bounds (`lower_bound`, `upper_bound`)
 - Try different downsampling factors
 - Ensure reference atlas downloaded correctly (`cellcounter-init`)
@@ -132,6 +137,7 @@ vc_full.combine_cellc()    # Creates cellcount/combined_cellc.tiff
 ```
 
 This creates a 3-channel TIFF:
+
 - **Channel 0 (Gray)**: Raw image (intensity-scaled)
 - **Channel 1 (Blue)**: Thresholded mask (filtered objects)
 - **Channel 2 (Green)**: Final detected cells
@@ -152,18 +158,18 @@ napari.run()
 
 **What each channel shows:**
 
-| Channel | Shows | What to Check |
-|---------|-------|---------------|
-| Raw | Original fluorescence | Good SNR, no artifacts |
+| Channel     | Shows                        | What to Check               |
+| ----------- | ---------------------------- | --------------------------- |
+| Raw         | Original fluorescence        | Good SNR, no artifacts      |
 | Thresholded | Objects passing size filters | Reasonable shapes, no holes |
-| Cells | Final watershed segments | One segment per cell |
+| Cells       | Final watershed segments     | One segment per cell        |
 
 ### Sign of Good Detection
 
 ✓ **Green regions (cells) align with bright spots in raw  
 ✓ **Each bright spot has one green segment**
 ✓ **Green segments are roughly circular/oval**
-✓ **No tiny debris included** (check size filter settings)
+✓ **No tiny debris included\*\* (check size filter settings)
 
 ### Common Cell Detection Problems
 
@@ -173,12 +179,12 @@ napari.run()
 
 **Causes & Solutions**:
 
-| Cause | Solution |
-|-------|----------|
-| Threshold too high | Lower `threshd_value` (60 → 40) |
-| Size filter too large | Decrease `min_wshed_size` |
-| Background not removed | Increase `tophat_radius` |
-| Cells too dim | Check image intensity scale |
+| Cause                  | Solution                          |
+| ---------------------- | --------------------------------- |
+| Threshold too high     | Lower `threshold_value` (60 → 40) |
+| Size filter too large  | Decrease `min_watershed_volume`   |
+| Background not removed | Increase `tophat_radius`          |
+| Cells too dim          | Check image intensity scale       |
 
 #### Problem: Too Many False Positives
 
@@ -186,29 +192,31 @@ napari.run()
 
 **Causes & Solutions**:
 
-| Cause | Solution |
-|-------|----------|
-| Threshold too low | Raise `threshd_value` (60 → 80) |
-| Size filter too small | Increase `min_wshed_size` |
-| Debris not filtered | Adjust `min_threshd_size`, `max_threshd_size` |
+| Cause                 | Solution                                              |
+| --------------------- | ----------------------------------------------------- |
+| Threshold too low     | Raise `threshold_value` (60 → 80)                     |
+| Size filter too small | Increase `min_watershed_volume`                       |
+| Debris not filtered   | Adjust `min_threshold_volume`, `max_threshold_volume` |
 
 #### Problem: Touching Cells Merged
 
 **Symptoms**: One green region covers multiple bright spots
 
 **Solutions**:
+
 - Adjust `dog_sigma1` and `dog_sigma2` for better edge detection
 - Check `maxima_radius` — may be too large
-- Verify watershed is running (check for `wshed_labels` file)
+- Verify watershed is running (check for `watershed_labels` file)
 
 #### Problem: Cells Split Incorrectly
 
 **Symptoms**: Single cell has multiple green regions
 
 **Solutions**:
+
 - Increase `maxima_radius` to avoid over-splitting
 - Adjust `dog_sigma1` closer to actual cell radius
-- Check if `min_wshed_size` is fragmenting cells
+- Check if `min_watershed_volume` is fragmenting cells
 
 ---
 
@@ -235,12 +243,14 @@ vc.combine_heatmap_trfm()      # cellcount/combined_heatmap_trfm.tiff
 ### Interpreting Heatmaps
 
 **Raw Heatmap**: Cell density in original image space
+
 ```python
 img = tifffile.imread("cellcount/combined_heatmap_raw.tiff")
 # Channels: raw image, thresholded, heatmap
 ```
 
 **Transformed Heatmap**: Cell density in atlas space
+
 ```python
 img = tifffile.imread("cellcount/combined_heatmap_trfm.tiff")
 # Channels: reference, annotation, heatmap
@@ -255,10 +265,12 @@ img = tifffile.imread("cellcount/combined_heatmap_trfm.tiff")
 ### Troubleshooting Mapping
 
 **Cells outside brain boundary**:
+
 - Registration failed — check `combined_reg.tiff`
 - Intensity clipping too aggressive — adjust bounds
 
 **Cells mapped to wrong regions**:
+
 - Registration misalignment — re-run registration
 - Coordinate transform error — check `transform_coords` output
 
@@ -348,11 +360,11 @@ view_images(
         # Cell counting intermediates
         pfm.bgrm,        # After top-hat filter
         pfm.dog,         # After DoG filter
-        pfm.threshd,     # After threshold
-        pfm.threshd_volumes,  # After size filter
+        pfm.threshold,     # After threshold
+        pfm.threshold_volumes,  # After size filter
         pfm.maxima,      # Detected maxima
-        pfm.wshed_volumes,    # After watershed
-        pfm.wshed_filt,  # Final filtered cells
+        pfm.watershed_volumes,    # After watershed
+        pfm.watershed_filt,  # Final filtered cells
     ],
     trimmer=(
         slice(500, 510),    # Z range
@@ -370,13 +382,13 @@ This opens all selected files in napari with linked views.
 
 Use this checklist for each sample:
 
-| Step | Check | Pass Criteria |
-|------|-------|---------------|
-| **Registration** | `combined_reg.tiff` | Brain outline matches atlas |
-| **Detection (tuning)** | `combined_cellc.tiff` (tuning) | >80% of cells detected |
-| **Detection (full)** | `combined_cellc.tiff` (full) | Consistent with tuning |
-| **Mapping** | `combined_heatmap_trfm.tiff` | Cells in expected regions |
-| **Output** | `cells_agg.csv` | Reasonable cell counts |
+| Step                   | Check                          | Pass Criteria               |
+| ---------------------- | ------------------------------ | --------------------------- |
+| **Registration**       | `combined_reg.tiff`            | Brain outline matches atlas |
+| **Detection (tuning)** | `combined_cellc.tiff` (tuning) | >80% of cells detected      |
+| **Detection (full)**   | `combined_cellc.tiff` (full)   | Consistent with tuning      |
+| **Mapping**            | `combined_heatmap_trfm.tiff`   | Cells in expected regions   |
+| **Output**             | `cells_agg.csv`                | Reasonable cell counts      |
 
 ---
 

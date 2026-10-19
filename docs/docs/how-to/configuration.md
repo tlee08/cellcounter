@@ -16,11 +16,11 @@ from cellcounter import Pipeline
 pipeline = Pipeline("/path/to/project")
 
 # Read current values
-print(pipeline.config.cell_counting.threshd_value)  # 60
+print(pipeline.config.cell_counting.threshold_value)  # 60
 
 # Update and save
 pipeline.update_config(
-    cell_counting={"threshd_value": 45}
+    cell_counting={"threshold_value": 45}
 )
 ```
 
@@ -61,11 +61,11 @@ Control how your image is divided for parallel processing.
 
 ### Why Chunks Matter
 
-| Chunk Size | Memory Usage | Speed | Best For |
-|------------|--------------|-------|----------|
-| Small (100³) | Low | Slower (more overhead) | Limited RAM |
-| Medium (500³) | Moderate | Fast | Most users (default) |
-| Large (1000³) | High | Faster (less overhead) | High RAM + GPU |
+| Chunk Size    | Memory Usage | Speed                  | Best For             |
+| ------------- | ------------ | ---------------------- | -------------------- |
+| Small (100³)  | Low          | Slower (more overhead) | Limited RAM          |
+| Medium (500³) | Moderate     | Fast                   | Most users (default) |
+| Large (1000³) | High         | Faster (less overhead) | High RAM + GPU       |
 
 ### Example Configurations
 
@@ -83,11 +83,7 @@ chunks={"z": 250, "y": 250, "x": 250}
 chunks={"z": 128, "y": 128, "x": 128}
 ```
 
-!!! tip "Chunk Size Rules"
-    - Must evenly divide your image dimensions OR
-    - CellCounter will pad automatically (slight overhead)
-    - Larger chunks = fewer files = faster I/O
-    - Smaller chunks = less memory per worker
+!!! tip "Chunk Size Rules" - Must evenly divide your image dimensions OR - CellCounter will pad automatically (slight overhead) - Larger chunks = fewer files = faster I/O - Smaller chunks = less memory per worker
 
 ---
 
@@ -106,10 +102,12 @@ registration={
 ```
 
 Understanding the values:
+
 - **Positive (1, 2, 3)**: Use axis 1, 2, or 3 without flipping
 - **Negative (-1, -2, -3)**: Use axis 1, 2, or 3 AND flip it
 
 The Allen Atlas axes are:
+
 - **Z**: Inferior → Superior
 - **Y**: Anterior → Posterior
 - **X**: Left → Right
@@ -129,15 +127,16 @@ napari.run()
 
 Look at voxel coordinates in napari to determine orientation:
 
-| Your Image | Atlas | Orientation Setting |
-|------------|-------|---------------------|
-| z=0 at bottom | z=0 at bottom | `{"z": 1, ...}` |
-| z=0 at top | z=0 at bottom | `{"z": -1, ...}` |
-| x=left, y=anterior | standard | `{"z": 1, "y": 2, "x": 3}` |
+| Your Image         | Atlas         | Orientation Setting        |
+| ------------------ | ------------- | -------------------------- |
+| z=0 at bottom      | z=0 at bottom | `{"z": 1, ...}`            |
+| z=0 at top         | z=0 at bottom | `{"z": -1, ...}`           |
+| x=left, y=anterior | standard      | `{"z": 1, "y": 2, "x": 3}` |
 
 ### Finding Your Orientation
 
 Method 1: Trial and Error
+
 ```python
 # Try different orientations, check registration result
 pipeline.update_config(
@@ -150,6 +149,7 @@ vc.combine_reg()  # Compare trimmed vs ref vs registered
 ```
 
 Method 2: Compare Dimensions
+
 ```python
 import tifffile
 import numpy as np
@@ -180,19 +180,16 @@ registration={
 
 Calculate based on your voxel size:
 
-| Your Resolution | Rough | Fine | Result |
-|-----------------|-------|------|--------|
-| 1 µm (lightsheet) | (2, 4, 4) | (1.0, 0.6, 0.6) | ~25µm |
-| 2 µm | (1, 3, 3) | (1.0, 0.8, 0.8) | ~25µm |
-| 5 µm | (1, 2, 2) | (1.0, 1.0, 1.0) | ~25µm |
+| Your Resolution   | Rough     | Fine            | Result |
+| ----------------- | --------- | --------------- | ------ |
+| 1 µm (lightsheet) | (2, 4, 4) | (1.0, 0.6, 0.6) | ~25µm  |
+| 2 µm              | (1, 3, 3) | (1.0, 0.8, 0.8) | ~25µm  |
+| 5 µm              | (1, 2, 2) | (1.0, 1.0, 1.0) | ~25µm  |
 
 Formula: `your_resolution × rough × fine ≈ 25`
 
 !!! warning "Registration Failing?"
-    If elastix fails to converge, try:
-    1. Different `downsample_rough` factors
-    2. Adjusting `reg_trim` to focus on brain region
-    3. Changing `lower_bound` / `upper_bound` intensity clipping
+If elastix fails to converge, try: 1. Different `downsample_rough` factors 2. Adjusting `reg_trim` to focus on brain region 3. Changing `lower_bound` / `upper_bound` intensity clipping
 
 ### Intensity Clipping
 
@@ -206,6 +203,7 @@ registration={
 ```
 
 Adjust based on your image histogram:
+
 - **lower_bound**: Background level (exclude dark regions)
 - **upper_bound**: Saturation level (exclude saturated regions)
 
@@ -215,28 +213,23 @@ Adjust based on your image histogram:
 
 Control how cells are detected and segmented.
 
-### Detection Sensitivity (`threshd_value`)
+### Detection Sensitivity (`threshold_value`)
 
 Most important parameter! Controls how bright a voxel must be to be considered "cell":
 
 ```python
 cell_counting={
-    "threshd_value": 60  # Default
+    "threshold_value": 60  # Default
 }
 ```
 
-| Threshold | Result | When to Use |
-|-----------|--------|-------------|
-| 20-40 | Many cells detected, more false positives | High SNR, dim cells |
-| 50-70 | Balanced (default) | Standard cFos staining |
-| 80-120 | Fewer cells, cleaner | Bright staining, want conservative |
+| Threshold | Result                                    | When to Use                        |
+| --------- | ----------------------------------------- | ---------------------------------- |
+| 20-40     | Many cells detected, more false positives | High SNR, dim cells                |
+| 50-70     | Balanced (default)                        | Standard cFos staining             |
+| 80-120    | Fewer cells, cleaner                      | Bright staining, want conservative |
 
-!!! tip "Finding the Right Threshold"
-    1. Run tuning with default (60)
-    2. Visualize with `vc.combine_cellc()`
-    3. If too many debris detected → increase threshold
-    4. If cells being missed → decrease threshold
-    5. Iterate in steps of 10-20
+!!! tip "Finding the Right Threshold" 1. Run tuning with default (60) 2. Visualize with `vc.combine_cellc()` 3. If too many debris detected → increase threshold 4. If cells being missed → decrease threshold 5. Iterate in steps of 10-20
 
 ### Background Removal (`tophat_radius`)
 
@@ -269,6 +262,7 @@ cell_counting={
 - **sigma2**: 3-4 × sigma1 (captures background around cell)
 
 Adjust based on cell size:
+
 - Small cells (fine resolution): `sigma1=0.5, sigma2=2`
 - Medium cells (default): `sigma1=1, sigma2=4`
 - Large cells (thick slices): `sigma1=2, sigma2=6`
@@ -290,28 +284,24 @@ Filter objects by voxel count to remove debris and clusters:
 ```python
 cell_counting={
     # First filter (on thresholded objects)
-    "min_threshd_size": 100,   # Minimum connected component
-    "max_threshd_size": 9000,  # Maximum (prevents huge clusters)
+    "min_threshold_volume": 100,   # Minimum connected component
+    "max_threshold_volume": 9000,  # Maximum (prevents huge clusters)
 
     # Second filter (on watershed segments)
-    "min_wshed_size": 1,       # Minimum final cell size
-    "max_wshed_size": 700,     # Maximum final cell size
+    "min_watershed_volume": 1,       # Minimum final cell size
+    "max_watershed_volume": 700,     # Maximum final cell size
 }
 ```
 
 Size guidelines (assume 1µm voxels):
 
-| Cell Type | Min Size | Max Size |
-|-----------|----------|----------|
-| cFos+ nuclei | 10-50 | 300-500 |
-| Neurons | 100-200 | 500-1000 |
-| Large cells | 200-500 | 1000-2000 |
+| Cell Type    | Min Size | Max Size  |
+| ------------ | -------- | --------- |
+| cFos+ nuclei | 10-50    | 300-500   |
+| Neurons      | 100-200  | 500-1000  |
+| Large cells  | 200-500  | 1000-2000 |
 
-!!! tip "Finding Size Range"
-    1. Look at your raw image in napari
-    2. Measure typical cell diameter
-    3. Calculate volume: 4/3 × π × r³
-    4. Set min/max ~50% around this
+!!! tip "Finding Size Range" 1. Look at your raw image in napari 2. Measure typical cell diameter 3. Calculate volume: 4/3 × π × r³ 4. Set min/max ~50% around this
 
 ### Maxima Detection (`maxima_radius`)
 
@@ -344,15 +334,16 @@ cluster={
 
 ### Cluster Types Used
 
-| Cluster | Method | Workers | Use Case |
-|---------|--------|---------|----------|
-| **GPU** | `gpu_cluster()` | 1 | Cell counting with CuPy |
-| **Heavy** | `heavy_cluster()` | 1 | Watershed (high memory) |
-| **Busy** | `busy_cluster()` | 4 | I/O, registration, mapping |
+| Cluster   | Method            | Workers | Use Case                   |
+| --------- | ----------------- | ------- | -------------------------- |
+| **GPU**   | `gpu_cluster()`   | 1       | Cell counting with CuPy    |
+| **Heavy** | `heavy_cluster()` | 1       | Watershed (high memory)    |
+| **Busy**  | `busy_cluster()`  | 4       | I/O, registration, mapping |
 
 ### Adjusting for Your Hardware
 
 **High-end workstation (64GB+ RAM, GPU)**:
+
 ```python
 cluster={
     "heavy_n_workers": 2,
@@ -362,6 +353,7 @@ cluster={
 ```
 
 **Laptop / Limited RAM (16GB)**:
+
 ```python
 cluster={
     "heavy_n_workers": 1,
@@ -385,12 +377,14 @@ tuning_trim={
 ```
 
 Choose a region that:
+
 - Contains cells typical of your data
 - Has some background (not all cells)
 - Is representative (not edge artifacts)
 - Runs quickly (smaller = faster iteration)
 
 Recommended sizes:
+
 - **Z**: 50-200 slices (depending on z-resolution)
 - **Y, X**: 1000-4000 pixels each
 
@@ -425,9 +419,9 @@ pipeline.update_config(
         "tophat_radius": 10,
         "dog_sigma1": 1,
         "dog_sigma2": 4,
-        "threshd_value": 60,
-        "min_wshed_size": 50,
-        "max_wshed_size": 500,
+        "threshold_value": 60,
+        "min_watershed_volume": 50,
+        "max_watershed_volume": 500,
     },
 )
 ```
@@ -444,9 +438,9 @@ pipeline.update_config(
         "tophat_radius": 5,
         "dog_sigma1": 0.5,
         "dog_sigma2": 2,
-        "threshd_value": 50,
-        "min_wshed_size": 10,
-        "max_wshed_size": 200,
+        "threshold_value": 50,
+        "min_watershed_volume": 10,
+        "max_watershed_volume": 200,
     },
 )
 ```
@@ -456,8 +450,8 @@ pipeline.update_config(
 ```python
 pipeline.update_config(
     cell_counting={
-        "threshd_value": 80,       # Higher threshold
-        "min_wshed_size": 100,     # Larger minimum
+        "threshold_value": 80,       # Higher threshold
+        "min_watershed_volume": 100,     # Larger minimum
         "tophat_radius": 12,       # More background removal
     },
 )
@@ -468,8 +462,8 @@ pipeline.update_config(
 ```python
 pipeline.update_config(
     cell_counting={
-        "threshd_value": 40,       # Lower threshold
-        "min_wshed_size": 10,      # Smaller minimum
+        "threshold_value": 40,       # Lower threshold
+        "min_watershed_volume": 10,      # Smaller minimum
         "tophat_radius": 8,        # Less background removal
     },
 )

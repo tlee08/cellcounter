@@ -15,7 +15,7 @@ class UnionFind:
     rank: dict[int, int]
     sort_idx: npt.NDArray | None
     sorted_keys: npt.NDArray | None
-    sorted_sizes: npt.NDArray | None
+    sorted_volumes: npt.NDArray | None
 
     def __init__(self) -> None:
         """Union Find."""
@@ -23,7 +23,7 @@ class UnionFind:
         self.rank = {}
         self.sort_idx = None
         self.sorted_keys = None
-        self.sorted_sizes = None
+        self.sorted_volumes = None
 
     def find(self, x: int) -> int:
         """Find method in union find."""
@@ -53,13 +53,13 @@ class UnionFind:
         We sum the values and store the given sorted labels and summed values.
         """
         # Aggregate by component root
-        component_sizes: dict[int, int] = defaultdict(int)
+        component_volumes: dict[int, int] = defaultdict(int)
         for label, value in zip(labels, values, strict=True):
-            component_sizes[self.find(label)] += value
+            component_volumes[self.find(label)] += value
         component_values = np.array(
-            [component_sizes[self.find(lbl)] for lbl in labels], dtype=np.uint64
+            [component_volumes[self.find(lbl)] for lbl in labels], dtype=np.uint64
         )
         # Build lookup table
         sort_idx = np.argsort(labels)
         self.sorted_keys = labels[sort_idx]
-        self.sorted_sizes = component_values[sort_idx]
+        self.sorted_volumes = component_values[sort_idx]

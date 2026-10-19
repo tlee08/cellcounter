@@ -7,11 +7,13 @@ Understanding how CellCounter is organized and how the pieces fit together.
 ## Why This Architecture?
 
 CellCounter is designed for **whole-brain microscopy images** that are:
+
 - **Very large**: ~90GB per brain
 - **High resolution**: often 1-2 µm per voxel
 - **Compute-intensive**: registration, filtering, segmentation
 
 The architecture addresses these challenges through:
+
 1. **Chunked storage** (Zarr) — memory-efficient access
 2. **Lazy evaluation** (Dask) — compute only what's needed
 3. **GPU acceleration** (CuPy) — fast array operations
@@ -101,6 +103,7 @@ pipeline.set_gpu(enabled=False)  # Use NumPy
 ```
 
 This enables:
+
 - Same code runs on both GPU and CPU
 - Easy fallback when GPU unavailable
 - Easy testing and debugging on CPU
@@ -139,6 +142,7 @@ class Pipeline:
 ```
 
 Benefits:
+
 - Safe to re-run scripts
 - Explicit control over recomputation
 - Prevents accidental data loss
@@ -184,6 +188,7 @@ with cluster_process(self.gpu_cluster()):
 ```
 
 Benefits:
+
 - Appropriate resources for each operation
 - Automatic cleanup
 - No resource conflicts
@@ -213,6 +218,7 @@ class ProjConfig(BaseModel):
 ```
 
 Benefits:
+
 - Type-safe configuration
 - Auto-validation on load
 - Human-readable JSON format
@@ -245,6 +251,7 @@ class ProjFp:
 ```
 
 Benefits:
+
 - Centralized path management
 - Consistent naming
 - Auto-created directories
@@ -279,7 +286,7 @@ flowchart TB
         LABEL[Label Contiguous]
         FILTER1[Size Filter #1]
         MAXIMA[Detect Local Maxima]
-        WSHED[Watershed Segmentation]
+        watershed[Watershed Segmentation]
         FILTER2[Size Filter #2]
         CELLS[Cell Table<br/>coordinates + measurements]
     end
@@ -293,7 +300,7 @@ flowchart TB
 
     TIFF --> ZARR
     ZARR --> DOWN1 --> DOWN2 --> TRIM --> BOUND --> REG
-    ZARR --> TOPHAT --> DOG --> ADAPT --> THRESH --> LABEL --> FILTER1 --> MAXIMA --> WSHED --> FILTER2 --> CELLS
+    ZARR --> TOPHAT --> DOG --> ADAPT --> THRESH --> LABEL --> FILTER1 --> MAXIMA --> watershed --> FILTER2 --> CELLS
     REG --> TRFM
     CELLS --> TRFM --> MAPPED --> AGG --> CSV
 ```
@@ -330,6 +337,7 @@ disk_cache(filtered, "output.zarr")  # Materializes
 ```
 
 Benefits:
+
 - No intermediate arrays in memory
 - Task optimization before execution
 - Automatic parallelism
@@ -343,6 +351,7 @@ with cluster_process(self.gpu_cluster()):
 ```
 
 GPU memory is limited — single worker ensures:
+
 - Only one chunk on GPU at a time
 - No contention for VRAM
 - Predictable memory usage
@@ -413,11 +422,11 @@ class ProjConfig(BaseModel):
 
 The modular design enables testing at multiple levels:
 
-| Level | What to Test | Example |
-|-------|--------------|---------|
-| Unit | Individual functions | `test_tophat_filter()` |
-| Integration | Pipeline steps | `test_registration_flow()` |
-| End-to-end | Full pipeline | `test_small_image()` |
+| Level       | What to Test         | Example                    |
+| ----------- | -------------------- | -------------------------- |
+| Unit        | Individual functions | `test_tophat_filter()`     |
+| Integration | Pipeline steps       | `test_registration_flow()` |
+| End-to-end  | Full pipeline        | `test_small_image()`       |
 
 ### Mock GPU for Testing
 
@@ -433,12 +442,12 @@ def test_cell_counting_cpu():
 
 ## Performance Considerations
 
-| Operation | Bottleneck | Optimization |
-|-----------|------------|--------------|
-| TIFF→Zarr | Disk I/O | SSD, parallel writing |
-| Registration | Elastix | Multi-thread elastix |
-| Top-hat | GPU memory | Right-sized chunks |
-| Watershed | Memory | Single worker, CPU |
-| CSV export | Aggregation | Parquet intermediate |
+| Operation    | Bottleneck  | Optimization          |
+| ------------ | ----------- | --------------------- |
+| TIFF→Zarr    | Disk I/O    | SSD, parallel writing |
+| Registration | Elastix     | Multi-thread elastix  |
+| Top-hat      | GPU memory  | Right-sized chunks    |
+| Watershed    | Memory      | Single worker, CPU    |
+| CSV export   | Aggregation | Parquet intermediate  |
 
 The architecture separates these concerns so each can be optimized independently.

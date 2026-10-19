@@ -114,24 +114,24 @@ class ProjFp:
         return self.root_dir / self.cellcount_sdir / "3_adaptv.zarr"
 
     @property
-    def threshd(self) -> Path:
+    def threshold(self) -> Path:
         """Thresholded filepath."""
-        return self.root_dir / self.cellcount_sdir / "4_threshd.zarr"
+        return self.root_dir / self.cellcount_sdir / "4_threshold.zarr"
 
     @property
-    def threshd_labels(self) -> Path:
+    def threshold_labels(self) -> Path:
         """Thresholded labels filepath."""
-        return self.root_dir / self.cellcount_sdir / "5_threshd_labels.zarr"
+        return self.root_dir / self.cellcount_sdir / "5_threshold_labels.zarr"
 
     @property
-    def threshd_volumes(self) -> Path:
+    def threshold_volumes(self) -> Path:
         """Thresholded volumes filepath."""
-        return self.root_dir / self.cellcount_sdir / "6_threshd_volumes.zarr"
+        return self.root_dir / self.cellcount_sdir / "6_threshold_volumes.zarr"
 
     @property
-    def threshd_filt(self) -> Path:
+    def threshold_filt(self) -> Path:
         """Thresholded filtered filepath."""
-        return self.root_dir / self.cellcount_sdir / "7_threshd_filt.zarr"
+        return self.root_dir / self.cellcount_sdir / "7_threshold_filt.zarr"
 
     @property
     def maxima(self) -> Path:
@@ -144,19 +144,19 @@ class ProjFp:
         return self.root_dir / self.cellcount_sdir / "9_maxima_labels.zarr"
 
     @property
-    def wshed_labels(self) -> Path:
+    def watershed_labels(self) -> Path:
         """Watershed labels filepath."""
-        return self.root_dir / self.cellcount_sdir / "10_wshed_labels.zarr"
+        return self.root_dir / self.cellcount_sdir / "10_watershed_labels.zarr"
 
     @property
-    def wshed_volumes(self) -> Path:
+    def watershed_volumes(self) -> Path:
         """Watershed volumes filepath."""
-        return self.root_dir / self.cellcount_sdir / "11_wshed_volumes.zarr"
+        return self.root_dir / self.cellcount_sdir / "11_watershed_volumes.zarr"
 
     @property
-    def wshed_filt(self) -> Path:
+    def watershed_filt(self) -> Path:
         """Watershed filtered filepath."""
-        return self.root_dir / self.cellcount_sdir / "12_wshed_filt.zarr"
+        return self.root_dir / self.cellcount_sdir / "12_watershed_filt.zarr"
 
     @property
     def cells_raw_df(self) -> Path:

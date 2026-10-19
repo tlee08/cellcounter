@@ -19,6 +19,10 @@ class DimsConfig[T](BaseModel):
         """Return tuple in (z, y, x) form."""
         return (self.z, self.y, self.x)
 
+    def scaled(self, scale: float) -> "DimsConfig[float]":
+        """Return a copy with each axis scaled by ``scale``."""
+        return DimsConfig(z=self.z * scale, y=self.y * scale, x=self.x * scale)  # ty: ignore[unsupported-operator]
+
 
 class SliceConfig(BaseModel):
     """Slice configs that map to slice(start, stop, step)."""

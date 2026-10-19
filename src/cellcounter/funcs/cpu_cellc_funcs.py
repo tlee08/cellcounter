@@ -5,6 +5,8 @@ for 3D microscopy images. Backend (numpy/cupy) is injected at runtime,
 enabling GPU acceleration without code duplication.
 """
 
+import math
+
 import numpy as np
 import numpy.typing as npt
 from loguru import logger
@@ -17,8 +19,8 @@ class CpuCellcFuncs:
 
     def __init__(
         self,
-        xp: type[np] = np,
-        xdimage: type[sc_ndimage] = sc_ndimage,
+        xp: type[np] = np,  # ty: ignore[invalid-parameter-default, invalid-type-form]
+        xdimage: type[sc_ndimage] = sc_ndimage,  # ty: ignore[invalid-parameter-default, invalid-type-form]
     ) -> None:
         """Initialize CpuCellcFuncs.
 
@@ -87,68 +89,142 @@ class CpuCellcFuncs:
     # Intended to be used with dask.array.map_blocks
     #############################################
 
-    def _spherical_footprint(self, radius: int) -> npt.NDArray:
-        """Create spherical structuring element.
+    def _ellipsoidal_footprint(
+        self, z_radius: float, y_radius: float, x_radius: float
+    ) -> npt.NDArray:
+        """Create an ellipsoidal structuring element.
 
         Args:
-            radius: Radius of sphere.
+            z_radius: Radius along the z axis (in voxels).
+            y_radius: Radius along the y axis (in voxels).
+            x_radius: Radius along the x axis (in voxels).
 
         Returns:
-            Boolean array True within sphere of given radius.
+            Boolean array True within the ellipsoid.
         """
-        coords = self.xp.ogrid[
-            -radius : radius + 1, -radius : radius + 1, -radius : radius + 1
+        z, y, x = self.xp.ogrid[
+            -math.ceil(z_radius) : math.ceil(z_radius) + 1,
+            -math.ceil(y_radius) : math.ceil(y_radius) + 1,
+            -math.ceil(x_radius) : math.ceil(x_radius) + 1,
         ]
-        return coords[0] ** 2 + coords[1] ** 2 + coords[2] ** 2 <= radius**2
+        return (z / z_radius) ** 2 + (y / y_radius) ** 2 + (x / x_radius) ** 2 <= 1.0
 
-    def tophat_filt(self, block: npt.NDArray, radius: int = 10) -> npt.NDArray:
-        """Calculate white top-hat filter with spherical structuring element.
+    def tophat_filt(
+        self,
+        block: npt.NDArray,
+        z_radius: float,
+        y_radius: float,
+        x_radius: float,
+    ) -> npt.NDArray:
+        """Calculate white top-hat filter with ellipsoidal structuring element.
 
         White top-hat removes background by subtracting the morphological
         opening (erosion followed by dilation) from the original image.
 
         Args:
             block: Input array.
-            radius: Radius of spherical structuring element.
+            z_radius: Structuring element radius along the z axis.
+            y_radius: Structuring element radius along the y axis.
+            x_radius: Structuring element radius along the x axis.
 
         Returns:
             Background-subtracted array (original - opening).
         """
         block = self.xp.asarray(block).astype(self.xp.float32)
-        logger.debug("Perform white top-hat filter with spherical element")
-        footprint = self._spherical_footprint(radius)
+        logger.debug("Perform white top-hat filter with ellipsoidal element")
+        footprint = self._ellipsoidal_footprint(z_radius, y_radius, x_radius)
         res_block = self.xdimage.white_tophat(block, footprint=footprint)
         logger.debug("ReLu")
         res_block = self.xp.maximum(res_block, 0)
         return res_block.astype(self.xp.uint16)
 
     def dog_filt(
-        self, block: npt.NDArray, sigma1: int = 1, sigma2: int = 2
+        self,
+        block: npt.NDArray,
+        z_radius1: float,
+        y_radius1: float,
+        x_radius1: float,
+        z_radius2: float,
+        y_radius2: float,
+        x_radius2: float,
     ) -> npt.NDArray:
-        """Apply Difference of Gaussians (DoG) filter."""
+        """Apply Difference of Gaussians (DoG) filter.
+
+        Each Gaussian is ellipsoidal, with independent per-axis sigmas.
+
+        Args:
+            block: Input array.
+            z_radius1: Inner Gaussian sigma along the z axis.
+            y_radius1: Inner Gaussian sigma along the y axis.
+            x_radius1: Inner Gaussian sigma along the x axis.
+            z_radius2: Outer Gaussian sigma along the z axis.
+            y_radius2: Outer Gaussian sigma along the y axis.
+            x_radius2: Outer Gaussian sigma along the x axis.
+
+        Returns:
+            Band-pass filtered array (gaus1 - gaus2, clipped at 0).
+        """
         block = self.xp.asarray(block).astype(self.xp.float32)
         logger.debug("Making gaussian blur 1")
-        gaus1 = self.xdimage.gaussian_filter(block, sigma=sigma1)
+        gaus1 = self.xdimage.gaussian_filter(
+            block, sigma=(z_radius1, y_radius1, x_radius1)
+        )
         logger.debug("Making gaussian blur 2")
-        gaus2 = self.xdimage.gaussian_filter(block, sigma=sigma2)
+        gaus2 = self.xdimage.gaussian_filter(
+            block, sigma=(z_radius2, y_radius2, x_radius2)
+        )
         logger.debug("Subtracting gaussian blurs")
         res_block = gaus1 - gaus2
         logger.debug("ReLu")
         res_block = self.xp.maximum(res_block, 0)
         return res_block.astype(self.xp.uint16)
 
-    def gauss_blur_filt(self, block: npt.NDArray, sigma: int = 10) -> npt.NDArray:
-        """Apply Gaussian blur filter."""
+    def gauss_blur_filt(
+        self,
+        block: npt.NDArray,
+        z_radius: float,
+        y_radius: float,
+        x_radius: float,
+    ) -> npt.NDArray:
+        """Apply ellipsoidal Gaussian blur filter.
+
+        Args:
+            block: Input array.
+            z_radius: Gaussian sigma along the z axis.
+            y_radius: Gaussian sigma along the y axis.
+            x_radius: Gaussian sigma along the x axis.
+
+        Returns:
+            Gaussian-blurred array.
+        """
         block = self.xp.asarray(block).astype(self.xp.float32)
         logger.debug("Calculate Gaussian blur")
-        res_block = self.xdimage.gaussian_filter(block, sigma=sigma)
+        res_block = self.xdimage.gaussian_filter(
+            block, sigma=(z_radius, y_radius, x_radius)
+        )
         return res_block.astype(self.xp.uint16)
 
-    def gauss_subt_filt(self, block: npt.NDArray, sigma: int = 10) -> npt.NDArray:
-        """Apply Gaussian subtraction filter."""
+    def gauss_subt_filt(
+        self,
+        block: npt.NDArray,
+        z_radius: float,
+        y_radius: float,
+        x_radius: float,
+    ) -> npt.NDArray:
+        """Apply ellipsoidal Gaussian subtraction filter.
+
+        Args:
+            block: Input array.
+            z_radius: Gaussian sigma along the z axis.
+            y_radius: Gaussian sigma along the y axis.
+            x_radius: Gaussian sigma along the x axis.
+
+        Returns:
+            Local background subtracted array (block - blur, clipped at 0).
+        """
         block = self.xp.asarray(block).astype(self.xp.float32)
         logger.debug("Calculate local Gaussian blur")
-        gaus = self.xdimage.gaussian_filter(block, sigma=sigma)
+        gaus = self.xdimage.gaussian_filter(block, sigma=(z_radius, y_radius, x_radius))
         logger.debug("Apply the adaptive filter")
         res_block = block - gaus
         logger.debug("ReLu")
@@ -272,8 +348,8 @@ class CpuCellcFuncs:
             return np.array(list(pairs))
         return np.empty((0, 2))
 
-    def get_label_sizemap(self, block: npt.NDArray) -> npt.NDArray:
-        """Get a dict of label_val : contiguous_size.
+    def get_label_volumemap(self, block: npt.NDArray) -> npt.NDArray:
+        """Get a dict of label_val : contiguous_volume.
 
         Parameters:
         -----------
@@ -332,20 +408,23 @@ class CpuCellcFuncs:
 
     def label2volume(self, block: npt.NDArray) -> npt.NDArray:
         """Convert array of label values to contiguous volume (i.e. count) values."""
-        sizemap = self.get_label_sizemap(block)
+        sizemap = self.get_label_volumemap(block)
         ids, counts = sizemap[:, 0], sizemap[:, 1]
         res_block = self.map_values_to_arr(block, ids, counts)
         return res_block
 
     def volume_filter(
-        self, block: npt.NDArray, smin: int | None = None, smax: int | None = None
+        self,
+        block: npt.NDArray,
+        min_volume: int | None = None,
+        max_volume: int | None = None,
     ) -> npt.NDArray:
         """Assumes `arr` is array of objects labelled with their volumes."""
         block = self.xp.asarray(block)
         logger.debug("Getting filter of small and large object to filter out")
-        smin = smin if smin is not None else 0
-        smax = smax if smax is not None else block.max()
-        filt_objs = (block < smin) | (block > smax)
+        min_volume = min_volume if min_volume is not None else 0
+        max_volume = max_volume if max_volume is not None else block.max()
+        filt_objs = (block < min_volume) | (block > max_volume)
         logger.debug("Filter out objects (by setting them to 0)")
         block[filt_objs] = 0
         return block
@@ -353,19 +432,23 @@ class CpuCellcFuncs:
     def get_local_maxima(
         self,
         block: npt.NDArray,
-        mask_block: npt.NDArray | None = None,
-        radius: int = 5,
+        mask_block: npt.NDArray | None,
+        z_radius: float,
+        y_radius: float,
+        x_radius: float,
     ) -> npt.NDArray:
-        """Find local maxima using spherical neighborhood.
+        """Find local maxima using an ellipsoidal neighborhood.
 
-        A point is a local maximum if it equals the maximum within a sphere
-        of given radius. Note: plateau regions (flat maxima) return all points
-        in the plateau, not just the center.
+        A point is a local maximum if it equals the maximum within an
+        ellipsoid of given per-axis radii. Note: plateau regions (flat
+        maxima) return all points in the plateau, not just the center.
 
         Args:
             block: Input 3D array.
-            radius: Radius of spherical structuring element.
-            mask_block: Optional mask; maxima only kept where mask > 0.
+            mask_block: Mask; maxima only kept where mask > 0 (None to disable).
+            z_radius: Neighborhood radius along the z axis.
+            y_radius: Neighborhood radius along the y axis.
+            x_radius: Neighborhood radius along the x axis.
 
         Returns:
             Binary array where True indicates local maxima.
@@ -375,8 +458,13 @@ class CpuCellcFuncs:
             logger.debug("Mask provided. Only mask regions considered (round 1).")
             mask_block = (self.xp.asarray(mask_block) > 0).astype(self.xp.uint8)
             block = block * mask_block
-        logger.debug("Finding local maxima with spherical radius {}", radius)
-        footprint = self._spherical_footprint(radius)
+        logger.debug(
+            "Finding local maxima with ellipsoidal radius {}, {}, {}",
+            z_radius,
+            y_radius,
+            x_radius,
+        )
+        footprint = self._ellipsoidal_footprint(z_radius, y_radius, x_radius)
         max_arr = self.xdimage.maximum_filter(block, footprint=footprint)
         logger.debug("Identifying points where arr == max_arr")
         res_block = block == max_arr
@@ -393,7 +481,7 @@ class CpuCellcFuncs:
         res_block = block * (mask_block > 0)
         return res_block
 
-    def wshed_segm(
+    def watershed_segmentation(
         self, block: npt.NDArray, maxima_block: npt.NDArray, mask_block: npt.NDArray
     ) -> npt.NDArray:
         """Do watershed segmentation.

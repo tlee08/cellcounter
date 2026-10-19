@@ -63,15 +63,15 @@ def _():
         "bgrm",
         "dog",
         "adaptv",
-        "threshd",
-        # "threshd_labels",
-        "threshd_volumes",
-        "threshd_filt",
+        "threshold",
+        # "threshold_labels",
+        "threshold_volumes",
+        "threshold_filt",
         "maxima",
         # "maxima_labels",
-        # "wshed_labels",
-        "wshed_volumes",
-        "wshed_filt",
+        # "watershed_labels",
+        "watershed_volumes",
+        "watershed_filt",
     ]
     return (selected_imgs,)
 
@@ -291,7 +291,7 @@ def _():
 def _(selected_imgs, x_start, x_stop, y_start, y_stop, z_start, z_stop):
     # Estimate size and give warning
 
-    estimated_size_bytes = (
+    estimated_volume_bytes = (
         (z_stop - z_start)
         * (y_stop - y_start)
         * (x_stop - x_start)
@@ -302,22 +302,22 @@ def _(selected_imgs, x_start, x_stop, y_start, y_stop, z_start, z_stop):
     mb_factor = 1024**2
     gb_factor = 1024**3
 
-    recommended_threshold_size = 1e10
+    recommended_threshold_volume = 1e10
 
-    estimated_size_callout = mo.callout(
+    estimated_volume_callout = mo.callout(
         value=mo.md(f"""
-    Estimated size to view in memory: {estimated_size_bytes / gb_factor:_.4f} GB (or {estimated_size_bytes / mb_factor:_.0f} MB)
+    Estimated size to view in memory: {estimated_volume_bytes / gb_factor:_.4f} GB (or {estimated_volume_bytes / mb_factor:_.0f} MB)
 
-    **Highly recommended** to have this size be less than {recommended_threshold_size / gb_factor:_.4f} GB
+    **Highly recommended** to have this size be less than {recommended_threshold_volume / gb_factor:_.4f} GB
     to avoid slow load times and OOM.
 
     Adjust the trimming or the selected layers to adjust the size
     """),
         kind="neutral"
-        if estimated_size_bytes < recommended_threshold_size
+        if estimated_volume_bytes < recommended_threshold_volume
         else "danger",
     )
-    estimated_size_callout
+    estimated_volume_callout
 
 
 @app.cell

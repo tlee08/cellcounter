@@ -104,9 +104,9 @@ for img_name in imgs_ls:
             # Cell counting (tune these first!)
             cell_counting={
                 "tophat_radius": 10,
-                "threshd_value": 60,
-                "min_wshed_size": 1,
-                "max_wshed_size": 700,
+                "threshold_value": 60,
+                "min_watershed_volume": 1,
+                "max_watershed_volume": 700,
             },
 
             # Tuning crop for parameter validation
@@ -445,9 +445,9 @@ def main():
                 },
                 cell_counting={
                     "tophat_radius": 10,
-                    "threshd_value": 60,
-                    "min_wshed_size": 1,
-                    "max_wshed_size": 700,
+                    "threshold_value": 60,
+                    "min_watershed_volume": 1,
+                    "max_watershed_volume": 700,
                 },
             )
 

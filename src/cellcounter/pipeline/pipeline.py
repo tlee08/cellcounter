@@ -194,7 +194,7 @@ class Pipeline:
             uf.union(int(a), int(b))
         logger.debug("Aggregating voxels per label...")
         delayed_ls = [
-            dask.delayed(self.cellc_funcs.get_label_sizemap)(i)
+            dask.delayed(self.cellc_funcs.get_label_volumemap)(i)
             for i in label_arr.to_delayed().ravel()
         ]
         # Computing each chunk sequentially, not parallel, so it works for memory
@@ -213,7 +213,7 @@ class Pipeline:
             self.cellc_funcs.map_values_to_arr,
             label_arr,
             ids=uf.sorted_keys,
-            values=uf.sorted_sizes,
+            values=uf.sorted_volumes,
             dtype=np.uint64,
         )
 
@@ -452,7 +452,9 @@ class Pipeline:
             result = da.map_blocks(
                 self.cellc_funcs.tophat_filt,
                 da.from_zarr(self.pfm.raw),
-                radius=self.config.cell_counting.tophat_radius,
+                z_radius=self.config.cell_counting.tophat_radius.z,
+                y_radius=self.config.cell_counting.tophat_radius.y,
+                x_radius=self.config.cell_counting.tophat_radius.x,
             )
             disk_cache(result, self.pfm.bgrm)
 
@@ -465,8 +467,12 @@ class Pipeline:
             result = da.map_blocks(
                 self.cellc_funcs.dog_filt,
                 da.from_zarr(self.pfm.bgrm),
-                sigma1=self.config.cell_counting.dog_sigma1,
-                sigma2=self.config.cell_counting.dog_sigma2,
+                z_radius1=self.config.cell_counting.dog_sigma1.z,
+                y_radius1=self.config.cell_counting.dog_sigma1.y,
+                x_radius1=self.config.cell_counting.dog_sigma1.x,
+                z_radius2=self.config.cell_counting.dog_sigma2.z,
+                y_radius2=self.config.cell_counting.dog_sigma2.y,
+                x_radius2=self.config.cell_counting.dog_sigma2.x,
             )
             disk_cache(result, self.pfm.dog)
 
@@ -483,61 +489,63 @@ class Pipeline:
             result = da.map_blocks(
                 self.cellc_funcs.gauss_subt_filt,
                 da.from_zarr(self.pfm.dog),
-                sigma=self.config.cell_counting.large_gauss_radius,
+                z_radius=self.config.cell_counting.large_gauss_radius.z,
+                y_radius=self.config.cell_counting.large_gauss_radius.y,
+                x_radius=self.config.cell_counting.large_gauss_radius.x,
             )
             disk_cache(result, self.pfm.adaptv)
 
     @trace
     def threshold(self, *, overwrite: bool = False) -> None:
         """Step 4: Manual thresholding."""
-        if not overwrite and has_output_files(self.pfm.threshd):
+        if not overwrite and has_output_files(self.pfm.threshold):
             return
         with cluster_process(self.gpu_cluster()):
             result = da.map_blocks(
                 self.cellc_funcs.manual_thresh,
                 da.from_zarr(self.pfm.adaptv),
-                val=self.config.cell_counting.threshd_value,
+                val=self.config.cell_counting.threshold_value,
             )
-            disk_cache(result, self.pfm.threshd)
+            disk_cache(result, self.pfm.threshold)
 
     @trace
     def label_thresholded(self, *, overwrite: bool = False) -> None:
         """Step 5: Label contiguous regions in thresholded image."""
-        if not overwrite and has_output_files(self.pfm.threshd_labels):
+        if not overwrite and has_output_files(self.pfm.threshold_labels):
             return
         max_labels = int(np.ceil(np.prod(self.config.chunks.to_tuple())) / 2) + 1
         with cluster_process(self.gpu_cluster()):
             result = da.map_blocks(
                 self.cellc_funcs.mask2label,
-                da.from_zarr(self.pfm.threshd),
+                da.from_zarr(self.pfm.threshold),
                 max_labels_per_chunk=max_labels,
             )
-            disk_cache(result, self.pfm.threshd_labels)
+            disk_cache(result, self.pfm.threshold_labels)
 
     @trace
     def compute_thresholded_volumes(self, *, overwrite: bool = False) -> None:
         """Step 6: Compute contiguous sizes using union-find."""
-        if not overwrite and has_output_files(self.pfm.threshd_volumes):
+        if not overwrite and has_output_files(self.pfm.threshold_volumes):
             return
         with cluster_process(self.gpu_cluster()):
             sizes_arr = self._spatial_connect_count(
-                da.from_zarr(self.pfm.threshd_labels),
+                da.from_zarr(self.pfm.threshold_labels),
             )
-            disk_cache(sizes_arr, self.pfm.threshd_volumes)
+            disk_cache(sizes_arr, self.pfm.threshold_volumes)
 
     @trace
     def filter_thresholded(self, *, overwrite: bool = False) -> None:
         """Step 7: Filter out objects by size."""
-        if not overwrite and has_output_files(self.pfm.threshd_filt):
+        if not overwrite and has_output_files(self.pfm.threshold_filt):
             return
         with cluster_process(self.gpu_cluster()):
             result = da.map_blocks(
                 self.cellc_funcs.volume_filter,
-                da.from_zarr(self.pfm.threshd_volumes),
-                smin=self.config.cell_counting.min_threshd_size,
-                smax=self.config.cell_counting.max_threshd_size,
+                da.from_zarr(self.pfm.threshold_volumes),
+                min_volume=self.config.cell_counting.min_threshold_volume,
+                max_volume=self.config.cell_counting.max_threshold_volume,
             )
-            disk_cache(result, self.pfm.threshd_filt)
+            disk_cache(result, self.pfm.threshold_filt)
 
     @trace
     def detect_maxima(self, *, overwrite: bool = False) -> None:
@@ -548,8 +556,10 @@ class Pipeline:
             result = da.map_blocks(
                 self.cellc_funcs.get_local_maxima,
                 da.from_zarr(self.pfm.adaptv),
-                da.from_zarr(self.pfm.threshd_filt),
-                radius=self.config.cell_counting.maxima_radius,
+                da.from_zarr(self.pfm.threshold_filt),
+                z_radius=self.config.cell_counting.maxima_radius.z,
+                y_radius=self.config.cell_counting.maxima_radius.y,
+                x_radius=self.config.cell_counting.maxima_radius.x,
             )
             disk_cache(result, self.pfm.maxima)
 
@@ -570,40 +580,40 @@ class Pipeline:
     @trace
     def watershed(self, *, overwrite: bool = False) -> None:
         """Step 10: Watershed segmentation."""
-        if not overwrite and has_output_files(self.pfm.wshed_labels):
+        if not overwrite and has_output_files(self.pfm.watershed_labels):
             return
         with cluster_process(self.heavy_cluster()):
             result = da.map_blocks(
-                self.cellc_funcs.wshed_segm,
+                self.cellc_funcs.watershed_segmentation,
                 da.from_zarr(self.pfm.adaptv),
                 da.from_zarr(self.pfm.maxima_labels),
-                da.from_zarr(self.pfm.threshd_filt),
+                da.from_zarr(self.pfm.threshold_filt),
             )
-            disk_cache(result, self.pfm.wshed_labels)
+            disk_cache(result, self.pfm.watershed_labels)
 
     @trace
     def compute_watershed_volumes(self, *, overwrite: bool = False) -> None:
         """Step 11: Compute watershed volumes using union-find."""
-        if not overwrite and has_output_files(self.pfm.wshed_volumes):
+        if not overwrite and has_output_files(self.pfm.watershed_volumes):
             return
         with cluster_process(self.heavy_cluster()):
-            wshed_labels_arr = da.from_zarr(self.pfm.wshed_labels)
-            wshed_volumes_arr = self._spatial_connect_count(wshed_labels_arr)
-            disk_cache(wshed_volumes_arr, self.pfm.wshed_volumes)
+            watershed_labels_arr = da.from_zarr(self.pfm.watershed_labels)
+            watershed_volumes_arr = self._spatial_connect_count(watershed_labels_arr)
+            disk_cache(watershed_volumes_arr, self.pfm.watershed_volumes)
 
     @trace
     def filter_watershed(self, *, overwrite: bool = False) -> None:
         """Step 12: Filter watershed objects by size."""
-        if not overwrite and has_output_files(self.pfm.wshed_filt):
+        if not overwrite and has_output_files(self.pfm.watershed_filt):
             return
         with cluster_process(self.heavy_cluster()):
             result = da.map_blocks(
                 self.cellc_funcs.volume_filter,
-                da.from_zarr(self.pfm.wshed_volumes),
-                smin=self.config.cell_counting.min_wshed_size,
-                smax=self.config.cell_counting.max_wshed_size,
+                da.from_zarr(self.pfm.watershed_volumes),
+                min_volume=self.config.cell_counting.min_watershed_volume,
+                max_volume=self.config.cell_counting.max_watershed_volume,
             )
-            disk_cache(result, self.pfm.wshed_filt)
+            disk_cache(result, self.pfm.watershed_filt)
 
     @trace
     def save_cells_table(self, *, overwrite: bool = False) -> None:
@@ -613,16 +623,16 @@ class Pipeline:
         with cluster_process(self.gpu_cluster()):
             raw_arr = da.from_zarr(self.pfm.raw)
             maxima_labels_arr = da.from_zarr(self.pfm.maxima_labels)
-            wshed_labels_arr = da.from_zarr(self.pfm.wshed_labels)
-            wshed_filt_arr = da.from_zarr(self.pfm.wshed_filt)
+            watershed_labels_arr = da.from_zarr(self.pfm.watershed_labels)
+            watershed_filt_arr = da.from_zarr(self.pfm.watershed_filt)
 
             offsets = [np.cumsum([0, *c[:-1]]) for c in raw_arr.chunks]
             n_blocks = np.prod(raw_arr.numblocks)
 
             raw_blocks = raw_arr.to_delayed().ravel()
             maxima_blocks = maxima_labels_arr.to_delayed().ravel()
-            wshed_blocks = wshed_labels_arr.to_delayed().ravel()
-            filt_blocks = wshed_filt_arr.to_delayed().ravel()
+            watershed_blocks = watershed_labels_arr.to_delayed().ravel()
+            filt_blocks = watershed_filt_arr.to_delayed().ravel()
 
             delayed_results = []
             for idx in range(n_blocks):
@@ -634,7 +644,7 @@ class Pipeline:
                     dask.delayed(get_cells)(
                         raw_blocks[idx],
                         maxima_blocks[idx],
-                        wshed_blocks[idx],
+                        watershed_blocks[idx],
                         filt_blocks[idx],
                         z_offset,
                         y_offset,
@@ -665,7 +675,7 @@ class Pipeline:
             return
         with cluster_process(self.busy_cluster()):
             cells_df = pd.read_parquet(self.pfm.cells_raw_df)
-            cells_df = cells_df[[Z, Y, X]]
+            cells_df = cells_df[[Z, Y, X]]  # This order matters
 
             cells_df = cells_df / np.array(
                 self.config.registration.downsample_rough.to_tuple(),
@@ -863,7 +873,7 @@ class Pipeline:
             y_trim = self.config.visual_check.cellcount_trim.y.to_slice()
             x_trim = self.config.visual_check.cellcount_trim.x.to_slice()
         combine_arrs(
-            fp_in_ls=(self.pfm.raw, self.pfm.threshd_filt, self.pfm.wshed_filt),
+            fp_in_ls=(self.pfm.raw, self.pfm.threshold_filt, self.pfm.watershed_filt),
             fp_out=self.pfm.comb_cellc,
             trimmer=(z_trim, y_trim, x_trim),
         )

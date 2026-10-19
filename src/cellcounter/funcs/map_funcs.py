@@ -272,8 +272,8 @@ def _to_numpy(arr: npt.NDArray) -> npt.NDArray:
 def get_cells(
     raw_block: npt.NDArray,
     maxima_labels_block: npt.NDArray,
-    wshed_labels_block: npt.NDArray,
-    wshed_filt_block: npt.NDArray,
+    watershed_labels_block: npt.NDArray,
+    watershed_filt_block: npt.NDArray,
     z_offset: int,
     y_offset: int,
     x_offset: int,
@@ -282,15 +282,15 @@ def get_cells(
     """Extract cells from watershed segmentation to DataFrame.
 
     Note:
-        assumes that maxima_labels and wshed_labels share
+        assumes that maxima_labels and watershed_labels share
         the same label IDs (i.e., each
         maxima has the same integer ID as its watershed region).
 
     Args:
         raw_block: Raw intensity values.
         maxima_labels_block: Labels for each maxima point.
-        wshed_labels_block: Watershed segmentation labels.
-        wshed_filt_block: Filtered watershed volumes.
+        watershed_labels_block: Watershed segmentation labels.
+        watershed_filt_block: Filtered watershed volumes.
         z_offset: Z-axis offset for global coordinates.
         y_offset: Y-axis offset for global coordinates.
         x_offset: X-axis offset for global coordinates.
@@ -301,14 +301,14 @@ def get_cells(
     """
     # Validating input shapes
     assert raw_block.shape == maxima_labels_block.shape
-    assert raw_block.shape == wshed_filt_block.shape
-    assert raw_block.shape == wshed_labels_block.shape
+    assert raw_block.shape == watershed_filt_block.shape
+    assert raw_block.shape == watershed_labels_block.shape
     # Convert inputs to GPU arrays if using cupy
     raw = xp.asarray(raw_block)
     maxima_labels = xp.asarray(maxima_labels_block)
-    wshed_labels = xp.asarray(wshed_labels_block)
-    wshed_filt = xp.asarray(wshed_filt_block)
-    mask = wshed_filt > 0
+    watershed_labels = xp.asarray(watershed_labels_block)
+    watershed_filt = xp.asarray(watershed_filt_block)
+    mask = watershed_filt > 0
     # Get maxima positions (first occurrence of each label)
     # Mask the maxima_labels to only consider foreground regions
     labels, coords_flat = xp.unique(maxima_labels * mask, return_index=True)
@@ -326,7 +326,7 @@ def get_cells(
     # Set count of 1 for each cell
     cells_df[COUNT] = 1
     # Get volume at each maxima position
-    cells_df[VOLUME] = _to_numpy(wshed_filt[z, y, x])
+    cells_df[VOLUME] = _to_numpy(watershed_filt[z, y, x])
     # Remove background label (label 0) if present
     if cells_df.shape[0] > 0:
         cells_df = cells_df.drop(index=0, errors="ignore")
@@ -337,7 +337,7 @@ def get_cells(
         cells_df[SUM_INTENSITY] = 0.0
         return cells_df
     # Get unique watershed labels and their corresponding summed intensities
-    fg_labels, inverse = xp.unique(wshed_labels[mask].ravel(), return_inverse=True)
+    fg_labels, inverse = xp.unique(watershed_labels[mask].ravel(), return_inverse=True)
     intensities = xp.bincount(inverse, weights=raw[mask].ravel())
     label_to_intensity = dict(
         zip(_to_numpy(fg_labels), _to_numpy(intensities), strict=True)

@@ -146,9 +146,9 @@ pipeline.update_config(
     },
     cell_counting={
         "tophat_radius": 10,       # Background removal radius
-        "threshd_value": 60,       # Detection threshold (tune this!)
-        "min_wshed_size": 1,       # Minimum cell size (voxels)
-        "max_wshed_size": 700,     # Maximum cell size (voxels)
+        "threshold_value": 60,       # Detection threshold (tune this!)
+        "min_watershed_volume": 1,       # Minimum cell size (voxels)
+        "max_watershed_volume": 700,     # Maximum cell size (voxels)
     },
 )
 ```
@@ -259,7 +259,7 @@ graph TD
 ### 3. Tune Cell Detection
 
 - Use small crop (`tuning=True`) for fast iteration
-- Adjust `threshd_value` and size filters
+- Adjust `threshold_value` and size filters
 - **Verify**: Use `VisualCheck.combine_cellc()` to see detected cells
 
 ### 4. Run Full Pipeline

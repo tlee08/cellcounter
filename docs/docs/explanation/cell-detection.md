@@ -15,6 +15,7 @@ cFos is a nuclear protein that marks recently active neurons. Cell detection inv
 5. **Filtering by size** — Removing debris and artifacts
 
 The pipeline is designed for images where:
+
 - Cells appear as bright, roughly spherical spots
 - Background varies across the image
 - Cells may touch or overlap
@@ -28,6 +29,7 @@ The pipeline is designed for images where:
 **Goal**: Remove large-scale illumination variations and uneven background.
 
 **How it works**:
+
 - Morphological opening with a large sphere removes bright objects
 - Subtracting this from original leaves only small bright objects
 
@@ -39,12 +41,13 @@ cells = image - background
 
 **Visual effect**:
 
-| Before | After |
-|--------|-------|
+| Before                           | After                                      |
+| -------------------------------- | ------------------------------------------ |
 | Uneven illumination across field | Uniform background, bright cells stand out |
-| Dark corners, bright center | Consistent baseline |
+| Dark corners, bright center      | Consistent baseline                        |
 
 **Parameters**:
+
 - `tophat_radius`: Radius of structuring element (voxels)
   - Default: 10
   - Smaller (5-8): For small cells or uneven background
@@ -57,6 +60,7 @@ cells = image - background
 **Goal**: Highlight cell boundaries and suppress noise.
 
 **How it works**:
+
 - Gaussian blur at small sigma (preserves cells)
 - Gaussian blur at large sigma (preserves background)
 - Subtract: edges remain, uniform regions cancel
@@ -69,18 +73,20 @@ edges = small_blur - large_blur
 ```
 
 **Why it helps**:
+
 - Cells have strong edges → enhanced
 - Background varies slowly → suppressed
 - Small noise → smoothed out
 
 **Visual effect**:
 
-| Before | After |
-|--------|-------|
+| Before                               | After                               |
+| ------------------------------------ | ----------------------------------- |
 | Whole cells bright, fuzzy boundaries | Edges emphasized, interiors uniform |
-| Some noise visible | Noise reduced |
+| Some noise visible                   | Noise reduced                       |
 
 **Parameters**:
+
 - `dog_sigma1`: Small Gaussian sigma (voxels)
   - Default: 1
   - Match to cell radius
@@ -95,6 +101,7 @@ edges = small_blur - large_blur
 **Goal**: Handle varying background intensity across the image.
 
 **How it works**:
+
 - Large Gaussian smooths over cells
 - Subtracts this slowly-varying background
 - Result: normalized image suitable for global threshold
@@ -107,6 +114,7 @@ normalized = image - background
 
 **Why it's needed**:
 Some brain regions are brighter than others due to:
+
 - Staining variation
 - Tissue thickness differences
 - Light sheet illumination falloff
@@ -118,6 +126,7 @@ Some brain regions are brighter than others due to:
 **Goal**: Create binary mask (cell / not-cell).
 
 **How it works**:
+
 - Pixels above threshold → foreground (1)
 - Pixels below threshold → background (0)
 
@@ -127,20 +136,21 @@ binary_image = filtered_image > threshold_value
 
 **Visual effect**:
 
-| Before | After |
-|--------|-------|
-| Grayscale, cells brighter | Black and white mask |
-| Some dim cells | May be lost if threshold too high |
-| Some bright debris | May be kept if threshold too low |
+| Before                    | After                             |
+| ------------------------- | --------------------------------- |
+| Grayscale, cells brighter | Black and white mask              |
+| Some dim cells            | May be lost if threshold too high |
+| Some bright debris        | May be kept if threshold too low  |
 
 **Parameters**:
-- `threshd_value`: Intensity threshold
+
+- `threshold_value`: Intensity threshold
   - Default: 60
   - Lower (40): More sensitive, more false positives
   - Higher (80): More stringent, fewer false positives
 
 !!! tip "Finding the Right Threshold"
-    Start with default (60), visualize with `combine_cellc()`, and adjust up/down by 10-20 until reaching good balance.
+Start with default (60), visualize with `combine_cellc()`, and adjust up/down by 10-20 until reaching good balance.
 
 ---
 
@@ -149,6 +159,7 @@ binary_image = filtered_image > threshold_value
 **Goal**: Identify connected regions and measure their sizes.
 
 **How it works**:
+
 1. Connected component labeling: each contiguous foreground region gets unique ID
 2. Union-Find algorithm merges labels across chunk boundaries
 3. Volume computed for each component
@@ -182,12 +193,13 @@ The custom `UnionFind` class efficiently merges these labels.
 **Goal**: Remove obviously wrong objects (too small = noise, too large = artifacts).
 
 ```python
-keep = (volume > min_threshd_size) & (volume < max_threshd_size)
+keep = (volume > min_threshold_volume) & (volume < max_threshold_volume)
 ```
 
 **What it removes**:
-- `min_threshd_size` (default: 100): Dust, noise pixels
-- `max_threshd_size` (default: 9000): Clusters, artifacts
+
+- `min_threshold_volume` (default: 100): Dust, noise pixels
+- `max_threshold_volume` (default: 9000): Clusters, artifacts
 
 **Note**: This is a coarse filter. Fine-tuning happens after watershed.
 
@@ -198,6 +210,7 @@ keep = (volume > min_threshd_size) & (volume < max_threshd_size)
 **Goal**: Find the center point of each cell.
 
 **How it works**:
+
 - For each pixel, check if it's the maximum in local neighborhood
 - Only keep maxima within valid regions (post-filter mask)
 
@@ -210,12 +223,13 @@ for each pixel:
 
 **Visual effect**:
 
-| Before | After |
-|--------|-------|
+| Before                  | After                                |
+| ----------------------- | ------------------------------------ |
 | Filtered threshold mask | Single-pixel markers at cell centers |
-| Connected regions | One marker per cell |
+| Connected regions       | One marker per cell                  |
 
 **Parameters**:
+
 - `maxima_radius`: Neighborhood size (voxels)
   - Default: 10
   - Smaller: More sensitive, may split cells
@@ -230,6 +244,7 @@ for each pixel:
 **Goal**: Separate touching cells.
 
 **How watershed works**:
+
 1. Treat inverted image as a terrain (dark = low, bright = high)
 2. Maxima are "basins" that will collect "water"
 3. Flood from each maxima simultaneously
@@ -250,16 +265,17 @@ Watershed Result:
 ```
 
 **Why it works for cells**:
+
 - Cells are brighter in center → form basins
 - Touching cells have saddle point between → watershed boundary
 - Separates overlapping nuclei
 
 **Visual effect**:
 
-| Before Watershed | After Watershed |
-|------------------|-----------------|
-| Single merged region for touching cells | Each cell has unique label |
-| Cannot count individual cells | Cell count = number of labels |
+| Before Watershed                        | After Watershed               |
+| --------------------------------------- | ----------------------------- |
+| Single merged region for touching cells | Each cell has unique label    |
+| Cannot count individual cells           | Cell count = number of labels |
 
 ---
 
@@ -271,14 +287,16 @@ Watershed Result:
 
 ```python
 # Filter watershed cells
-keep = (volume > min_wshed_size) & (volume < max_wshed_size)
+keep = (volume > min_watershed_volume) & (volume < max_watershed_volume)
 ```
 
 **Parameters**:
-- `min_wshed_size`: Minimum final cell size (default: 1)
-- `max_wshed_size`: Maximum final cell size (default: 700)
+
+- `min_watershed_volume`: Minimum final cell size (default: 1)
+- `max_watershed_volume`: Maximum final cell size (default: 700)
 
 These are the **most important** parameters for tuning:
+
 - Too low: Dust included
 - Too high: Real cells excluded
 - Typical cFos nucleus: 50-300 voxels (at 1µm resolution)
@@ -290,6 +308,7 @@ These are the **most important** parameters for tuning:
 **Goal**: Extract measurements for each detected cell.
 
 For each valid cell:
+
 - Center coordinates (z, y, x)
 - Volume (voxels)
 - Sum intensity (total fluorescence)
@@ -297,28 +316,28 @@ For each valid cell:
 
 Output: Parquet file with columns:
 
-| z | y | x | label | volume | sum_intensity | mean_intensity |
-|---|---|---|-------|--------|---------------|----------------|
-| 100 | 1500 | 2000 | 1 | 127 | 5432 | 42.8 |
-| 102 | 1505 | 2010 | 2 | 98 | 4100 | 41.8 |
-| ... | ... | ... | ... | ... | ... | ... |
+| z   | y    | x    | label | volume | sum_intensity | mean_intensity |
+| --- | ---- | ---- | ----- | ------ | ------------- | -------------- |
+| 100 | 1500 | 2000 | 1     | 127    | 5432          | 42.8           |
+| 102 | 1505 | 2010 | 2     | 98     | 4100          | 41.8           |
+| ... | ...  | ...  | ...   | ...    | ...           | ...            |
 
 ---
 
 ## Algorithm Parameters Summary
 
-| Parameter | Step | Default | Effect of Increase | Effect of Decrease |
-|-----------|------|---------|-------------------|-------------------|
-| `tophat_radius` | Background removal | 10 | More background removed | Less background removed |
-| `dog_sigma1` | Edge detection | 1 | Larger features | Smaller features |
-| `dog_sigma2` | Edge detection | 4 | Smoother edges | Sharper edges |
-| `large_gauss_radius` | Adaptive thresh | 101 | More normalization | Less normalization |
-| `threshd_value` | Thresholding | 60 | Fewer cells detected | More cells detected |
-| `min_threshd_size` | Pre-filter | 100 | Fewer objects | More objects |
-| `max_threshd_size` | Pre-filter | 9000 | Allows larger | Rejects larger |
-| `maxima_radius` | Maxima detection | 10 | Fewer maxima | More maxima |
-| `min_wshed_size` | Final filter | 1 | Rejects small | Keeps small |
-| `max_wshed_size` | Final filter | 700 | Rejects large | Keeps large |
+| Parameter              | Step               | Default | Effect of Increase      | Effect of Decrease      |
+| ---------------------- | ------------------ | ------- | ----------------------- | ----------------------- |
+| `tophat_radius`        | Background removal | 10      | More background removed | Less background removed |
+| `dog_sigma1`           | Edge detection     | 1       | Larger features         | Smaller features        |
+| `dog_sigma2`           | Edge detection     | 4       | Smoother edges          | Sharper edges           |
+| `large_gauss_radius`   | Adaptive thresh    | 101     | More normalization      | Less normalization      |
+| `threshold_value`      | Thresholding       | 60      | Fewer cells detected    | More cells detected     |
+| `min_threshold_volume` | Pre-filter         | 100     | Fewer objects           | More objects            |
+| `max_threshold_volume` | Pre-filter         | 9000    | Allows larger           | Rejects larger          |
+| `maxima_radius`        | Maxima detection   | 10      | Fewer maxima            | More maxima             |
+| `min_watershed_volume` | Final filter       | 1       | Rejects small           | Keeps small             |
+| `max_watershed_volume` | Final filter       | 700     | Rejects large           | Keeps large             |
 
 ---
 
@@ -339,7 +358,7 @@ flowchart LR
     subgraph Detect["3. Detection"]
         THRESH["Threshold<br/>binary mask"]
         MAXIMA["Local maxima<br/>find centers"]
-        WSHED["Watershed<br/>separate cells"]
+        watershed["Watershed<br/>separate cells"]
     end
 
     subgraph Filter2["4. Filtering"]
@@ -350,7 +369,7 @@ flowchart LR
         CELLS["📊 Cell table<br/>coordinates + metrics"]
     end
 
-    R --> TOPHAT --> DOG --> ADAPT --> THRESH --> MAXIMA --> WSHED --> VOL --> CELLS
+    R --> TOPHAT --> DOG --> ADAPT --> THRESH --> MAXIMA --> watershed --> VOL --> CELLS
 ```
 
 ---

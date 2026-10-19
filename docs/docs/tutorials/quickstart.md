@@ -3,7 +3,7 @@
 Process your first microscopy image from TIFF file to cell counts by brain region.
 
 !!! tip "Prerequisites"
-    Make sure you've completed the [Installation guide](installation.md) first.
+Make sure you've completed the [Installation guide](installation.md) first.
 
 ---
 
@@ -37,11 +37,11 @@ flowchart LR
     style E fill:#c8e6c9
 ```
 
-| Stage | What It Does | Time (GPU) |
-|-------|-------------|------------|
-| **Registration** | Converts TIFF, aligns image to Allen Atlas | 30-60 min |
-| **Cell Detection** | Finds cFos+ cells using watershed segmentation | 20-40 min |
-| **Region Mapping** | Assigns each cell to a brain region | 5-10 min |
+| Stage              | What It Does                                   | Time (GPU) |
+| ------------------ | ---------------------------------------------- | ---------- |
+| **Registration**   | Converts TIFF, aligns image to Allen Atlas     | 30-60 min  |
+| **Cell Detection** | Finds cFos+ cells using watershed segmentation | 20-40 min  |
+| **Region Mapping** | Assigns each cell to a brain region            | 5-10 min   |
 
 ---
 
@@ -69,6 +69,7 @@ uv run cellcounter-make-project
 ```
 
 You'll see:
+
 ```
 ? Enter project name:  my_experiment
 ✓ Created project: my_experiment
@@ -86,7 +87,7 @@ my_experiment/
 ```
 
 !!! success "Checkpoint"
-    You now have a project folder ready for processing.
+You now have a project folder ready for processing.
 
 ---
 
@@ -101,7 +102,7 @@ from cellcounter import Pipeline
 pipeline = Pipeline("/path/to/your/analysis/my_experiment")
 
 # View current config
-print(pipeline.config.cell_counting.threshd_value)  # Default: 60
+print(pipeline.config.cell_counting.threshold_value)  # Default: 60
 ```
 
 ### Understanding Your Image
@@ -151,11 +152,11 @@ pipeline.update_config(
     # Cell counting parameters
     cell_counting={
         # Detection sensitivity (lower = more cells detected)
-        "threshd_value": 60,
+        "threshold_value": 60,
 
         # Cell size range (in voxels)
-        "min_wshed_size": 1,    # Minimum cell size
-        "max_wshed_size": 700,  # Maximum cell size
+        "min_watershed_volume": 1,    # Minimum cell size
+        "max_watershed_volume": 700,  # Maximum cell size
 
         # Background removal
         "tophat_radius": 10,
@@ -164,7 +165,7 @@ pipeline.update_config(
 ```
 
 !!! tip "Finding the Right Orientation"
-    The Allen Atlas has axes (z=inferior-superior, y=anterior-posterior, x=left-right). Use napari to open your image and compare with the reference atlas to determine the correct mapping.
+The Allen Atlas has axes (z=inferior-superior, y=anterior-posterior, x=left-right). Use napari to open your image and compare with the reference atlas to determine the correct mapping.
 
 ---
 
@@ -180,15 +181,14 @@ pipeline.tiff2zarr("/path/to/your/image.tiff")
 This creates `cellcount/raw.zarr/` with your image in chunked format.
 
 !!! note "TIFF Variations"
-    CellCounter supports:
-    - Single multi-page TIFF files
-    - Directories of single-plane TIFFs (will be stacked by natural sort order)
+CellCounter supports: - Single multi-page TIFF files - Directories of single-plane TIFFs (will be stacked by natural sort order)
 
 ---
 
 ## Step 4: Run Registration
 
 Registration aligns your image to the Allen Atlas. This step:
+
 1. Prepares reference images
 2. Downsamples your image to match atlas resolution
 3. Runs elastix registration
@@ -208,9 +208,10 @@ pipeline.reg_elastix()      # Elastix registration (~20-30 min)
 ```
 
 !!! success "Checkpoint"
-    You now have a registered image aligned to the atlas. Verify with:
-    ```python
-    from cellcounter import VisualCheck
+You now have a registered image aligned to the atlas. Verify with:
+
+````python
+from cellcounter import VisualCheck
 
     vc = VisualCheck("/path/to/your/analysis/my_experiment")
     vc.combine_reg()  # Creates combined_reg.tiff for inspection
@@ -236,7 +237,7 @@ pipeline.update_config(
 
 # Create the tuning crop
 pipeline.make_tuning_arr()
-```
+````
 
 ### Run Cell Counting on Tuning Crop
 
@@ -270,6 +271,7 @@ vc_tuning.combine_cellc()  # Creates combined file for inspection
 ```
 
 Open `cellcount/tuning/combined_cellc.tiff` in napari to verify:
+
 - Are cells being detected? (blue channel = thresholded, green = final cells)
 - Are cells being split correctly? (watershed should separate touching cells)
 - Are debris/dust particles filtered out? (adjust size filters)
@@ -280,10 +282,10 @@ Adjust parameters and re-run tuning until detection looks good:
 
 ```python
 # If too few cells detected, lower threshold
-pipeline_tuning.update_config(cell_counting={"threshd_value": 50})
+pipeline_tuning.update_config(cell_counting={"threshold_value": 50})
 
 # If too many small noise artifacts, increase min size
-pipeline_tuning.update_config(cell_counting={"min_wshed_size": 10})
+pipeline_tuning.update_config(cell_counting={"min_watershed_volume": 10})
 
 # Re-run cell counting steps (overwrite=True to update)
 pipeline_tuning.dog_filter(overwrite=True)
@@ -292,7 +294,7 @@ pipeline_tuning.threshold(overwrite=True)
 ```
 
 !!! success "Checkpoint"
-    You now have cell detection parameters that work for your data.
+You now have cell detection parameters that work for your data.
 
 ---
 
@@ -343,7 +345,7 @@ pipeline_full.cells2csv()
 ```
 
 !!! success "Done!"
-    Your results are in `cellcount/cells_agg.csv`
+Your results are in `cellcount/cells_agg.csv`
 
 ---
 
@@ -351,36 +353,40 @@ pipeline_full.cells2csv()
 
 Open `cellcount/cells_agg.csv`:
 
-| Column | Description |
-|--------|-------------|
-| `id` | Allen Atlas region ID |
-| `name` | Brain region name |
-| `acronym` | Short name (e.g., "CA1", "MOp") |
-| `cell_count` | Number of cells in this region |
-| `volume` | Total cell volume (voxels) |
-| `sum_intensity` | Sum of fluorescence intensities |
-| `avg_intensity` | Average intensity per cell |
-| `voxel_intensity` | Intensity per voxel |
+| Column            | Description                     |
+| ----------------- | ------------------------------- |
+| `id`              | Allen Atlas region ID           |
+| `name`            | Brain region name               |
+| `acronym`         | Short name (e.g., "CA1", "MOp") |
+| `cell_count`      | Number of cells in this region  |
+| `volume`          | Total cell volume (voxels)      |
+| `sum_intensity`   | Sum of fluorescence intensities |
+| `avg_intensity`   | Average intensity per cell      |
+| `voxel_intensity` | Intensity per voxel             |
 
 ---
 
 ## Quick Reference: Common Issues
 
 ### "Not detecting any cells"
-- Lower `threshd_value` (try 40, 30, 20...)
+
+- Lower `threshold_value` (try 40, 30, 20...)
 - Check image intensity range — is it very dim?
 - Verify tuning crop has visible cFos+ cells
 
 ### "Detecting too many false positives"
-- Increase `threshd_value`
-- Increase `min_wshed_size` to filter small debris
+
+- Increase `threshold_value`
+- Increase `min_watershed_volume` to filter small debris
 - Adjust `tophat_radius` if background not removed
 
 ### "Cells not separated correctly"
+
 - Increase `dog_sigma1` or `dog_sigma2` for better edge detection
 - Check that detected maxima are inside cells
 
 ### "Registration looks wrong"
+
 - Check `ref_orientation` — are axes mapped correctly?
 - Verify `downsample_rough` matches your resolution
 - Use `VisualCheck.combine_reg()` to diagnose

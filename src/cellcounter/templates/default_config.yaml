@@ -117,37 +117,52 @@ registration:
 # ---------------------------------------------------------------------------
 # Cell counting parameters.
 #
-# tophat_radius — radius for top-hat background subtraction.
+# cell_diameter_px — physical cell diameter in voxels, per axis (z, y, x).
+#   Because acquisition voxels are anisotropic (z is usually thicker than
+#   x/y), the diameter differs per axis. Every filter size below is derived
+#   from this diameter by a dimensionless scale factor, so anisotropy is
+#   handled automatically.
+#
+# tophat_radius_scale — top-hat background subtraction radius, as a multiple
+#   of cell_diameter_px.
 #   Rule of thumb (https://www.cell.com/cell-reports/fulltext/S2211-1247(22)00371-0, https://pmc.ncbi.nlm.nih.gov/articles/PMC8592694/):
-#     tophat_radius is 30% to 50% larger than largest cFos cell diameter
-# dog_sigma1 / dog_sigma2 — Difference-of-Gaussian bandpass.
-#   Must satisfy: dog_sigma1 < dog_sigma2.
+#     tophat radius is 30% to 50% larger than largest cFos cell diameter.
+#
+# dog_sigma1_scale / dog_sigma2_scale — Difference-of-Gaussian bandpass, as
+#   multiples of cell_diameter_px. Must satisfy dog_sigma1_scale < dog_sigma2_scale.
 #   Rule of thumb (https://bioimagebook.github.io/chapters/appendices/macros/macro_dog.html):
 #     dog_sigma1 is 1/4 to 1/2 of average cFos cell diameter
 #     dog_sigma2 is 1.4 (in other books 1.6 to 2.0) times dog_sigma1
-# large_gauss_radius — radius for large-scale background estimation.
-#   Including in case, but in most cases this step can be skipped.
-#   To skip, set large_gauss_radius to null
 #
-# threshd_value — absolute intensity threshold.
-# min/max_threshd_size — size filter on thresholded blobs (voxels).
-#   Must satisfy: min_threshd_size < max_threshd_size.
+# maxima_radius_scale — local maxima detection radius, as a multiple of
+#   cell_diameter_px.
 #
-# maxima_radius — radius for local maxima detection.
-# min/max_wshed_size — size filter after watershed (voxels).
-#   Must satisfy: min_wshed_size < max_wshed_size.
+# large_gauss_radius — radius for large-scale background estimation, absolute
+#   and per-axis (z, y, x). Including in case, but in most cases this step can
+#   be skipped. To skip, set large_gauss_radius to null.
+#
+# threshold_value — absolute intensity threshold.
+# min/max_threshold_volume_volume — size filter on thresholded blobs, in voxels.
+#   Must satisfy min < max.
+#
+# min/max_watershed_volume_volume — size filter after watershed, in voxels.
+#   Must satisfy min < max.
 # ---------------------------------------------------------------------------
 cell_counting:
-  tophat_radius: 11
-  dog_sigma1: 2
-  dog_sigma2: 4
+  cell_diameter_px:
+    z: 2.0
+    y: 10.0
+    x: 10.0
+  tophat_radius_scale: 1.5
+  dog_sigma1_scale: 0.5
+  dog_sigma2_scale: 1.0
+  maxima_radius_scale: 0.5
   large_gauss_radius: null
-  threshd_value: 100
-  min_threshd_size: 1
-  max_threshd_size: 15000
-  maxima_radius: 4
-  min_wshed_size: 1
-  max_wshed_size: 1000
+  threshold_value: 100
+  min_threshold_volume_volume: 1
+  max_threshold_volume_volume: 15000
+  min_watershed_volume_volume: 1
+  max_watershed_volume_volume: 1000
 
 # ---------------------------------------------------------------------------
 # Visual QC settings.

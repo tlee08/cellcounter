@@ -53,7 +53,7 @@ Access project configuration.
 **Example**:
 
 ```python
-print(pipeline.config.cell_counting.threshd_value)  # 60
+print(pipeline.config.cell_counting.threshold_value)  # 60
 ```
 
 ---
@@ -111,7 +111,7 @@ Update project configuration and save to disk.
 
 ```python
 pipeline.update_config(
-    cell_counting={"threshd_value": 45},
+    cell_counting={"threshold_value": 45},
     registration={"ref_orientation": {"z": -2, "y": 3, "x": 1}},
 )
 ```
@@ -334,7 +334,7 @@ def threshold(self, *, overwrite: bool = False) -> None
 
 Step 4: Manual intensity thresholding.
 
-Creates binary mask based on `threshd_value` parameter.
+Creates binary mask based on `threshold_value` parameter.
 
 ---
 
@@ -370,7 +370,7 @@ def filter_thresholded(self, *, overwrite: bool = False) -> None
 
 Step 7: Filter thresholded objects by size.
 
-Removes objects outside size range (`min_threshd_size`, `max_threshd_size`).
+Removes objects outside size range (`min_threshold_volume`, `max_threshold_volume`).
 
 ---
 
@@ -430,7 +430,7 @@ def filter_watershed(self, *, overwrite: bool = False) -> None
 
 Step 12: Filter watershed objects by size.
 
-Final size filtering using `min_wshed_size` and `max_wshed_size`.
+Final size filtering using `min_watershed_volume` and `max_watershed_volume`.
 
 ---
 
@@ -594,9 +594,9 @@ pipeline.update_config(
         "downsample_rough": {"z": 3, "y": 6, "x": 6},
     },
     cell_counting={
-        "threshd_value": 60,
-        "min_wshed_size": 1,
-        "max_wshed_size": 700,
+        "threshold_value": 60,
+        "min_watershed_volume": 1,
+        "max_watershed_volume": 700,
     },
 )
 
