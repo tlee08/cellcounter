@@ -496,7 +496,7 @@ class Pipeline:
             disk_cache(result, self.pfm.adaptv)
 
     @trace
-    def threshold(self, *, overwrite: bool = False) -> None:
+    def threshold_segment(self, *, overwrite: bool = False) -> None:
         """Step 4: Manual thresholding."""
         if not overwrite and has_output_files(self.pfm.threshold):
             return
@@ -509,7 +509,7 @@ class Pipeline:
             disk_cache(result, self.pfm.threshold)
 
     @trace
-    def label_thresholded(self, *, overwrite: bool = False) -> None:
+    def threshold_label(self, *, overwrite: bool = False) -> None:
         """Step 5: Label contiguous regions in thresholded image."""
         if not overwrite and has_output_files(self.pfm.threshold_labels):
             return
@@ -523,7 +523,7 @@ class Pipeline:
             disk_cache(result, self.pfm.threshold_labels)
 
     @trace
-    def compute_thresholded_volumes(self, *, overwrite: bool = False) -> None:
+    def threshold_volumes(self, *, overwrite: bool = False) -> None:
         """Step 6: Compute contiguous sizes using union-find."""
         if not overwrite and has_output_files(self.pfm.threshold_volumes):
             return
@@ -534,7 +534,7 @@ class Pipeline:
             disk_cache(sizes_arr, self.pfm.threshold_volumes)
 
     @trace
-    def filter_thresholded(self, *, overwrite: bool = False) -> None:
+    def threshold_volumes_filter(self, *, overwrite: bool = False) -> None:
         """Step 7: Filter out objects by size."""
         if not overwrite and has_output_files(self.pfm.threshold_filt):
             return
@@ -548,7 +548,7 @@ class Pipeline:
             disk_cache(result, self.pfm.threshold_filt)
 
     @trace
-    def detect_maxima(self, *, overwrite: bool = False) -> None:
+    def maxima_detect(self, *, overwrite: bool = False) -> None:
         """Step 8: Detect local maxima as cell candidates."""
         if not overwrite and has_output_files(self.pfm.maxima):
             return
@@ -564,7 +564,7 @@ class Pipeline:
             disk_cache(result, self.pfm.maxima)
 
     @trace
-    def label_maxima(self, *, overwrite: bool = False) -> None:
+    def maxima_label(self, *, overwrite: bool = False) -> None:
         """Step 9: Label maxima points."""
         if not overwrite and has_output_files(self.pfm.maxima_labels):
             return
@@ -578,13 +578,13 @@ class Pipeline:
             disk_cache(result, self.pfm.maxima_labels)
 
     @trace
-    def watershed(self, *, overwrite: bool = False) -> None:
+    def watershed_segment(self, *, overwrite: bool = False) -> None:
         """Step 10: Watershed segmentation."""
         if not overwrite and has_output_files(self.pfm.watershed_labels):
             return
         with cluster_process(self.heavy_cluster()):
             result = da.map_blocks(
-                self.cellc_funcs.watershed_segmentation,
+                self.cellc_funcs.watershed_segment,
                 da.from_zarr(self.pfm.adaptv),
                 da.from_zarr(self.pfm.maxima_labels),
                 da.from_zarr(self.pfm.threshold_filt),
@@ -592,7 +592,7 @@ class Pipeline:
             disk_cache(result, self.pfm.watershed_labels)
 
     @trace
-    def compute_watershed_volumes(self, *, overwrite: bool = False) -> None:
+    def watershed_volumes(self, *, overwrite: bool = False) -> None:
         """Step 11: Compute watershed volumes using union-find."""
         if not overwrite and has_output_files(self.pfm.watershed_volumes):
             return
@@ -602,7 +602,7 @@ class Pipeline:
             disk_cache(watershed_volumes_arr, self.pfm.watershed_volumes)
 
     @trace
-    def filter_watershed(self, *, overwrite: bool = False) -> None:
+    def watershed_volumes_filter(self, *, overwrite: bool = False) -> None:
         """Step 12: Filter watershed objects by size."""
         if not overwrite and has_output_files(self.pfm.watershed_filt):
             return
@@ -669,7 +669,7 @@ class Pipeline:
     # ===========================================
 
     @trace
-    def transform_coords(self, *, overwrite: bool = False) -> None:
+    def cells_transform(self, *, overwrite: bool = False) -> None:
         """Transform cell coordinates to reference atlas space."""
         if not overwrite and has_output_files(self.pfm.cells_trfm_df):
             return
@@ -703,7 +703,7 @@ class Pipeline:
             write_parquet(cells_trfm_df, self.pfm.cells_trfm_df)
 
     @trace
-    def cell_mapping(self, *, overwrite: bool = False) -> None:
+    def cells_mapping(self, *, overwrite: bool = False) -> None:
         """Map transformed cell coordinates to region IDs."""
         if not overwrite and has_output_files(self.pfm.cells_df):
             return
@@ -740,7 +740,7 @@ class Pipeline:
             write_parquet(cells_df, self.pfm.cells_df)
 
     @trace
-    def group_cells(self, *, overwrite: bool = False) -> None:
+    def cells_group(self, *, overwrite: bool = False) -> None:
         """Group cells by region and aggregate."""
         if not overwrite and has_output_files(self.pfm.cells_agg_df):
             return

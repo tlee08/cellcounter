@@ -19,10 +19,10 @@ class CellCountingConfig(BaseModel):
     cell_diameter_px: DimsConfig[PositiveFloat] = DimsConfig.from_tuple(3.0, 10.0, 10.0)
 
     # Dimensionless scale factors applied to cell_diameter_px.
-    tophat_radius_scale: PositiveFloat = 1.5
-    dog_sigma1_scale: PositiveFloat = 0.5
-    dog_sigma2_scale: PositiveFloat = 1.0
-    maxima_radius_scale: PositiveFloat = 0.5
+    tophat_radius_scale: PositiveFloat = 1.8
+    dog_sigma1_scale: PositiveFloat = 0.6
+    dog_sigma2_scale: PositiveFloat = 1.4
+    maxima_radius_scale: PositiveFloat = 1.0
 
     # Absolute per-axis radius for large-scale background estimation.
     # None skips the adaptive thresholding step.

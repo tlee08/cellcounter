@@ -153,10 +153,10 @@ cell_counting:
     z: 2.0
     y: 10.0
     x: 10.0
-  tophat_radius_scale: 1.5
-  dog_sigma1_scale: 0.5
-  dog_sigma2_scale: 1.0
-  maxima_radius_scale: 0.5
+  tophat_radius_scale: 1.8
+  dog_sigma1_scale: 0.6
+  dog_sigma2_scale: 1.4
+  maxima_radius_scale: 1.0
   large_gauss_radius: null
   threshold_value: 100
   min_threshold_volume_volume: 1

@@ -432,10 +432,10 @@ class CpuCellcFuncs:
     def get_local_maxima(
         self,
         block: npt.NDArray,
-        mask_block: npt.NDArray | None,
         z_radius: float,
         y_radius: float,
         x_radius: float,
+        mask_block: npt.NDArray | None = None,
     ) -> npt.NDArray:
         """Find local maxima using an ellipsoidal neighborhood.
 
@@ -445,10 +445,10 @@ class CpuCellcFuncs:
 
         Args:
             block: Input 3D array.
-            mask_block: Mask; maxima only kept where mask > 0 (None to disable).
             z_radius: Neighborhood radius along the z axis.
             y_radius: Neighborhood radius along the y axis.
             x_radius: Neighborhood radius along the x axis.
+            mask_block: Mask; maxima only kept where mask > 0 (None to disable).
 
         Returns:
             Binary array where True indicates local maxima.
@@ -481,7 +481,7 @@ class CpuCellcFuncs:
         res_block = block * (mask_block > 0)
         return res_block
 
-    def watershed_segmentation(
+    def watershed_segment(
         self, block: npt.NDArray, maxima_block: npt.NDArray, mask_block: npt.NDArray
     ) -> npt.NDArray:
         """Do watershed segmentation.
