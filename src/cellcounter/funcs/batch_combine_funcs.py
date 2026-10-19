@@ -58,7 +58,7 @@ def _get_reference_config(pfm: ProjFp) -> tuple:
 
 def _validate_project(pfm: ProjFp, reference_config: tuple) -> None:
     """Validate project has required files and matches reference atlas."""
-    if not pfm.cells_agg_df.exists():
+    if not pfm.cells_aggregated_df.exists():
         msg = f"Missing cells_agg_df for {pfm.root_dir}"
         raise FileNotFoundError(msg)
     config = _get_reference_config(pfm)
@@ -73,7 +73,7 @@ def _validate_project(pfm: ProjFp, reference_config: tuple) -> None:
 
 def _load_cells_agg(pfm: ProjFp) -> pd.DataFrame:
     """Load cell aggregation data for a single project."""
-    df = pd.read_parquet(pfm.cells_agg_df)
+    df = pd.read_parquet(pfm.cells_aggregated_df)
     return df[CELL_COLUMNS]
 
 

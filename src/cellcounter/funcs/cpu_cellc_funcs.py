@@ -141,12 +141,12 @@ class CpuCellcFuncs:
     def dog_filt(
         self,
         block: npt.NDArray,
-        z_radius1: float,
-        y_radius1: float,
-        x_radius1: float,
-        z_radius2: float,
-        y_radius2: float,
-        x_radius2: float,
+        z_sigma1: float,
+        y_sigma1: float,
+        x_sigma1: float,
+        z_sigma2: float,
+        y_sigma2: float,
+        x_sigma2: float,
     ) -> npt.NDArray:
         """Apply Difference of Gaussians (DoG) filter.
 
@@ -154,12 +154,12 @@ class CpuCellcFuncs:
 
         Args:
             block: Input array.
-            z_radius1: Inner Gaussian sigma along the z axis.
-            y_radius1: Inner Gaussian sigma along the y axis.
-            x_radius1: Inner Gaussian sigma along the x axis.
-            z_radius2: Outer Gaussian sigma along the z axis.
-            y_radius2: Outer Gaussian sigma along the y axis.
-            x_radius2: Outer Gaussian sigma along the x axis.
+            z_sigma1: Inner Gaussian sigma along the z axis.
+            y_sigma1: Inner Gaussian sigma along the y axis.
+            x_sigma1: Inner Gaussian sigma along the x axis.
+            z_sigma2: Outer Gaussian sigma along the z axis.
+            y_sigma2: Outer Gaussian sigma along the y axis.
+            x_sigma2: Outer Gaussian sigma along the x axis.
 
         Returns:
             Band-pass filtered array (gaus1 - gaus2, clipped at 0).
@@ -167,11 +167,11 @@ class CpuCellcFuncs:
         block = self.xp.asarray(block).astype(self.xp.float32)
         logger.debug("Making gaussian blur 1")
         gaus1 = self.xdimage.gaussian_filter(
-            block, sigma=(z_radius1, y_radius1, x_radius1)
+            block, sigma=(z_sigma1, y_sigma1, x_sigma1)
         )
         logger.debug("Making gaussian blur 2")
         gaus2 = self.xdimage.gaussian_filter(
-            block, sigma=(z_radius2, y_radius2, x_radius2)
+            block, sigma=(z_sigma2, y_sigma2, x_sigma2)
         )
         logger.debug("Subtracting gaussian blurs")
         res_block = gaus1 - gaus2
@@ -182,17 +182,17 @@ class CpuCellcFuncs:
     def gauss_blur_filt(
         self,
         block: npt.NDArray,
-        z_radius: float,
-        y_radius: float,
-        x_radius: float,
+        z_sigma: float,
+        y_sigma: float,
+        x_sigma: float,
     ) -> npt.NDArray:
         """Apply ellipsoidal Gaussian blur filter.
 
         Args:
             block: Input array.
-            z_radius: Gaussian sigma along the z axis.
-            y_radius: Gaussian sigma along the y axis.
-            x_radius: Gaussian sigma along the x axis.
+            z_sigma: Gaussian sigma along the z axis.
+            y_sigma: Gaussian sigma along the y axis.
+            x_sigma: Gaussian sigma along the x axis.
 
         Returns:
             Gaussian-blurred array.
@@ -200,31 +200,31 @@ class CpuCellcFuncs:
         block = self.xp.asarray(block).astype(self.xp.float32)
         logger.debug("Calculate Gaussian blur")
         res_block = self.xdimage.gaussian_filter(
-            block, sigma=(z_radius, y_radius, x_radius)
+            block, sigma=(z_sigma, y_sigma, x_sigma)
         )
         return res_block.astype(self.xp.uint16)
 
     def gauss_subt_filt(
         self,
         block: npt.NDArray,
-        z_radius: float,
-        y_radius: float,
-        x_radius: float,
+        z_sigma: float,
+        y_sigma: float,
+        x_sigma: float,
     ) -> npt.NDArray:
         """Apply ellipsoidal Gaussian subtraction filter.
 
         Args:
             block: Input array.
-            z_radius: Gaussian sigma along the z axis.
-            y_radius: Gaussian sigma along the y axis.
-            x_radius: Gaussian sigma along the x axis.
+            z_sigma: Gaussian sigma along the z axis.
+            y_sigma: Gaussian sigma along the y axis.
+            x_sigma: Gaussian sigma along the x axis.
 
         Returns:
             Local background subtracted array (block - blur, clipped at 0).
         """
         block = self.xp.asarray(block).astype(self.xp.float32)
         logger.debug("Calculate local Gaussian blur")
-        gaus = self.xdimage.gaussian_filter(block, sigma=(z_radius, y_radius, x_radius))
+        gaus = self.xdimage.gaussian_filter(block, sigma=(z_sigma, y_sigma, x_sigma))
         logger.debug("Apply the adaptive filter")
         res_block = block - gaus
         logger.debug("ReLu")
@@ -432,10 +432,10 @@ class CpuCellcFuncs:
     def get_local_maxima(
         self,
         block: npt.NDArray,
+        mask_block: npt.NDArray | None,
         z_radius: float,
         y_radius: float,
         x_radius: float,
-        mask_block: npt.NDArray | None = None,
     ) -> npt.NDArray:
         """Find local maxima using an ellipsoidal neighborhood.
 

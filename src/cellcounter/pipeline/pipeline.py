@@ -407,12 +407,12 @@ class Pipeline:
     @trace
     def reg_elastix(self, *, overwrite: bool = False) -> None:
         """Register image with elastix and store transformation components."""
-        if not overwrite and has_output_files(self.pfm.regresult):
+        if not overwrite and has_output_files(self.pfm.registration_result):
             return
         registration(
             fixed_img_fp=self.pfm.bounded,
             moving_img_fp=self.pfm.ref,
-            output_img_fp=self.pfm.regresult,
+            output_img_fp=self.pfm.registration_result,
             affine_fp=self.pfm.affine,
             bspline_fp=self.pfm.bspline,
         )
@@ -446,7 +446,7 @@ class Pipeline:
     @trace
     def tophat_filter(self, *, overwrite: bool = False) -> None:
         """Step 1: Top-hat filter (background subtraction)."""
-        if not overwrite and has_output_files(self.pfm.bgrm):
+        if not overwrite and has_output_files(self.pfm.background_removed):
             return
         with cluster_process(self.gpu_cluster()):
             result = da.map_blocks(
@@ -456,17 +456,17 @@ class Pipeline:
                 y_radius=self.config.cell_counting.tophat_radius.y,
                 x_radius=self.config.cell_counting.tophat_radius.x,
             )
-            disk_cache(result, self.pfm.bgrm)
+            disk_cache(result, self.pfm.background_removed)
 
     @trace
     def dog_filter(self, *, overwrite: bool = False) -> None:
         """Step 2: Difference of Gaussians (edge detection)."""
-        if not overwrite and has_output_files(self.pfm.dog):
+        if not overwrite and has_output_files(self.pfm.difference_of_gaussian):
             return
         with cluster_process(self.gpu_cluster()):
             result = da.map_blocks(
                 self.cellc_funcs.dog_filt,
-                da.from_zarr(self.pfm.bgrm),
+                da.from_zarr(self.pfm.background_removed),
                 z_radius1=self.config.cell_counting.dog_sigma1.z,
                 y_radius1=self.config.cell_counting.dog_sigma1.y,
                 x_radius1=self.config.cell_counting.dog_sigma1.x,
@@ -474,26 +474,28 @@ class Pipeline:
                 y_radius2=self.config.cell_counting.dog_sigma2.y,
                 x_radius2=self.config.cell_counting.dog_sigma2.x,
             )
-            disk_cache(result, self.pfm.dog)
+            disk_cache(result, self.pfm.difference_of_gaussian)
 
     @trace
     def adaptive_threshold_prep(self, *, overwrite: bool = False) -> None:
         """Step 3: Gaussian subtraction for adaptive thresholding."""
-        if not overwrite and has_output_files(self.pfm.adaptv):
+        if not overwrite and has_output_files(self.pfm.adaptive_filter):
             return
         if self.config.cell_counting.large_gauss_radius is None:
             logger.info("Parameter is None. Copying last step output across.")
-            disk_cache(da.from_zarr(self.pfm.dog), self.pfm.adaptv)
+            disk_cache(
+                da.from_zarr(self.pfm.difference_of_gaussian), self.pfm.adaptive_filter
+            )
             return
         with cluster_process(self.gpu_cluster()):
             result = da.map_blocks(
                 self.cellc_funcs.gauss_subt_filt,
-                da.from_zarr(self.pfm.dog),
+                da.from_zarr(self.pfm.difference_of_gaussian),
                 z_radius=self.config.cell_counting.large_gauss_radius.z,
                 y_radius=self.config.cell_counting.large_gauss_radius.y,
                 x_radius=self.config.cell_counting.large_gauss_radius.x,
             )
-            disk_cache(result, self.pfm.adaptv)
+            disk_cache(result, self.pfm.adaptive_filter)
 
     @trace
     def threshold_segment(self, *, overwrite: bool = False) -> None:
@@ -503,7 +505,7 @@ class Pipeline:
         with cluster_process(self.gpu_cluster()):
             result = da.map_blocks(
                 self.cellc_funcs.manual_thresh,
-                da.from_zarr(self.pfm.adaptv),
+                da.from_zarr(self.pfm.adaptive_filter),
                 val=self.config.cell_counting.threshold_value,
             )
             disk_cache(result, self.pfm.threshold)
@@ -536,7 +538,7 @@ class Pipeline:
     @trace
     def threshold_volumes_filter(self, *, overwrite: bool = False) -> None:
         """Step 7: Filter out objects by size."""
-        if not overwrite and has_output_files(self.pfm.threshold_filt):
+        if not overwrite and has_output_files(self.pfm.threshold_filter):
             return
         with cluster_process(self.gpu_cluster()):
             result = da.map_blocks(
@@ -545,7 +547,7 @@ class Pipeline:
                 min_volume=self.config.cell_counting.min_threshold_volume,
                 max_volume=self.config.cell_counting.max_threshold_volume,
             )
-            disk_cache(result, self.pfm.threshold_filt)
+            disk_cache(result, self.pfm.threshold_filter)
 
     @trace
     def maxima_detect(self, *, overwrite: bool = False) -> None:
@@ -555,8 +557,8 @@ class Pipeline:
         with cluster_process(self.gpu_cluster()):
             result = da.map_blocks(
                 self.cellc_funcs.get_local_maxima,
-                da.from_zarr(self.pfm.adaptv),
-                da.from_zarr(self.pfm.threshold_filt),
+                da.from_zarr(self.pfm.adaptive_filter),
+                da.from_zarr(self.pfm.threshold_filter),
                 z_radius=self.config.cell_counting.maxima_radius.z,
                 y_radius=self.config.cell_counting.maxima_radius.y,
                 x_radius=self.config.cell_counting.maxima_radius.x,
@@ -585,9 +587,9 @@ class Pipeline:
         with cluster_process(self.heavy_cluster()):
             result = da.map_blocks(
                 self.cellc_funcs.watershed_segment,
-                da.from_zarr(self.pfm.adaptv),
+                da.from_zarr(self.pfm.adaptive_filter),
                 da.from_zarr(self.pfm.maxima_labels),
-                da.from_zarr(self.pfm.threshold_filt),
+                da.from_zarr(self.pfm.threshold_filter),
             )
             disk_cache(result, self.pfm.watershed_labels)
 
@@ -604,7 +606,7 @@ class Pipeline:
     @trace
     def watershed_volumes_filter(self, *, overwrite: bool = False) -> None:
         """Step 12: Filter watershed objects by size."""
-        if not overwrite and has_output_files(self.pfm.watershed_filt):
+        if not overwrite and has_output_files(self.pfm.watershed_filter):
             return
         with cluster_process(self.heavy_cluster()):
             result = da.map_blocks(
@@ -613,7 +615,7 @@ class Pipeline:
                 min_volume=self.config.cell_counting.min_watershed_volume,
                 max_volume=self.config.cell_counting.max_watershed_volume,
             )
-            disk_cache(result, self.pfm.watershed_filt)
+            disk_cache(result, self.pfm.watershed_filter)
 
     @trace
     def save_cells_table(self, *, overwrite: bool = False) -> None:
@@ -624,7 +626,7 @@ class Pipeline:
             raw_arr = da.from_zarr(self.pfm.raw)
             maxima_labels_arr = da.from_zarr(self.pfm.maxima_labels)
             watershed_labels_arr = da.from_zarr(self.pfm.watershed_labels)
-            watershed_filt_arr = da.from_zarr(self.pfm.watershed_filt)
+            watershed_filt_arr = da.from_zarr(self.pfm.watershed_filter)
 
             offsets = [np.cumsum([0, *c[:-1]]) for c in raw_arr.chunks]
             n_blocks = np.prod(raw_arr.numblocks)
@@ -671,7 +673,7 @@ class Pipeline:
     @trace
     def cells_transform(self, *, overwrite: bool = False) -> None:
         """Transform cell coordinates to reference atlas space."""
-        if not overwrite and has_output_files(self.pfm.cells_trfm_df):
+        if not overwrite and has_output_files(self.pfm.cells_transformed_df):
             return
         with cluster_process(self.busy_cluster()):
             cells_df = pd.read_parquet(self.pfm.cells_raw_df)
@@ -698,9 +700,9 @@ class Pipeline:
             cells_trfm_df = transformation_coords(
                 cells_df,
                 str(self.pfm.ref),
-                str(self.pfm.regresult),
+                str(self.pfm.registration_result),
             )
-            write_parquet(cells_trfm_df, self.pfm.cells_trfm_df)
+            write_parquet(cells_trfm_df, self.pfm.cells_transformed_df)
 
     @trace
     def cells_mapping(self, *, overwrite: bool = False) -> None:
@@ -709,7 +711,7 @@ class Pipeline:
             return
         with cluster_process(self.busy_cluster()):
             cells_df = pd.read_parquet(self.pfm.cells_raw_df)
-            coords_trfm = pd.read_parquet(self.pfm.cells_trfm_df)
+            coords_trfm = pd.read_parquet(self.pfm.cells_transformed_df)
             cells_df = cells_df.reset_index(drop=True)
             cells_df[f"{Z}_{TRFM}"] = coords_trfm[Z].to_numpy()
             cells_df[f"{Y}_{TRFM}"] = coords_trfm[Y].to_numpy()
@@ -742,7 +744,7 @@ class Pipeline:
     @trace
     def cells_group(self, *, overwrite: bool = False) -> None:
         """Group cells by region and aggregate."""
-        if not overwrite and has_output_files(self.pfm.cells_agg_df):
+        if not overwrite and has_output_files(self.pfm.cells_aggregated_df):
             return
         with cluster_process(self.busy_cluster()):
             cells_df = pd.read_parquet(self.pfm.cells_df)
@@ -755,15 +757,15 @@ class Pipeline:
             cells_agg_df = combine_nested_regions(cells_agg_df, annot_df)
             cells_agg_df[IOV] = cells_agg_df[SUM_INTENSITY] / cells_agg_df[VOLUME]
             cells_agg_df = cells_agg_df[[*ANNOTATED_COLUMNS_FINAL, *CELL_COLUMNS]]
-            write_parquet(cells_agg_df, self.pfm.cells_agg_df)
+            write_parquet(cells_agg_df, self.pfm.cells_aggregated_df)
 
     @trace
     def cells2csv(self, *, overwrite: bool = False) -> None:
         """Save aggregated cell data to CSV."""
-        if not overwrite and has_output_files(self.pfm.cells_agg_csv):
+        if not overwrite and has_output_files(self.pfm.cells_aggregated_csv):
             return
-        cells_agg_df = pd.read_parquet(self.pfm.cells_agg_df)
-        cells_agg_df.to_csv(self.pfm.cells_agg_csv)
+        cells_agg_df = pd.read_parquet(self.pfm.cells_aggregated_df)
+        cells_agg_df.to_csv(self.pfm.cells_aggregated_csv)
 
     # ===========================================
     # HELPER WRAPPER FOR COMBINE IMAGE DATA
@@ -826,34 +828,34 @@ class Pipeline:
     @trace
     def coords2points_trfm(self, *, overwrite: bool = False) -> None:
         """Generate single-voxel markers at transformed cell coordinates."""
-        if not overwrite and has_output_files(self.pfm.points_trfm):
+        if not overwrite and has_output_files(self.pfm.points_transformed):
             return
         visual_check_funcs_tiff.coords2points(
-            coords=pd.read_parquet(self.pfm.cells_trfm_df),
+            coords=pd.read_parquet(self.pfm.cells_transformed_df),
             shape=tifffile.imread(self.pfm.ref).shape,
-            out_fp=self.pfm.points_trfm,
+            out_fp=self.pfm.points_transformed,
         )
 
     @trace
     def coords2heatmap_trfm(self, *, overwrite: bool = False) -> None:
         """Generate spherical heatmap at transformed cell coordinates."""
-        if not overwrite and has_output_files(self.pfm.heatmap_trfm):
+        if not overwrite and has_output_files(self.pfm.heatmap_transformed):
             return
         visual_check_funcs_tiff.coords2heatmap(
-            coords=pd.read_parquet(self.pfm.cells_trfm_df),
+            coords=pd.read_parquet(self.pfm.cells_transformed_df),
             shape=tifffile.imread(self.pfm.ref).shape,
-            out_fp=self.pfm.heatmap_trfm,
+            out_fp=self.pfm.heatmap_transformed,
             radius=self.config.visual_check.heatmap_trfm_radius,
         )
 
     @trace
     def combine_reg(self, *, overwrite: bool = False) -> None:
         """Combine registration images into multi-channel TIFF for viewing."""
-        if not overwrite and has_output_files(self.pfm.comb_reg):
+        if not overwrite and has_output_files(self.pfm.combined_registration):
             return
         combine_arrs(
-            fp_in_ls=(self.pfm.trimmed, self.pfm.bounded, self.pfm.regresult),
-            fp_out=self.pfm.comb_reg,
+            fp_in_ls=(self.pfm.trimmed, self.pfm.bounded, self.pfm.registration_result),
+            fp_out=self.pfm.combined_registration,
         )
 
     @trace
@@ -863,7 +865,7 @@ class Pipeline:
         If not tuning (i.e. is prod), then we have to trim anyway
         - otherwise image is too large.
         """
-        if not overwrite and has_output_files(self.pfm.comb_cellc):
+        if not overwrite and has_output_files(self.pfm.combined_cellcount):
             return
         z_trim = slice(None)
         y_trim = slice(None)
@@ -873,17 +875,21 @@ class Pipeline:
             y_trim = self.config.visual_check.cellcount_trim.y.to_slice()
             x_trim = self.config.visual_check.cellcount_trim.x.to_slice()
         combine_arrs(
-            fp_in_ls=(self.pfm.raw, self.pfm.threshold_filt, self.pfm.watershed_filt),
-            fp_out=self.pfm.comb_cellc,
+            fp_in_ls=(
+                self.pfm.raw,
+                self.pfm.threshold_filter,
+                self.pfm.watershed_filter,
+            ),
+            fp_out=self.pfm.combined_cellcount,
             trimmer=(z_trim, y_trim, x_trim),
         )
 
     @trace
     def combine_heatmap_trfm(self, *, overwrite: bool = False) -> None:
         """Combine heatmap image into multi-channel TIFF for viewing."""
-        if not overwrite and has_output_files(self.pfm.comb_heatmap):
+        if not overwrite and has_output_files(self.pfm.combined_heatmap):
             return
         combine_arrs(
-            fp_in_ls=(self.pfm.ref, self.pfm.annot, self.pfm.heatmap_trfm),
-            fp_out=self.pfm.comb_heatmap,
+            fp_in_ls=(self.pfm.ref, self.pfm.annot, self.pfm.heatmap_transformed),
+            fp_out=self.pfm.combined_heatmap,
         )

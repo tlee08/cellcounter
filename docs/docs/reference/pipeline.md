@@ -350,10 +350,10 @@ Assigns unique labels to connected foreground components.
 
 ---
 
-### `compute_thresholded_volumes`
+### `threshold_volumes`
 
 ```python
-def compute_thresholded_volumes(self, *, overwrite: bool = False) -> None
+def threshold_volumes(self, *, overwrite: bool = False) -> None
 ```
 
 Step 6: Compute connected component volumes.
@@ -410,10 +410,10 @@ Separates touching cells using watershed algorithm on maxima labels.
 
 ---
 
-### `compute_watershed_volumes`
+### `watershed_volumes`
 
 ```python
-def compute_watershed_volumes(self, *, overwrite: bool = False) -> None
+def watershed_volumes(self, *, overwrite: bool = False) -> None
 ```
 
 Compute watershed cell volumes.
@@ -558,12 +558,12 @@ Pipeline.STEPS_CELL_COUNTING = (
     "adaptive_threshold_prep",
     "threshold",
     "label_thresholded",
-    "compute_thresholded_volumes",
+    "threshold_volumes",
     "filter_thresholded",
     "detect_maxima",
     "label_maxima",
     "watershed",
-    "compute_watershed_volumes",
+    "watershed_volumes",
     "filter_watershed",
     "save_cells_table",
 )

@@ -45,7 +45,7 @@ _GPU_METHODS = {
 _GPU_METHODS_NO_CONVERT = {
     "get_boundary_pairs",
     "label2volume",
-    "watershed_segmentation",
+    "watershed_segment",
 }
 
 

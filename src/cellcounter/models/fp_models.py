@@ -94,24 +94,24 @@ class ProjFp:
         return self.root_dir / self.registration_sdir / "4_bounded.tif"
 
     @property
-    def regresult(self) -> Path:
+    def registration_result(self) -> Path:
         """Registration result filepath."""
-        return self.root_dir / self.registration_sdir / "5_regresult.tif"
+        return self.root_dir / self.registration_sdir / "5_registration_result.tif"
 
     @property
-    def bgrm(self) -> Path:
+    def background_removed(self) -> Path:
         """Background removed filepath."""
-        return self.root_dir / self.cellcount_sdir / "1_bgrm.zarr"
+        return self.root_dir / self.cellcount_sdir / "1_background_removed.zarr"
 
     @property
-    def dog(self) -> Path:
+    def difference_of_gaussian(self) -> Path:
         """Difference of Gaussian filepath."""
-        return self.root_dir / self.cellcount_sdir / "2_dog.zarr"
+        return self.root_dir / self.cellcount_sdir / "2_difference_of_gaussian.zarr"
 
     @property
-    def adaptv(self) -> Path:
+    def adaptive_filter(self) -> Path:
         """Adaptive threshold filepath."""
-        return self.root_dir / self.cellcount_sdir / "3_adaptv.zarr"
+        return self.root_dir / self.cellcount_sdir / "3_adaptive_filter.zarr"
 
     @property
     def threshold(self) -> Path:
@@ -129,9 +129,9 @@ class ProjFp:
         return self.root_dir / self.cellcount_sdir / "6_threshold_volumes.zarr"
 
     @property
-    def threshold_filt(self) -> Path:
+    def threshold_filter(self) -> Path:
         """Thresholded filtered filepath."""
-        return self.root_dir / self.cellcount_sdir / "7_threshold_filt.zarr"
+        return self.root_dir / self.cellcount_sdir / "7_threshold_filter.zarr"
 
     @property
     def maxima(self) -> Path:
@@ -154,9 +154,9 @@ class ProjFp:
         return self.root_dir / self.cellcount_sdir / "11_watershed_volumes.zarr"
 
     @property
-    def watershed_filt(self) -> Path:
+    def watershed_filter(self) -> Path:
         """Watershed filtered filepath."""
-        return self.root_dir / self.cellcount_sdir / "12_watershed_filt.zarr"
+        return self.root_dir / self.cellcount_sdir / "12_watershed_filter.zarr"
 
     @property
     def cells_raw_df(self) -> Path:
@@ -164,9 +164,9 @@ class ProjFp:
         return self.root_dir / self.analysis_sdir / "1_cells_raw.parquet"
 
     @property
-    def cells_trfm_df(self) -> Path:
+    def cells_transformed_df(self) -> Path:
         """Cells transformed dataframe filepath."""
-        return self.root_dir / self.analysis_sdir / "2_cells_trfm.parquet"
+        return self.root_dir / self.analysis_sdir / "2_cells_transformed.parquet"
 
     @property
     def cells_df(self) -> Path:
@@ -174,14 +174,14 @@ class ProjFp:
         return self.root_dir / self.analysis_sdir / "3_cells.parquet"
 
     @property
-    def cells_agg_df(self) -> Path:
+    def cells_aggregated_df(self) -> Path:
         """Cells aggregated dataframe filepath."""
-        return self.root_dir / self.analysis_sdir / "4_cells_agg.parquet"
+        return self.root_dir / self.analysis_sdir / "4_cells_aggregated.parquet"
 
     @property
-    def cells_agg_csv(self) -> Path:
+    def cells_aggregated_csv(self) -> Path:
         """Cells aggregated CSV filepath."""
-        return self.root_dir / self.analysis_sdir / "5_cells_agg.csv"
+        return self.root_dir / self.analysis_sdir / "5_cells_aggregated.csv"
 
     @property
     def points_raw(self) -> Path:
@@ -194,29 +194,29 @@ class ProjFp:
         return self.root_dir / self.visual_sdir / "heatmap_raw.zarr"
 
     @property
-    def points_trfm(self) -> Path:
+    def points_transformed(self) -> Path:
         """Points transformed filepath."""
-        return self.root_dir / self.visual_sdir / "points_trfm.tif"
+        return self.root_dir / self.visual_sdir / "points_transformed.tif"
 
     @property
-    def heatmap_trfm(self) -> Path:
+    def heatmap_transformed(self) -> Path:
         """Heatmap transformed filepath."""
-        return self.root_dir / self.visual_sdir / "heatmap_trfm.tif"
+        return self.root_dir / self.visual_sdir / "heatmap_transformed.tif"
 
     @property
-    def comb_reg(self) -> Path:
+    def combined_registration(self) -> Path:
         """Combined registration filepath."""
-        return self.root_dir / self.visual_sdir / "comb_reg.tif"
+        return self.root_dir / self.visual_sdir / "comb_registration.tif"
 
     @property
-    def comb_cellc(self) -> Path:
+    def combined_cellcount(self) -> Path:
         """Combined cell count filepath."""
-        return self.root_dir / self.visual_sdir / "comb_cellc.tif"
+        return self.root_dir / self.visual_sdir / "combined_cellcount.tif"
 
     @property
-    def comb_heatmap(self) -> Path:
+    def combined_heatmap(self) -> Path:
         """Combined heatmap filepath."""
-        return self.root_dir / self.visual_sdir / "comb_heatmap.tif"
+        return self.root_dir / self.visual_sdir / "combined_heatmap.tif"
 
 
 class RefFp:

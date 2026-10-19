@@ -142,15 +142,15 @@ registration:
 #   be skipped. To skip, set large_gauss_radius to null.
 #
 # threshold_value — absolute intensity threshold.
-# min/max_threshold_volume_volume — size filter on thresholded blobs, in voxels.
+# min/max_threshold_volume — size filter on thresholded blobs, in voxels.
 #   Must satisfy min < max.
 #
-# min/max_watershed_volume_volume — size filter after watershed, in voxels.
+# min/max_watershed_volume — size filter after watershed, in voxels.
 #   Must satisfy min < max.
 # ---------------------------------------------------------------------------
 cell_counting:
   cell_diameter_px:
-    z: 2.0
+    z: 3.0
     y: 10.0
     x: 10.0
   tophat_radius_scale: 1.8
@@ -159,10 +159,10 @@ cell_counting:
   maxima_radius_scale: 1.0
   large_gauss_radius: null
   threshold_value: 100
-  min_threshold_volume_volume: 1
-  max_threshold_volume_volume: 15000
-  min_watershed_volume_volume: 1
-  max_watershed_volume_volume: 1000
+  min_threshold_volume: 1
+  max_threshold_volume: 15000
+  min_watershed_volume: 1
+  max_watershed_volume: 1000
 
 # ---------------------------------------------------------------------------
 # Visual QC settings.

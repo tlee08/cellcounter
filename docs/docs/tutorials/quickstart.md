@@ -254,12 +254,12 @@ pipeline_tuning.dog_filter()                 # Edge enhancement
 pipeline_tuning.adaptive_threshold_prep()    # Adaptive thresholding
 pipeline_tuning.threshold()                  # Binary threshold
 pipeline_tuning.label_thresholded()          # Label regions
-pipeline_tuning.compute_thresholded_volumes() # Compute sizes
+pipeline_tuning.threshold_volumes() # Compute sizes
 pipeline_tuning.filter_thresholded()         # Size filter #1
 pipeline_tuning.detect_maxima()              # Find cell centers
 pipeline_tuning.label_maxima()               # Label centers
 pipeline_tuning.watershed()                  # Segment touching cells
-pipeline_tuning.compute_watershed_volumes()  # Compute cell sizes
+pipeline_tuning.watershed_volumes()  # Compute cell sizes
 pipeline_tuning.filter_watershed()           # Size filter #2
 
 # Visualize results
@@ -314,12 +314,12 @@ pipeline_full.dog_filter()
 pipeline_full.adaptive_threshold_prep()
 pipeline_full.threshold()
 pipeline_full.label_thresholded()
-pipeline_full.compute_thresholded_volumes()
+pipeline_full.threshold_volumes()
 pipeline_full.filter_thresholded()
 pipeline_full.detect_maxima()
 pipeline_full.label_maxima()
 pipeline_full.watershed()
-pipeline_full.compute_watershed_volumes()
+pipeline_full.watershed_volumes()
 pipeline_full.filter_watershed()
 
 # Extract cell measurements
