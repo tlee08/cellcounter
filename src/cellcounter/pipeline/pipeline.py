@@ -525,8 +525,8 @@ class Pipeline:
             return
         with cluster_process(self.gpu_cluster()):
             dog_arr = da.from_zarr(self.pfm.adaptive_filter)
-            # Prevents overflow when squaring uint16 large values in float32
-            fg_arr = dog_arr.astype(np.float32)
+            # float64 to avoid overflow in sum-of-squares for large arrays
+            fg_arr = dog_arr.astype(np.float64)
             # Considering only foreground (non-zero) voxels
             mask_arr = fg_arr > 0
             # Compute mean and standard deviation of foreground voxels
@@ -569,8 +569,12 @@ class Pipeline:
 
     @trace
     def threshold_foreground(self, *, overwrite: bool = False) -> None:
-        """Step 4: Thresholding based on configured method (percentile)."""
-        self.threshold_foreground_percentile(overwrite=overwrite)
+        """Step 4: Thresholding (dispatches on threshold_method)."""
+        {
+            "percentile": self.threshold_foreground_percentile,
+            "mean": self.threshold_foreground_mean,
+            "value": self.threshold_foreground_value,
+        }[self.config.cell_counting.threshold_method](overwrite=overwrite)
 
     @trace
     def threshold_label(self, *, overwrite: bool = False) -> None:

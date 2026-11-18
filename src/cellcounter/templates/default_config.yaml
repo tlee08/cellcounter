@@ -141,10 +141,10 @@ registration:
 #   multiple of cell_radius_px. Including in case, but in most cases this step
 #   can be skipped. To skip, set large_gauss_sigma_scale to null.
 #
-# Thresholding — three interchangeable methods (picked by threshold_foreground):
-#   threshold_percentile - keep the top (100-p)% of foreground (DoG > 0) voxels.
-#   threshold_offset_sd - threshold at mean + offset*sd of foreground voxels.
-#   threshold_value - fixed absolute intensity threshold (legacy).
+# Thresholding — pick the method via threshold_method, then tune its knob:
+#   threshold_method: percentile -> threshold_percentile (top (100-p)% of foreground).
+#   threshold_method: mean       -> threshold_offset_sd (mean + offset*sd of foreground).
+#   threshold_method: value      -> threshold_value (fixed absolute, legacy).
 #
 # min/max_threshold_volume - size filter on thresholded blobs, in voxels.
 #   Must satisfy min < max.
@@ -162,6 +162,7 @@ cell_counting:
   dog_sigma2_scale: 2.8
   maxima_radius_scale: 2.0
   large_gauss_sigma_scale: null
+  threshold_method: percentile
   threshold_percentile: 98.0
   threshold_offset_sd: 1.0
   threshold_value: 100

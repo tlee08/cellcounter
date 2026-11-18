@@ -1,4 +1,4 @@
-from typing import Self
+from typing import Literal, Self
 
 from pydantic import (
     BaseModel,
@@ -34,10 +34,11 @@ class CellCountingConfig(BaseModel):
     # None skips the adaptive thresholding step.
     large_gauss_sigma_scale: PositiveFloat | None = None
 
-    # Thresholding — three interchangeable methods (picked by threshold_foreground):
-    #   threshold_percentile — keep the top (100-p)% of foreground (DoG > 0) voxels.
-    #   threshold_offset_sd  — threshold at mean + offset*sd of foreground voxels.
-    #   threshold_value      — fixed absolute intensity threshold (legacy).
+    # Thresholding — pick the method via threshold_method, then tune its knob:
+    #   "percentile" -> threshold_percentile: keep top (100-p)% of foreground (DoG > 0).
+    #   "mean"       -> threshold_offset_sd: threshold at mean + offset*sd of fg.
+    #   "value"      -> threshold_value: fixed absolute intensity threshold (legacy).
+    threshold_method: Literal["percentile", "mean", "value"] = "percentile"
     threshold_percentile: PositiveFloat = 98.0
     threshold_offset_sd: NonNegativeFloat = 1.0
     threshold_value: PositiveInt = 100
