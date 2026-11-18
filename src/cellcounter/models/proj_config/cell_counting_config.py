@@ -8,21 +8,21 @@ from cellcounter.models.proj_config.dims_config import DimsConfig
 class CellCountingConfig(BaseModel):
     """Cell detection and filtering parameters.
 
-    Every size-based filter is derived from ``cell_diameter_px``, the
-    physical cell diameter expressed in voxels along each axis. Because
+    Every size-based filter is derived from ``cell_radius_px``, the
+    physical cell radius expressed in voxels along each axis. Because
     acquisition voxels are anisotropic (z is usually thicker than x/y),
-    each size is per-axis and obtained by scaling the diameter by a
+    each size is per-axis and obtained by scaling the radius by a
     dimensionless factor, so anisotropy is inherited automatically.
     """
 
     # Cell size - anchors every derived filter size.
-    cell_diameter_px: DimsConfig[PositiveFloat] = DimsConfig.from_tuple(3.0, 10.0, 10.0)
+    cell_radius_px: DimsConfig[PositiveFloat] = DimsConfig.from_tuple(1.5, 5.0, 5.0)
 
-    # Dimensionless scale factors applied to cell_diameter_px.
-    tophat_radius_scale: PositiveFloat = 1.8
-    dog_sigma1_scale: PositiveFloat = 0.6
-    dog_sigma2_scale: PositiveFloat = 1.4
-    maxima_radius_scale: PositiveFloat = 1.0
+    # Dimensionless scale factors applied to cell_radius_px.
+    tophat_radius_scale: PositiveFloat = 3.6
+    dog_sigma1_scale: PositiveFloat = 1.2
+    dog_sigma2_scale: PositiveFloat = 2.8
+    maxima_radius_scale: PositiveFloat = 2.0
 
     # Absolute per-axis sigma for large-scale background estimation.
     # None skips the adaptive thresholding step.
@@ -40,29 +40,29 @@ class CellCountingConfig(BaseModel):
     @property
     def tophat_radius(self) -> DimsConfig[float]:
         """Top-hat footprint radius, per axis."""
-        return self.cell_diameter_px.scaled(self.tophat_radius_scale)
+        return self.cell_radius_px.scaled(self.tophat_radius_scale)
 
     @property
     def dog_sigma1(self) -> DimsConfig[float]:
         """Inner DoG Gaussian sigma, per axis."""
-        return self.cell_diameter_px.scaled(self.dog_sigma1_scale)
+        return self.cell_radius_px.scaled(self.dog_sigma1_scale)
 
     @property
     def dog_sigma2(self) -> DimsConfig[float]:
         """Outer DoG Gaussian sigma, per axis."""
-        return self.cell_diameter_px.scaled(self.dog_sigma2_scale)
+        return self.cell_radius_px.scaled(self.dog_sigma2_scale)
 
     @property
     def large_gauss_sigma(self) -> DimsConfig[float] | None:
         """Large-scale Gaussian sigma, per axis."""
         if self.large_gauss_sigma_scale is None:
             return None
-        return self.cell_diameter_px.scaled(self.large_gauss_sigma_scale)
+        return self.cell_radius_px.scaled(self.large_gauss_sigma_scale)
 
     @property
     def maxima_radius(self) -> DimsConfig[float]:
         """Local-maxima detection radius, per axis."""
-        return self.cell_diameter_px.scaled(self.maxima_radius_scale)
+        return self.cell_radius_px.scaled(self.maxima_radius_scale)
 
     @model_validator(mode="after")
     def _validate_sigma(self) -> Self:

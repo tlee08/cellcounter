@@ -331,7 +331,7 @@ Output: Parquet file with columns:
 | `tophat_radius`        | Background removal | 10      | More background removed | Less background removed |
 | `dog_sigma1`           | Edge detection     | 1       | Larger features         | Smaller features        |
 | `dog_sigma2`           | Edge detection     | 4       | Smoother edges          | Sharper edges           |
-| `large_gauss_radius`   | Adaptive thresh    | 101     | More normalization      | Less normalization      |
+| `large_gauss_sigma`    | Adaptive thresh    | 101     | More normalization      | Less normalization      |
 | `threshold_value`      | Thresholding       | 60      | Fewer cells detected    | More cells detected     |
 | `min_threshold_volume` | Pre-filter         | 100     | Fewer objects           | More objects            |
 | `max_threshold_volume` | Pre-filter         | 9000    | Allows larger           | Rejects larger          |

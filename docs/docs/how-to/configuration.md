@@ -267,11 +267,11 @@ Adjust based on cell size:
 - Medium cells (default): `sigma1=1, sigma2=4`
 - Large cells (thick slices): `sigma1=2, sigma2=6`
 
-### Adaptive Thresholding (`large_gauss_radius`)
+### Adaptive Thresholding (`large_gauss_sigma`)
 
 ```python
 cell_counting={
-    "large_gauss_radius": 101  # Default
+    "large_gauss_sigma": 101  # Default
 }
 ```
 
@@ -301,7 +301,7 @@ Size guidelines (assume 1µm voxels):
 | Neurons      | 100-200  | 500-1000  |
 | Large cells  | 200-500  | 1000-2000 |
 
-!!! tip "Finding Size Range" 1. Look at your raw image in napari 2. Measure typical cell diameter 3. Calculate volume: 4/3 × π × r³ 4. Set min/max ~50% around this
+!!! tip "Finding Size Range" 1. Look at your raw image in napari 2. Measure typical cell radius 3. Calculate volume: 4/3 × π × r³ 4. Set min/max ~50% around this
 
 ### Maxima Detection (`maxima_radius`)
 

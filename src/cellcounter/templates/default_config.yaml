@@ -117,29 +117,29 @@ registration:
 # ---------------------------------------------------------------------------
 # Cell counting parameters.
 #
-# cell_diameter_px - physical cell diameter in voxels, per axis (z, y, x).
+# cell_radius_px - physical cell radius in voxels, per axis (z, y, x).
 #   Because acquisition voxels are anisotropic (z is usually thicker than
-#   x/y), the diameter differs per axis. Every filter size below is derived
-#   from this diameter by a dimensionless scale factor, so anisotropy is
+#   x/y), the radius differs per axis. Every filter size below is derived
+#   from this radius by a dimensionless scale factor, so anisotropy is
 #   handled automatically.
 #
 # tophat_radius_scale - top-hat background subtraction radius, as a multiple
-#   of cell_diameter_px.
+#   of cell_radius_px.
 #   Rule of thumb (https://www.cell.com/cell-reports/fulltext/S2211-1247(22)00371-0, https://pmc.ncbi.nlm.nih.gov/articles/PMC8592694/):
-#     tophat radius is 30% to 50% larger than largest cFos cell diameter.
+#     tophat radius is 30% to 50% larger than the cell diameter (2.6-3.0x radius).
 #
 # dog_sigma1_scale / dog_sigma2_scale - Difference-of-Gaussian bandpass, as
-#   multiples of cell_diameter_px. Must satisfy dog_sigma1_scale < dog_sigma2_scale.
+#   multiples of cell_radius_px. Must satisfy dog_sigma1_scale < dog_sigma2_scale.
 #   Rule of thumb (https://bioimagebook.github.io/chapters/appendices/macros/macro_dog.html):
-#     dog_sigma1 is 1/4 to 1/2 of average cFos cell diameter
+#     dog_sigma1 is 1/4 to 1/2 of the cell diameter (0.5-1.0x radius)
 #     dog_sigma2 is 1.4 (in other books 1.6 to 2.0) times dog_sigma1
 #
 # maxima_radius_scale - local maxima detection radius, as a multiple of
-#   cell_diameter_px.
+#   cell_radius_px.
 #
-# large_gauss_sigma_scale - radius for large-scale background estimation, absolute
-#   and per-axis (z, y, x). Including in case, but in most cases this step can
-#   be skipped. To skip, set large_gauss_sigma_scale to null.
+# large_gauss_sigma_scale - large-scale background Gaussian sigma, as a
+#   multiple of cell_radius_px. Including in case, but in most cases this step
+#   can be skipped. To skip, set large_gauss_sigma_scale to null.
 #
 # threshold_value - absolute intensity threshold.
 # min/max_threshold_volume - size filter on thresholded blobs, in voxels.
@@ -149,14 +149,14 @@ registration:
 #   Must satisfy min < max.
 # ---------------------------------------------------------------------------
 cell_counting:
-  cell_diameter_px:
-    z: 3.0
-    y: 10.0
-    x: 10.0
-  tophat_radius_scale: 1.8
-  dog_sigma1_scale: 0.6
-  dog_sigma2_scale: 1.4
-  maxima_radius_scale: 1.0
+  cell_radius_px:
+    z: 1.5
+    y: 5.0
+    x: 5.0
+  tophat_radius_scale: 3.6
+  dog_sigma1_scale: 1.2
+  dog_sigma2_scale: 2.8
+  maxima_radius_scale: 2.0
   large_gauss_sigma_scale: null
   threshold_value: 100
   min_threshold_volume: 1
