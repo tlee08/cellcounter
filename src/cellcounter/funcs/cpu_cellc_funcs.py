@@ -231,7 +231,7 @@ class CpuCellcFuncs:
         res_block = self.xp.maximum(res_block, 0)
         return res_block.astype(self.xp.uint16)
 
-    def manual_threshold(self, block: npt.NDArray, val: int) -> npt.NDArray:
+    def manual_threshold(self, block: npt.NDArray, val: float) -> npt.NDArray:
         """Perform manual thresholding on a tensor."""
         block = self.xp.asarray(block)
         logger.debug("Applying the threshold")

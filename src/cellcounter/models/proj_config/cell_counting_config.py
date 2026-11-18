@@ -1,6 +1,12 @@
 from typing import Self
 
-from pydantic import BaseModel, PositiveFloat, PositiveInt, model_validator
+from pydantic import (
+    BaseModel,
+    NonNegativeFloat,
+    PositiveFloat,
+    PositiveInt,
+    model_validator,
+)
 
 from cellcounter.models.proj_config.dims_config import DimsConfig
 
@@ -28,10 +34,12 @@ class CellCountingConfig(BaseModel):
     # None skips the adaptive thresholding step.
     large_gauss_sigma_scale: PositiveFloat | None = None
 
-    # Thresholding
-    # Different options. Defaults to threshold_offset_df (mean + offset * std)
-    threshold_percentile: PositiveFloat = 95.0
-    threshold_offset_sd: PositiveFloat = 0.0
+    # Thresholding — three interchangeable methods (picked by threshold_foreground):
+    #   threshold_percentile — keep the top (100-p)% of foreground (DoG > 0) voxels.
+    #   threshold_offset_sd  — threshold at mean + offset*sd of foreground voxels.
+    #   threshold_value      — fixed absolute intensity threshold (legacy).
+    threshold_percentile: PositiveFloat = 98.0
+    threshold_offset_sd: NonNegativeFloat = 1.0
     threshold_value: PositiveInt = 100
 
     # Threshold volume filtering (in voxels)

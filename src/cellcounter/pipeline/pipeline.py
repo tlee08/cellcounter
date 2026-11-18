@@ -520,7 +520,7 @@ class Pipeline:
 
     @trace
     def threshold_foreground_mean(self, *, overwrite: bool = False) -> None:
-        """Step 4 (option): Manual thresholding."""
+        """Step 4 (option): Mean + offset·sd (adaptive) thresholding."""
         if not overwrite and has_output_files(self.pfm.threshold):
             return
         with cluster_process(self.gpu_cluster()):
@@ -553,13 +553,6 @@ class Pipeline:
                 val=float(threshold_res),
             )
             disk_cache(result, self.pfm.threshold)
-            # Threshold
-            result = da.map_blocks(
-                self.cellc_funcs.manual_threshold,
-                da.from_zarr(self.pfm.adaptive_filter),
-                val=self.config.cell_counting.threshold_value,
-            )
-            disk_cache(result, self.pfm.threshold)
 
     @trace
     def threshold_foreground_value(self, *, overwrite: bool = False) -> None:
@@ -570,7 +563,7 @@ class Pipeline:
             result = da.map_blocks(
                 self.cellc_funcs.manual_threshold,
                 da.from_zarr(self.pfm.adaptive_filter),
-                val=self.config.cell_counting.threshold_value,
+                val=float(self.config.cell_counting.threshold_value),
             )
             disk_cache(result, self.pfm.threshold)
 
