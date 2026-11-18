@@ -30,8 +30,8 @@ class CellCountingConfig(BaseModel):
 
     # Thresholding
     # Different options. Defaults to threshold_offset_df (mean + offset * std)
-    threshold_offset_sd: PositiveFloat = 0.0
     threshold_percentile: PositiveFloat = 95.0
+    threshold_offset_sd: PositiveFloat = 0.0
     threshold_value: PositiveInt = 100
 
     # Threshold volume filtering (in voxels)
