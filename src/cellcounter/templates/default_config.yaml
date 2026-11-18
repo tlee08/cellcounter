@@ -137,9 +137,9 @@ registration:
 # maxima_radius_scale - local maxima detection radius, as a multiple of
 #   cell_diameter_px.
 #
-# large_gauss_radius - radius for large-scale background estimation, absolute
+# large_gauss_sigma_scale - radius for large-scale background estimation, absolute
 #   and per-axis (z, y, x). Including in case, but in most cases this step can
-#   be skipped. To skip, set large_gauss_radius to null.
+#   be skipped. To skip, set large_gauss_sigma_scale to null.
 #
 # threshold_value - absolute intensity threshold.
 # min/max_threshold_volume - size filter on thresholded blobs, in voxels.
@@ -157,7 +157,7 @@ cell_counting:
   dog_sigma1_scale: 0.6
   dog_sigma2_scale: 1.4
   maxima_radius_scale: 1.0
-  large_gauss_radius: null
+  large_gauss_sigma_scale: null
   threshold_value: 100
   min_threshold_volume: 1
   max_threshold_volume: 15000

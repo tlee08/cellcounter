@@ -24,9 +24,9 @@ class CellCountingConfig(BaseModel):
     dog_sigma2_scale: PositiveFloat = 1.4
     maxima_radius_scale: PositiveFloat = 1.0
 
-    # Absolute per-axis radius for large-scale background estimation.
+    # Absolute per-axis sigma for large-scale background estimation.
     # None skips the adaptive thresholding step.
-    large_gauss_scale: PositiveFloat | None = None
+    large_gauss_sigma_scale: PositiveFloat | None = None
 
     # Thresholding
     threshold_value: PositiveInt = 100
@@ -55,9 +55,9 @@ class CellCountingConfig(BaseModel):
     @property
     def large_gauss_sigma(self) -> DimsConfig[float] | None:
         """Large-scale Gaussian sigma, per axis."""
-        if self.large_gauss_scale is None:
+        if self.large_gauss_sigma_scale is None:
             return None
-        return self.cell_diameter_px.scaled(self.large_gauss_scale)
+        return self.cell_diameter_px.scaled(self.large_gauss_sigma_scale)
 
     @property
     def maxima_radius(self) -> DimsConfig[float]:
