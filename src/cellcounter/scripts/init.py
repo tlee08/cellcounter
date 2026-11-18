@@ -27,7 +27,7 @@ def main() -> None:
         f"unzip {output_fp} -d {CACHE_DIR}",
     ]:
         try:
-            subprocess.run(
+            subprocess.run(  # noqa: S602
                 cmd_str,
                 shell=True,
                 check=True,

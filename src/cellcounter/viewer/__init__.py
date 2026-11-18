@@ -9,6 +9,7 @@ import asyncio
 from pathlib import Path
 
 import napari
+import numpy.typing as npt
 from loguru import logger
 
 from cellcounter.funcs.io_funcs import async_read_files, read_img
@@ -61,7 +62,13 @@ def _build_display_kwargs(
     return contrast_limits, colormaps
 
 
-def _show_in_napari(imgs_fp_ls, names_ls, arr_ls, contrast_limits, colormaps):
+def _show_in_napari(
+    imgs_fp_ls: list[Path | str],
+    names_ls: list[str],
+    arr_ls: list[npt.NDArray],
+    contrast_limits: list[tuple[float, float]],
+    colormaps: list[str],
+) -> None:
     kwargs_ls = [
         {
             "name": names_ls[i],

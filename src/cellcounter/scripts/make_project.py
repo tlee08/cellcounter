@@ -11,6 +11,7 @@ FOLDERS = ["analysis_images"]
 
 
 def _confirm(prompt: str) -> bool:
+    """Prompt user for confirmation."""
     while True:
         resp = input(f"{prompt} [y/N]: ").strip().lower()
         if resp in ("y", "yes"):
@@ -20,6 +21,7 @@ def _confirm(prompt: str) -> bool:
 
 
 def main() -> None:
+    """Create a new cellcounter project with template files."""
     target = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path.cwd()
 
     if not _confirm(f"Create project in {target}?"):
