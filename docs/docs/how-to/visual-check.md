@@ -8,10 +8,10 @@ Verify that registration and cell detection are working correctly by visualizing
 
 Even with good parameters, always verify:
 
-1. **Registration accuracy** — Is your image aligned to the atlas?
-2. **Cell detection quality** — Are real cells being found?
-3. **False positive rate** — Is debris being counted as cells?
-4. **Cell separation** — Are touching cells split correctly?
+1. **Registration accuracy** - Is your image aligned to the atlas?
+2. **Cell detection quality** - Are real cells being found?
+3. **False positive rate** - Is debris being counted as cells?
+4. **Cell separation** - Are touching cells split correctly?
 
 !!! tip "Golden Rule"
 Visualize your results before trusting the CSV numbers. A few minutes of QC can save hours of reprocessing.
@@ -100,7 +100,7 @@ Tick the visibility (eye icon) of each channel to compare:
 
 **Issue: Registration is flipped**
 
-- Check `ref_orientation` — one or more axes may need negation
+- Check `ref_orientation` - one or more axes may need negation
 - Example: `{"z": -2, "y": 3, "x": 1}` instead of `{"z": 2, ...}`
 
 **Issue: Registration is rotated 90°**
@@ -205,7 +205,7 @@ napari.run()
 **Solutions**:
 
 - Adjust `dog_sigma1` and `dog_sigma2` for better edge detection
-- Check `maxima_radius` — may be too large
+- Check `maxima_radius` - may be too large
 - Verify watershed is running (check for `watershed_labels` file)
 
 #### Problem: Cells Split Incorrectly
@@ -266,13 +266,13 @@ img = tifffile.imread("cellcount/combined_heatmap_trfm.tiff")
 
 **Cells outside brain boundary**:
 
-- Registration failed — check `combined_reg.tiff`
-- Intensity clipping too aggressive — adjust bounds
+- Registration failed - check `combined_reg.tiff`
+- Intensity clipping too aggressive - adjust bounds
 
 **Cells mapped to wrong regions**:
 
-- Registration misalignment — re-run registration
-- Coordinate transform error — check `transform_coords` output
+- Registration misalignment - re-run registration
+- Coordinate transform error - check `transform_coords` output
 
 ---
 

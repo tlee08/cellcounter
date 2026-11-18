@@ -15,7 +15,7 @@ class CellCountingConfig(BaseModel):
     dimensionless factor, so anisotropy is inherited automatically.
     """
 
-    # Cell size — anchors every derived filter size.
+    # Cell size - anchors every derived filter size.
     cell_diameter_px: DimsConfig[PositiveFloat] = DimsConfig.from_tuple(3.0, 10.0, 10.0)
 
     # Dimensionless scale factors applied to cell_diameter_px.

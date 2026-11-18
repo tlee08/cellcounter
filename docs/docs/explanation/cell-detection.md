@@ -8,11 +8,11 @@ How CellCounter identifies and counts cFos-positive cells.
 
 cFos is a nuclear protein that marks recently active neurons. Cell detection involves:
 
-1. **Enhancing cell-like structures** — Filtering to highlight nuclei
-2. **Separating foreground from background** — Thresholding
-3. **Finding individual cell centers** — Local maxima detection
-4. **Separating touching cells** — Watershed segmentation
-5. **Filtering by size** — Removing debris and artifacts
+1. **Enhancing cell-like structures** - Filtering to highlight nuclei
+2. **Separating foreground from background** - Thresholding
+3. **Finding individual cell centers** - Local maxima detection
+4. **Separating touching cells** - Watershed segmentation
+5. **Filtering by size** - Removing debris and artifacts
 
 The pipeline is designed for images where:
 
@@ -376,19 +376,19 @@ flowchart LR
 
 ## Advantages of This Approach
 
-1. **No training data needed** — Traditional image processing, not deep learning
-2. **Interpretable parameters** — Each knob has clear meaning
-3. **Fast on GPU** — All operations parallelize well
-4. **Memory efficient** — Dask handles chunked processing
-5. **Scales to large images** — Tested on ~90GB whole brains
+1. **No training data needed** - Traditional image processing, not deep learning
+2. **Interpretable parameters** - Each knob has clear meaning
+3. **Fast on GPU** - All operations parallelize well
+4. **Memory efficient** - Dask handles chunked processing
+5. **Scales to large images** - Tested on ~90GB whole brains
 
 ---
 
 ## Limitations
 
-1. **Assumes spherical cells** — Elongated cells may be split
-2. **Requires staining quality** — Poor SNR defeats even best parameters
-3. **Parameter tuning needed** — Not fully automatic
-4. **No cell classification** — Can't distinguish cell types by morphology
+1. **Assumes spherical cells** - Elongated cells may be split
+2. **Requires staining quality** - Poor SNR defeats even best parameters
+3. **Parameter tuning needed** - Not fully automatic
+4. **No cell classification** - Can't distinguish cell types by morphology
 
 For datasets where these limitations matter, deep learning approaches (StarDist, Cellpose) may be more appropriate, though they have their own trade-offs (training data, compute cost, GPU memory).

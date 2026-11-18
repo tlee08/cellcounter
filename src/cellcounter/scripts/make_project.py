@@ -39,7 +39,7 @@ def main() -> None:
     for folder in FOLDERS:
         (target / folder).mkdir(parents=True, exist_ok=True)
 
-    print(f"\nNext:\n  marimo edit {target / 'run_pipeline.py'}")
+    print("\nNext:\n  marimo edit 'run_pipeline.py'")
 
 
 if __name__ == "__main__":

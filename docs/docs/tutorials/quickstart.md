@@ -371,7 +371,7 @@ Open `cellcount/cells_agg.csv`:
 ### "Not detecting any cells"
 
 - Lower `threshold_value` (try 40, 30, 20...)
-- Check image intensity range — is it very dim?
+- Check image intensity range - is it very dim?
 - Verify tuning crop has visible cFos+ cells
 
 ### "Detecting too many false positives"
@@ -387,7 +387,7 @@ Open `cellcount/cells_agg.csv`:
 
 ### "Registration looks wrong"
 
-- Check `ref_orientation` — are axes mapped correctly?
+- Check `ref_orientation` - are axes mapped correctly?
 - Verify `downsample_rough` matches your resolution
 - Use `VisualCheck.combine_reg()` to diagnose
 
@@ -395,7 +395,7 @@ Open `cellcount/cells_agg.csv`:
 
 ## Next Steps
 
-- [Process multiple images](../how-to/batch.md) — Batch processing guide
-- [Configure parameters](../how-to/configuration.md) — Detailed parameter reference
-- [Visual QC](../how-to/visual-check.md) — Quality control tools
-- [Understand the algorithm](../explanation/cell-detection.md) — How cell detection works
+- [Process multiple images](../how-to/batch.md) - Batch processing guide
+- [Configure parameters](../how-to/configuration.md) - Detailed parameter reference
+- [Visual QC](../how-to/visual-check.md) - Quality control tools
+- [Understand the algorithm](../explanation/cell-detection.md) - How cell detection works

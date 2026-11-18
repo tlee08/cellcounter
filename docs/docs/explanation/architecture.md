@@ -14,10 +14,10 @@ CellCounter is designed for **whole-brain microscopy images** that are:
 
 The architecture addresses these challenges through:
 
-1. **Chunked storage** (Zarr) — memory-efficient access
-2. **Lazy evaluation** (Dask) — compute only what's needed
-3. **GPU acceleration** (CuPy) — fast array operations
-4. **Modular design** — easy to extend and maintain
+1. **Chunked storage** (Zarr) - memory-efficient access
+2. **Lazy evaluation** (Dask) - compute only what's needed
+3. **GPU acceleration** (CuPy) - fast array operations
+4. **Modular design** - easy to extend and maintain
 
 ---
 
@@ -328,7 +328,7 @@ raw.zarr/
 ### 2. Dask Lazy Evaluation
 
 ```python
-# Doesn't load data yet — just builds task graph
+# Doesn't load data yet - just builds task graph
 raw_arr = da.from_zarr("raw.zarr")
 filtered = da.map_blocks(tophat_filt, raw_arr)
 
@@ -350,7 +350,7 @@ with cluster_process(self.gpu_cluster()):
     result = da.map_blocks(gpu_operation, arr)
 ```
 
-GPU memory is limited — single worker ensures:
+GPU memory is limited - single worker ensures:
 
 - Only one chunk on GPU at a time
 - No contention for VRAM

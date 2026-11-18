@@ -277,8 +277,8 @@ combine_root(
 
 Output files:
 
-- `combined_cells_agg.csv` — All cells from all samples
-- `combined_summary.csv` — Summary statistics per sample
+- `combined_cells_agg.csv` - All cells from all samples
+- `combined_summary.csv` - Summary statistics per sample
 
 ### Understanding Combined Output
 
@@ -337,7 +337,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 pipeline2 = Pipeline(analysis_root_dir / "mouse_02")
 ```
 
-Note: Requires careful management — recommended for advanced users only.
+Note: Requires careful management - recommended for advanced users only.
 
 ---
 
@@ -397,7 +397,7 @@ with open(analysis_root_dir / "processing_notes.txt", "w") as f:
 if i % 5 == 0:
     vc = VisualCheck(analysis_img_dir, tuning=False)
     vc.combine_cellc()
-    print("  Visual check saved — verify before continuing!")
+    print("  Visual check saved - verify before continuing!")
 ```
 
 ---

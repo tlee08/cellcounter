@@ -18,7 +18,7 @@ chunks:
   x: 500
 
 # ---------------------------------------------------------------------------
-# Tuning crop — subset extracted for parameter exploration.
+# Tuning crop - subset extracted for parameter exploration.
 # Set start/stop/step per axis; None means full range.
 # ---------------------------------------------------------------------------
 tuning_trim:
@@ -37,8 +37,8 @@ tuning_trim:
 
 # ---------------------------------------------------------------------------
 # Dask cluster sizing for parallel processing.
-#   heavy_* — few workers, high memory (registration, elastix)
-#   busy_*  — many workers, lower memory (cell counting)
+#   heavy_* - few workers, high memory (registration, elastix)
+#   busy_*  - many workers, lower memory (cell counting)
 # ---------------------------------------------------------------------------
 cluster:
   heavy_n_workers: 2
@@ -59,16 +59,16 @@ reference:
 # ---------------------------------------------------------------------------
 # Registration parameters.
 #
-# ref_orientation — flips/permutes axes to match atlas orientation.
+# ref_orientation - flips/permutes axes to match atlas orientation.
 #   Values must be 1, 2, 3 (optionally negated), one per axis.
 #   Positive = same direction; negative = flipped.
 #
-# ref_trim / reg_trim — crop before/after registration.
+# ref_trim / reg_trim - crop before/after registration.
 #
-# downsample_rough — initial coarse downsample (integer factors).
-# downsample_fine — final sub-voxel downsample (0 < factor <= 1).
+# downsample_rough - initial coarse downsample (integer factors).
+# downsample_fine - final sub-voxel downsample (0 < factor <= 1).
 #
-# lower/upper_bound — intensity clipping range.
+# lower/upper_bound - intensity clipping range.
 # ---------------------------------------------------------------------------
 registration:
   ref_orientation:
@@ -117,35 +117,35 @@ registration:
 # ---------------------------------------------------------------------------
 # Cell counting parameters.
 #
-# cell_diameter_px — physical cell diameter in voxels, per axis (z, y, x).
+# cell_diameter_px - physical cell diameter in voxels, per axis (z, y, x).
 #   Because acquisition voxels are anisotropic (z is usually thicker than
 #   x/y), the diameter differs per axis. Every filter size below is derived
 #   from this diameter by a dimensionless scale factor, so anisotropy is
 #   handled automatically.
 #
-# tophat_radius_scale — top-hat background subtraction radius, as a multiple
+# tophat_radius_scale - top-hat background subtraction radius, as a multiple
 #   of cell_diameter_px.
 #   Rule of thumb (https://www.cell.com/cell-reports/fulltext/S2211-1247(22)00371-0, https://pmc.ncbi.nlm.nih.gov/articles/PMC8592694/):
 #     tophat radius is 30% to 50% larger than largest cFos cell diameter.
 #
-# dog_sigma1_scale / dog_sigma2_scale — Difference-of-Gaussian bandpass, as
+# dog_sigma1_scale / dog_sigma2_scale - Difference-of-Gaussian bandpass, as
 #   multiples of cell_diameter_px. Must satisfy dog_sigma1_scale < dog_sigma2_scale.
 #   Rule of thumb (https://bioimagebook.github.io/chapters/appendices/macros/macro_dog.html):
 #     dog_sigma1 is 1/4 to 1/2 of average cFos cell diameter
 #     dog_sigma2 is 1.4 (in other books 1.6 to 2.0) times dog_sigma1
 #
-# maxima_radius_scale — local maxima detection radius, as a multiple of
+# maxima_radius_scale - local maxima detection radius, as a multiple of
 #   cell_diameter_px.
 #
-# large_gauss_radius — radius for large-scale background estimation, absolute
+# large_gauss_radius - radius for large-scale background estimation, absolute
 #   and per-axis (z, y, x). Including in case, but in most cases this step can
 #   be skipped. To skip, set large_gauss_radius to null.
 #
-# threshold_value — absolute intensity threshold.
-# min/max_threshold_volume — size filter on thresholded blobs, in voxels.
+# threshold_value - absolute intensity threshold.
+# min/max_threshold_volume - size filter on thresholded blobs, in voxels.
 #   Must satisfy min < max.
 #
-# min/max_watershed_volume — size filter after watershed, in voxels.
+# min/max_watershed_volume - size filter after watershed, in voxels.
 #   Must satisfy min < max.
 # ---------------------------------------------------------------------------
 cell_counting:
@@ -167,9 +167,9 @@ cell_counting:
 # ---------------------------------------------------------------------------
 # Visual QC settings.
 #
-# heatmap_raw_radius — radius for raw-coordinate heatmap kernel.
-# heatmap_trfm_radius — radius for transformed-coordinate heatmap kernel.
-# cellcount_trim — crop region for visual inspection of cell detection.
+# heatmap_raw_radius - radius for raw-coordinate heatmap kernel.
+# heatmap_trfm_radius - radius for transformed-coordinate heatmap kernel.
+# cellcount_trim - crop region for visual inspection of cell detection.
 # ---------------------------------------------------------------------------
 visual_check:
   heatmap_raw_radius: 5

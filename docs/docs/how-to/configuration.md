@@ -31,7 +31,7 @@ pipeline.update_config(
 nano /path/to/project/config.json
 ```
 
-Changes take effect immediately — no restart needed.
+Changes take effect immediately - no restart needed.
 
 ---
 

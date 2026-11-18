@@ -124,6 +124,7 @@ uv run cellcounter-init
 ```
 
 This will:
+
 - Download the reference brain atlas (~1GB)
 - Download the annotation volume (~1GB)
 - Download the region hierarchy mapping (~100MB)
@@ -132,7 +133,7 @@ This will:
 The download may take 5-10 minutes depending on your connection.
 
 !!! tip "Atlas Location"
-    The atlas is saved in your home directory under `~/.cellcounter/atlas/`. You only need to do this once — all projects will share this atlas.
+The atlas is saved in your home directory under `~/.cellcounter/atlas/`. You only need to do this once - all projects will share this atlas.
 
 ---
 
@@ -149,6 +150,7 @@ uv run python -c "import cupy; print('✓ GPU (CuPy) available')"
 ```
 
 Expected output:
+
 ```
 ✓ CellCounter installed successfully
 ✓ GPU (CuPy) available  # (GPU users only)

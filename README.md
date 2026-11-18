@@ -21,7 +21,7 @@ CellCounter is a Python tool designed for **neuroscientists** who need to:
 - Labs doing whole-brain imaging (light sheet microscopy, serial two-photon, etc.)
 - Anyone needing automated, reproducible cell counting across brain regions
 
-**No programming experience required** — the tool provides command-line scripts and pre-made templates you can customize.
+**No programming experience required** - the tool provides command-line scripts and pre-made templates you can customize.
 
 ---
 
@@ -51,7 +51,7 @@ CellCounter is a Python tool designed for **neuroscientists** who need to:
 ### Prerequisites
 
 - **Python 3.12** (exact version required)
-- **[uv](https://docs.astral.sh/uv/)** — a fast Python package manager
+- **[uv](https://docs.astral.sh/uv/)** - a fast Python package manager
 - **(Recommended)** NVIDIA GPU with CUDA support for processing large images
 
 ### Step 1: Install System Dependencies (Ubuntu/Debian)
@@ -221,7 +221,7 @@ Results are saved in `cellcount/cells_agg.csv`:
 | Feature              | Description                                                         |
 | -------------------- | ------------------------------------------------------------------- |
 | **GPU Acceleration** | Process ~90GB images using CUDA (CuPy)                              |
-| **Memory Efficient** | Chunked processing via Dask — no need to load entire image into RAM |
+| **Memory Efficient** | Chunked processing via Dask - no need to load entire image into RAM |
 | **Reproducible**     | All parameters saved in `config.json`; every run documented         |
 | **Customizable**     | Tune detection parameters for your specific staining and resolution |
 | **Visual QC**        | Built-in tools to verify registration and cell detection            |
@@ -272,8 +272,8 @@ graph TD
 
 ## Getting Help
 
-- 📖 **[Documentation](https://tlee08.github.io/cellcounter/)** — Start here
-- 🐛 **[Issues](https://github.com/tlee08/cellcounter/issues)** — Report bugs or request features
+- 📖 **[Documentation](https://tlee08.github.io/cellcounter/)** - Start here
+- 🐛 **[Issues](https://github.com/tlee08/cellcounter/issues)** - Report bugs or request features
 - 💬 **Questions?** Open a discussion on GitHub
 
 ---
@@ -295,4 +295,4 @@ If you use CellCounter in your research, please cite:
 
 ## License
 
-This project is licensed under the GNU General Public License v3.0 — see [LICENSE](LICENSE) for details.
+This project is licensed under the GNU General Public License v3.0 - see [LICENSE](LICENSE) for details.

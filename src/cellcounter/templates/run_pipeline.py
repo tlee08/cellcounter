@@ -20,12 +20,12 @@ with app.setup:
 @app.cell(hide_code=True)
 def _():
     mo.md(r"""
-    # CellCounter — Run Pipeline
+    # CellCounter - Run Pipeline
 
     **Setup**
     * Change the paths and config below as needed.
     * Copy `templates/default_config.yaml` as a starting point.
-    * Click **Run Pipeline** when ready — it will take a while.
+    * Click **Run Pipeline** when ready - it will take a while.
     """)
 
 

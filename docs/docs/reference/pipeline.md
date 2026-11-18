@@ -48,7 +48,7 @@ def config(self) -> ProjConfig
 
 Access project configuration.
 
-**Returns**: `ProjConfig` — Pydantic model with all settings
+**Returns**: `ProjConfig` - Pydantic model with all settings
 
 **Example**:
 
@@ -67,7 +67,7 @@ def pfm(self) -> ProjFp
 
 Access project filepath model.
 
-**Returns**: `ProjFp` — All file paths in the project
+**Returns**: `ProjFp` - All file paths in the project
 
 **Example**:
 
