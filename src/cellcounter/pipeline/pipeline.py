@@ -467,12 +467,12 @@ class Pipeline:
             result = da.map_blocks(
                 self.cellc_funcs.dog_filt,
                 da.from_zarr(self.pfm.background_removed),
-                z_radius1=self.config.cell_counting.dog_sigma1.z,
-                y_radius1=self.config.cell_counting.dog_sigma1.y,
-                x_radius1=self.config.cell_counting.dog_sigma1.x,
-                z_radius2=self.config.cell_counting.dog_sigma2.z,
-                y_radius2=self.config.cell_counting.dog_sigma2.y,
-                x_radius2=self.config.cell_counting.dog_sigma2.x,
+                z_sigma1=self.config.cell_counting.dog_sigma1.z,
+                y_sigma1=self.config.cell_counting.dog_sigma1.y,
+                x_sigma1=self.config.cell_counting.dog_sigma1.x,
+                z_sigma2=self.config.cell_counting.dog_sigma2.z,
+                y_sigma2=self.config.cell_counting.dog_sigma2.y,
+                x_sigma2=self.config.cell_counting.dog_sigma2.x,
             )
             disk_cache(result, self.pfm.difference_of_gaussian)
 
@@ -491,9 +491,9 @@ class Pipeline:
             result = da.map_blocks(
                 self.cellc_funcs.gauss_subt_filt,
                 da.from_zarr(self.pfm.difference_of_gaussian),
-                z_radius=self.config.cell_counting.large_gauss_sigma.z,
-                y_radius=self.config.cell_counting.large_gauss_sigma.y,
-                x_radius=self.config.cell_counting.large_gauss_sigma.x,
+                z_sigma=self.config.cell_counting.large_gauss_sigma.z,
+                y_sigma=self.config.cell_counting.large_gauss_sigma.y,
+                x_sigma=self.config.cell_counting.large_gauss_sigma.x,
             )
             disk_cache(result, self.pfm.adaptive_filter)
 
