@@ -29,7 +29,12 @@ class CellCountingConfig(BaseModel):
     large_gauss_sigma_scale: PositiveFloat | None = None
 
     # Thresholding
+    # Different options. Defaults to threshold_offset_df (mean + offset * std)
+    threshold_offset_sd: PositiveFloat = 0.0
+    threshold_percentile: PositiveFloat = 95.0
     threshold_value: PositiveInt = 100
+
+    # Threshold volume filtering (in voxels)
     min_threshold_volume: PositiveInt = 1
     max_threshold_volume: PositiveInt = 15000
 

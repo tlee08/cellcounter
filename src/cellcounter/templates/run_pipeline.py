@@ -105,7 +105,7 @@ def _(analysis_dir, config_path, imgs_ls, overwrite, stitch_dir):
                     p.tophat_filter(overwrite=overwrite)
                     p.dog_filter(overwrite=overwrite)
                     p.adaptive_threshold_prep(overwrite=overwrite)
-                    p.threshold_segment(overwrite=overwrite)
+                    p.threshold_foreground(overwrite=overwrite)
                     p.threshold_label(overwrite=overwrite)
                     p.threshold_volumes(overwrite=overwrite)
                     p.threshold_volumes_filter(overwrite=overwrite)

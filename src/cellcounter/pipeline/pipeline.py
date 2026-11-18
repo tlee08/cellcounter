@@ -117,7 +117,7 @@ class Pipeline:
 
     @property
     def config(self) -> ProjConfig:
-        """Project configuration."""
+        """Project configuration. Read from file every time."""
         return ProjConfig.read_yaml(self._pfm.config_fp)
 
     @staticmethod
@@ -498,17 +498,86 @@ class Pipeline:
             disk_cache(result, self.pfm.adaptive_filter)
 
     @trace
-    def threshold_segment(self, *, overwrite: bool = False) -> None:
-        """Step 4: Manual thresholding."""
+    def threshold_foreground_percentile(self, *, overwrite: bool = False) -> None:
+        """Step 4 (option): Percentile thresholding."""
         if not overwrite and has_output_files(self.pfm.threshold):
             return
         with cluster_process(self.gpu_cluster()):
+            dog_arr = da.from_zarr(self.pfm.adaptive_filter)
+            fg_arr = dog_arr.astype(np.float32)
+            fg_values = fg_arr[fg_arr > 0]
+            threshold_res = float(
+                da.percentile(
+                    fg_values, self.config.cell_counting.threshold_percentile
+                ).compute()
+            )
             result = da.map_blocks(
-                self.cellc_funcs.manual_thresh,
+                self.cellc_funcs.manual_threshold,
+                dog_arr,
+                val=float(threshold_res),
+            )
+            disk_cache(result, self.pfm.threshold)
+
+    @trace
+    def threshold_foreground_mean(self, *, overwrite: bool = False) -> None:
+        """Step 4 (option): Manual thresholding."""
+        if not overwrite and has_output_files(self.pfm.threshold):
+            return
+        with cluster_process(self.gpu_cluster()):
+            dog_arr = da.from_zarr(self.pfm.adaptive_filter)
+            # Prevents overflow when squaring uint16 large values in float32
+            fg_arr = dog_arr.astype(np.float32)
+            # Considering only foreground (non-zero) voxels
+            mask_arr = fg_arr > 0
+            # Compute mean and standard deviation of foreground voxels
+            count_res, sum_res, squared_sum_res = da.compute(
+                mask_arr.sum(),
+                fg_arr.where(mask_arr, 0).sum(),
+                (fg_arr * fg_arr).where(mask_arr, 0).sum(),
+            )
+            if count_res == 0:  # guard: empty DoG → no cells
+                threshold_res = float("inf")
+            else:
+                mu_res = sum_res / count_res
+                var_res = max(
+                    squared_sum_res / count_res - mu_res * mu_res, 0.0
+                )  # clamp float-error negatives
+                sd_res = np.sqrt(var_res)
+                threshold_res = (
+                    mu_res + self.config.cell_counting.threshold_offset_sd * sd_res
+                )
+            # Apply thresholding
+            result = da.map_blocks(
+                self.cellc_funcs.manual_threshold,
+                dog_arr,
+                val=float(threshold_res),
+            )
+            disk_cache(result, self.pfm.threshold)
+            # Threshold
+            result = da.map_blocks(
+                self.cellc_funcs.manual_threshold,
                 da.from_zarr(self.pfm.adaptive_filter),
                 val=self.config.cell_counting.threshold_value,
             )
             disk_cache(result, self.pfm.threshold)
+
+    @trace
+    def threshold_foreground_value(self, *, overwrite: bool = False) -> None:
+        """Step 4 (option): Fixed value thresholding."""
+        if not overwrite and has_output_files(self.pfm.threshold):
+            return
+        with cluster_process(self.gpu_cluster()):
+            result = da.map_blocks(
+                self.cellc_funcs.manual_threshold,
+                da.from_zarr(self.pfm.adaptive_filter),
+                val=self.config.cell_counting.threshold_value,
+            )
+            disk_cache(result, self.pfm.threshold)
+
+    @trace
+    def threshold_foreground(self, *, overwrite: bool = False) -> None:
+        """Step 4: Thresholding based on configured method (percentile)."""
+        self.threshold_foreground_percentile(overwrite=overwrite)
 
     @trace
     def threshold_label(self, *, overwrite: bool = False) -> None:

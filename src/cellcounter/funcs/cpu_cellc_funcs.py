@@ -231,31 +231,7 @@ class CpuCellcFuncs:
         res_block = self.xp.maximum(res_block, 0)
         return res_block.astype(self.xp.uint16)
 
-    def intensity_cutoff(
-        self, block: npt.NDArray, min_: None | float = None, max_: None | float = None
-    ) -> npt.NDArray:
-        """Performing cutoffs on a 3D tensor."""
-        block = self.xp.asarray(block)
-        logger.debug("Making cutoffs")
-        res_block = block
-        if min_ is not None:
-            res_block = self.xp.maximum(res_block, min_)
-        if max_ is not None:
-            res_block = self.xp.minimum(res_block, max_)
-        return res_block
-
-    def mean_thresh(self, block: npt.NDArray, offset_sd: float = 0.0) -> npt.NDArray:
-        """Perform adaptive thresholding on a 3D tensor."""
-        block = self.xp.asarray(block)
-        logger.debug("Get mean and std of ONLY non-zero values")
-        arr0 = block[block > 0]
-        mu = arr0.mean()
-        sd = arr0.std()
-        logger.debug("Apply the threshold")
-        res_block = block > mu + offset_sd * sd
-        return res_block.astype(self.xp.uint8)
-
-    def manual_thresh(self, block: npt.NDArray, val: int) -> npt.NDArray:
+    def manual_threshold(self, block: npt.NDArray, val: int) -> npt.NDArray:
         """Perform manual thresholding on a tensor."""
         block = self.xp.asarray(block)
         logger.debug("Applying the threshold")
