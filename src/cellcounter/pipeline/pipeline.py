@@ -481,7 +481,7 @@ class Pipeline:
         """Step 3: Gaussian subtraction for adaptive thresholding."""
         if not overwrite and has_output_files(self.pfm.adaptive_filter):
             return
-        if self.config.cell_counting.large_gauss_radius is None:
+        if self.config.cell_counting.large_gauss_sigma is None:
             logger.info("Parameter is None. Copying last step output across.")
             disk_cache(
                 da.from_zarr(self.pfm.difference_of_gaussian), self.pfm.adaptive_filter
@@ -491,9 +491,9 @@ class Pipeline:
             result = da.map_blocks(
                 self.cellc_funcs.gauss_subt_filt,
                 da.from_zarr(self.pfm.difference_of_gaussian),
-                z_radius=self.config.cell_counting.large_gauss_radius.z,
-                y_radius=self.config.cell_counting.large_gauss_radius.y,
-                x_radius=self.config.cell_counting.large_gauss_radius.x,
+                z_radius=self.config.cell_counting.large_gauss_sigma.z,
+                y_radius=self.config.cell_counting.large_gauss_sigma.y,
+                x_radius=self.config.cell_counting.large_gauss_sigma.x,
             )
             disk_cache(result, self.pfm.adaptive_filter)
 
