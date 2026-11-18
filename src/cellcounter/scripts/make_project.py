@@ -28,16 +28,16 @@ def main() -> None:
     target.mkdir(parents=True, exist_ok=True)
 
     # Make files
-    for name in FILES:
-        dst = target / name
-        if dst.exists() and not _confirm(f"Overwrite {name}?"):
+    for file in FILES:
+        dst_fp = target / file
+        if dst_fp.exists() and not _confirm(f"Overwrite {file}?"):
             continue
-        shutil.copy(str(TEMPLATE_DIR / name), dst)
-        print(f"Copied: {name}")
+        shutil.copy(str(TEMPLATE_DIR / file), dst_fp)
+        print(f"Copied: {file}")
 
     # Make folders
     for folder in FOLDERS:
-        (dst / folder).mkdir(parents=True, exist_ok=True)
+        (target / folder).mkdir(parents=True, exist_ok=True)
 
     print(f"\nNext:\n  marimo edit {target / 'run_pipeline.py'}")
 
